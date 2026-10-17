@@ -188,6 +188,11 @@ unzip -l "$IPA" | grep 'Payload/Tube9.app/Info.plist'
 2. **Release** (tag `build-AAAAMMDD-HHMMSS`): descargable desde cualquier
    navegador, **incluso desde el propio iPhone**. Esta es la que se usa para
    instalarlo en el dispositivo.
+   Las notas del Release no van escritas dentro del *workflow* sino en
+   **`.github/notas-release.md`**, y se marca con `--latest` para que sea la
+   entrada que se vea la primera: así, quien llegue al repositorio sin saber
+   nada puede leer qué es, qué trae la versión y cómo se instala sin abrir
+   siquiera el README.
 
 ---
 
