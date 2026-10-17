@@ -143,26 +143,61 @@ Por eso Safari, Cydia y cualquier app fallan hoy con errores de certificado
 (`NSURLErrorServerCertificateUntrusted`, `-1202`).
 
 No es un fallo de Tube9: es que iOS 9 no conoce a Let's Encrypt ni a las raíces
-nuevas de Google. La solución que usa la comunidad de dispositivos antiguos es
-**instalar las raíces modernas**:
+nuevas de Google. Se arregla instalando las raíces modernas, y **el repositorio
+ya trae el perfil hecho**: `certificados/CertificadosModernos.mobileconfig`,
+que instala de una sola vez
 
-1. Descarga estos certificados **en el propio dispositivo** (o pásalos por
-   correo/AirDrop como archivos `.cer` / `.pem`):
-   * **ISRG Root X1** → https://letsencrypt.org/certificates/
-   * **GTS Root R1** y **GTS Root R4** → https://pki.goog/repository/
-2. Abre cada archivo en el dispositivo → **Ajustes → General → Perfil** →
-   *Instalar*.
-3. En iOS 9, una raíz instalada manualmente pasa a ser **de confianza para SSL
-   automáticamente**. Si tu dispositivo muestra además
-   *Ajustes → General → Información → Ajustes de confianza de certificados*,
-   activa ahí el interruptor de cada certificado.
+* **ISRG Root X1** y **ISRG Root X2** (Let's Encrypt)
+* **GTS Root R1** y **GTS Root R4** (Google, las que usa YouTube)
+* **DigiCert Global Root G2** (la que usa GitHub entre otros)
 
-Con esto, la app puede hablar con YouTube directamente por HTTPS desde tu
-conexión de casa (una IP residencial, que YouTube trata mucho mejor que las IP
-de centro de datos).
+> **Aviso: el círculo vicioso.** El dispositivo **todavía no puede descargar
+> nada por HTTPS**, da igual que sea desde GitHub o desde la web de Let's
+> Encrypt. Así que el perfil hay que **pasarle el fichero desde el PC**, no
+> intentar descargarlo con el propio dispositivo.
 
-> ¿No quieres tocar certificados? Usa el **modo relay** (ver más abajo): la app
-> habla por HTTP plano con tu servidor y el problema de TLS desaparece.
+Dos formas de pasarlo, de más cómoda a más manual:
+
+**1. Por la red local, sin cables ni correo (recomendada).** En el PC, dentro de
+la carpeta del repositorio:
+
+```powershell
+cd certificados
+python -m http.server 8000
+```
+
+Averigua la IP del PC con `ipconfig` (por ejemplo `192.168.1.50`) y abre en
+**Safari del dispositivo**:
+
+```
+http://192.168.1.50:8000/CertificadosModernos.mobileconfig
+```
+
+Es HTTP plano dentro de tu propia red, así que funciona aunque el dispositivo no
+confíe todavía en ningún certificado.
+
+**2. Por correo.** Adjunta el `.mobileconfig` en un correo a ti mismo y ábrelo
+desde la app Mail del dispositivo.
+
+Después, en el dispositivo: **Ajustes → General → Perfil** (en iOS 9 aparece al
+final de la lista) → *Instalar* → código de acceso si lo pide → *Instalar* otra
+vez.
+
+* En iOS 9 una raíz instalada así queda **de confianza para SSL
+  automáticamente**: no hay que activar nada más.
+* Si tu dispositivo fuera iOS 10.3 o superior, aparecería además
+  *Ajustes → General → Información → Ajustes de confianza de certificados*;
+  activa ahí el interruptor de cada certificado.
+
+Con esto la app habla con YouTube directamente por HTTPS desde tu conexión de
+casa (una IP residencial, que YouTube trata mucho mejor que las IP de centro de
+datos).
+
+*(El perfil se puede regenerar cuando quieras con
+`python tools/generar_certificados.py`.)*
+
+> ¿Prefieres no tocar certificados? Usa el **modo relay** (ver más abajo): la app
+> habla por HTTP plano con un servidor tuyo y el problema de TLS desaparece.
 
 ---
 
@@ -260,7 +295,7 @@ escríbelo también en Ajustes.
 
 | Síntoma | Causa y solución |
 |---|---|
-| «Certificado TLS no valido: iOS 9 no confia en la CA moderna» | Falta el paso **B.2**. Instala ISRG Root X1 y GTS Root R1/R4. |
+| «Certificado TLS no valido: iOS 9 no confia en la CA moderna» | Falta el paso **B.2**. Instala `certificados/CertificadosModernos.mobileconfig` una sola vez. |
 | «YouTube pide iniciar sesion» | Aleatorio y por vídeo. Entra en **Ajustes → Iniciar sesion en YouTube**. |
 | «YouTube ha rechazado la descarga (403)» | La URL del vídeo caducó o falta sesión. Pulsa **Reintentar**; si sigue, inicia sesión. |
 | No aparece 720p ni 1080p | El chip es de 32 bits y no decodifica VP9/AV1. 360p es el techo real. |
@@ -290,9 +325,12 @@ escríbelo también en Ajustes.
 │   ├── YTSettingsViewController.{h,m} Ajustes y diagnóstico
 │   ├── YTLoginViewController.{h,m}   Inicio de sesión (UIWebView)
 │   └── Resources/                    Info.plist, iconos, imágenes de arranque
+├── certificados/
+│   └── CertificadosModernos.mobileconfig   Perfil listo para las raíces nuevas
 ├── relay/relay.py                    Relay opcional (Python 3, sin dependencias)
 └── tools/
     ├── generar_recursos.py           Genera iconos y arranques (PNG a mano)
+    ├── generar_certificados.py       Genera el perfil .mobileconfig
     └── verificar_ipa.py              Comprueba arquitectura y versión del .ipa
 ```
 
