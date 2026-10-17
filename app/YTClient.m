@@ -21,6 +21,20 @@ static NSCache *sCacheMiniaturas = nil;
 // Declarada al final del fichero; hace falta el prototipo aqui.
 void YTRecogerRenderers(id nodo, NSString *sufijo, NSMutableArray *salida);
 
+// ---------------------------------------------------------------------------
+//  NSURLSession entrega los resultados en una cola de fondo, y la interfaz de
+//  iOS SOLO se puede tocar desde el hilo principal: actualizarla desde otra
+//  cola deja la tabla vacia y el reproductor clavado en "Cargando...".
+//  Todo lo que sale de esta clase pasa por aqui.
+// ---------------------------------------------------------------------------
+static void YTEnPrincipal(dispatch_block_t bloque) {
+    if ([NSThread isMainThread]) {
+        bloque();
+    } else {
+        dispatch_async(dispatch_get_main_queue(), bloque);
+    }
+}
+
 @interface YTClient ()
 @property (nonatomic, strong) NSURLSession *sesion;
 @end
@@ -167,15 +181,17 @@ void YTRecogerRenderers(id nodo, NSString *sufijo, NSMutableArray *salida);
     [[self.sesion dataTaskWithRequest:peticion
                             completionHandler:^(NSData *datos, NSURLResponse *respuesta,
                                                 NSError *error) {
-        if (error) { completion(nil, error); return; }
+        if (error) { YTEnPrincipal(^{ completion(nil, error); }); return; }
         NSError *jsonError = nil;
         id objeto = [NSJSONSerialization JSONObjectWithData:datos options:0 error:&jsonError];
         if (![objeto isKindOfClass:[NSDictionary class]]) {
-            completion(nil, jsonError ?: [NSError errorWithDomain:@"tube9"
-                code:1 userInfo:@{NSLocalizedDescriptionKey : @"Respuesta no valida"}]);
+            YTEnPrincipal(^{
+                completion(nil, jsonError ?: [NSError errorWithDomain:@"tube9"
+                    code:1 userInfo:@{NSLocalizedDescriptionKey : @"Respuesta no valida"}]);
+            });
             return;
         }
-        completion(objeto, nil);
+        YTEnPrincipal(^{ completion(objeto, nil); });
     }] resume];
 }
 
@@ -348,15 +364,17 @@ void YTRecogerRenderers(id nodo, NSString *sufijo, NSMutableArray *salida);
     [[self.sesion dataTaskWithRequest:peticion
                             completionHandler:^(NSData *datos, NSURLResponse *respuesta,
                                                 NSError *error) {
-        if (error) { completion(nil, error); return; }
+        if (error) { YTEnPrincipal(^{ completion(nil, error); }); return; }
         NSError *jsonError = nil;
         id objeto = [NSJSONSerialization JSONObjectWithData:datos options:0 error:&jsonError];
         if (![objeto isKindOfClass:[NSDictionary class]]) {
-            completion(nil, jsonError ?: [NSError errorWithDomain:@"tube9" code:8
-                userInfo:@{NSLocalizedDescriptionKey : @"YouTube devolvio algo inesperado"}]);
+            YTEnPrincipal(^{
+                completion(nil, jsonError ?: [NSError errorWithDomain:@"tube9" code:8
+                    userInfo:@{NSLocalizedDescriptionKey : @"YouTube devolvio algo inesperado"}]);
+            });
             return;
         }
-        completion(objeto, nil);
+        YTEnPrincipal(^{ completion(objeto, nil); });
     }] resume];
 }
 
@@ -391,22 +409,98 @@ void YTRecogerRenderers(id nodo, NSString *sufijo, NSMutableArray *salida);
         return;
     }
 
-    [informe appendString:@"Probando youtube.com por HTTPS...\n"];
+    [informe appendString:@"\n1) Buscando en youtube.com...\n"];
+    NSDate *principioBusqueda = [NSDate date];
     [self buscar:@"prueba" completion:^(NSArray *videos, NSError *error) {
+        [informe appendFormat:@"   %@\n", [self describir:videos error:error
+                                                     desde:principioBusqueda]];
         if (error) {
-            [informe appendFormat:@"FALLO: %@\n\n%@",
-                [YTClient explicarError:error],
-                @"Si es un error de certificado, instala las raices actualizadas "
-                @"en el dispositivo (mira el README, pasos 1-3)."];
-        } else {
-            [informe appendFormat:@"OK  la busqueda devolvio %lu resultados.\n",
-                (unsigned long)videos.count];
-            [informe appendFormat:@"Playback: %@",
-                ([YTClient haySesion] ? @"autenticado (mejor fiabilidad)"
-                                      : @"anonimo (puede pedir login en algun video)")];
+            [informe appendString:@"\nSi es un error de certificado, instala las raices "
+                               @"actualizadas en el dispositivo (mira el README)."];
+            completion(informe);
+            return;
         }
-        completion(informe);
+        if (videos.count == 0) {
+            [informe appendString:@"\nLa busqueda no devolvio ningun resultado."];
+            completion(informe);
+            return;
+        }
+
+        YTVideo *prueba = videos[0];
+        NSString *recorte = prueba.titulo.length > 32
+            ? [prueba.titulo substringToIndex:32] : prueba.titulo;
+        [informe appendFormat:@"\n2) Pidiendo la URL del video \"%@\"...\n", recorte];
+        NSDate *principioResolucion = [NSDate date];
+        [self resolverVideo:prueba.identificador
+            completion:^(NSDictionary *info, NSError *error) {
+            double segundos = -[principioResolucion timeIntervalSinceNow];
+            NSString *enlace = info[@"url"];
+            if (error || enlace.length == 0) {
+                [informe appendFormat:@"   FALLO tras %.1f s: %@\n", segundos,
+                    [YTClient explicarError:error] ?: @"YouTube no devolvio URL"];
+                [informe appendString:@"\nSi aparece LOGIN_REQUIRED, inicia sesion en Ajustes."];
+                completion(informe);
+                return;
+            }
+            NSURL *url = [NSURL URLWithString:enlace];
+            [informe appendFormat:@"   OK  URL obtenida en %.1f s\n", segundos];
+            [informe appendFormat:@"   servidor de video: %@\n", url.host ?: @"(desconocido)"];
+            [informe appendString:@"\n3) Descargando los primeros KB del video...\n"];
+            [self probarBytesDe:enlace completion:^(NSString *resultado) {
+                [informe appendFormat:@"   %@\n", resultado];
+                [informe appendString:
+                    @"\nSi el paso 3 falla o tarda muchisimo, el problema esta en la "
+                    @"descarga del video, no en la busqueda: suele ser el proveedor de "
+                    @"Internet dando largas con googlevideo.com. Prueba el modo relay."];
+                completion(informe);
+            }];
+        }];
     }];
+}
+
+// Resumen de una llamada con su duracion, para el informe.
+- (NSString *)describir:(NSArray *)videos error:(NSError *)error desde:(NSDate *)inicio {
+    double segundos = -[inicio timeIntervalSinceNow];
+    if (error) {
+        return [NSString stringWithFormat:@"FALLO tras %.1f s: %@",
+                segundos, [YTClient explicarError:error]];
+    }
+    return [NSString stringWithFormat:@"OK  %lu resultados en %.1f s",
+            (unsigned long)videos.count, segundos];
+}
+
+// Pide solo los primeros 64 KB, que es lo mismo que hace el reproductor al
+// empezar. Es la prueba decisiva: separa "la busqueda falla" de "el video no
+// se descarga".
+- (void)probarBytesDe:(NSString *)enlace completion:(void (^)(NSString *resultado))completion {
+    NSURL *url = [NSURL URLWithString:enlace];
+    if (!url) { completion(@"La URL del video no es valida."); return; }
+
+    NSMutableURLRequest *peticion = [NSMutableURLRequest requestWithURL:url];
+    [peticion setValue:@"bytes=0-65535" forHTTPHeaderField:@"Range"];
+    peticion.timeoutInterval = 15.0;   // el informe no debe quedarse colgado
+    NSDate *inicio = [NSDate date];
+    [[self.sesion dataTaskWithRequest:peticion
+        completionHandler:^(NSData *datos, NSURLResponse *respuesta, NSError *error) {
+        double segundos = -[inicio timeIntervalSinceNow];
+        if (error) {
+            completion([NSString stringWithFormat:@"FALLO tras %.1f s: %@",
+                segundos, [YTClient explicarError:error]]);
+            return;
+        }
+        NSHTTPURLResponse *http = [respuesta isKindOfClass:[NSHTTPURLResponse class]]
+                                ? (NSHTTPURLResponse *)respuesta : nil;
+        NSString *firma = @"";
+        if (datos.length >= 8) {
+            NSString *atom = [[NSString alloc] initWithData:
+                [datos subdataWithRange:NSMakeRange(4, 4)] encoding:NSASCIIStringEncoding];
+            if (atom) firma = [NSString stringWithFormat:@", atom '%@'", atom];
+        }
+        completion([NSString stringWithFormat:@"OK  HTTP %ld, %@, %.0f KB en %.1f s%@",
+                    (long)(http ? http.statusCode : 0),
+                    [respuesta MIMEType] ?: @"tipo desconocido",
+                    datos.length / 1024.0, segundos, firma]);
+    }] resume];
 }
 
 #pragma mark - Miniaturas

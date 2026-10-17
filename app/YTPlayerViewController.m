@@ -19,6 +19,9 @@
     UIActivityIndicatorView *_girador;
     AVPlayerItem *_elemento;
     BOOL _observando;
+    NSTimer *_vigilante;      // evita quedarse en "Cargando..." para siempre
+    NSDate *_inicioCarga;
+    NSString *_hostVideo;
 }
 
 - (instancetype)initWithVideo:(YTVideo *)video {
@@ -145,29 +148,71 @@
         _observando = NO;
     }
 
+    _hostVideo = url.host ?: @"desconocido";
     _elemento = [AVPlayerItem playerItemWithURL:url];
     [_elemento addObserver:self forKeyPath:@"status" options:NSKeyValueObservingOptionNew context:NULL];
     _observando = YES;
 
     _reproductor.player = [AVPlayer playerWithPlayerItem:_elemento];
     [_reproductor.player play];
-    _estado.text = @"Cargando...";
+
+    // AVPlayer no avisa cuando el servidor de video no contesta: se queda en
+    // "Cargando..." indefinidamente y desde fuera parece que la app se ha
+    // colgado. Este vigilante muestra los segundos que lleva y, a los 30 s,
+    // da un error util en lugar de quedarse mudo.
+    _inicioCarga = [NSDate date];
+    [_vigilante invalidate];
+    _vigilante = [NSTimer scheduledTimerWithTimeInterval:1.0
+                                                  target:self
+                                                selector:@selector(vigilarCarga)
+                                                userInfo:nil
+                                                 repeats:YES];
+    [self vigilarCarga];
+}
+
+- (void)vigilarCarga {
+    if (_elemento.status == AVPlayerItemStatusReadyToPlay) {
+        [_vigilante invalidate];
+        _vigilante = nil;
+        return;
+    }
+    NSTimeInterval segundos = -[_inicioCarga timeIntervalSinceNow];
+    _estado.text = [NSString stringWithFormat:@"Cargando... %.0f s   (%@)",
+                    segundos, _hostVideo];
+    if (segundos >= 30.0) {
+        [_vigilante invalidate];
+        _vigilante = nil;
+        [self mostrarError:[NSString stringWithFormat:
+            @"El video no llega a empezar.\n\nServidor: %@\n30 segundos sin recibir "
+            @"nada.\n\nSuele ser el proveedor de Internet dando largas con "
+            @"googlevideo.com, o que YouTube pida iniciar sesion. Prueba "
+            @"Ajustes > Iniciar sesion en YouTube, o el modo relay.", _hostVideo]];
+    }
 }
 
 - (void)observeValueForKeyPath:(NSString *)ruta
                       ofObject:(id)objeto
                         change:(NSDictionary *)cambio
                        context:(void *)contexto {
-    if ([ruta isEqualToString:@"status"] && objeto == _elemento) {
-        AVPlayerItemStatus estado = _elemento.status;
+    if (![ruta isEqualToString:@"status"] || objeto != _elemento) return;
+
+    // La notificacion puede llegar desde una cola interna de AVFoundation, y
+    // la interfaz solo se puede tocar desde el hilo principal.
+    AVPlayerItemStatus estado = _elemento.status;
+    dispatch_async(dispatch_get_main_queue(), ^{
         if (estado == AVPlayerItemStatusReadyToPlay) {
-            [_girador stopAnimating];
-            _estado.text = @"Reproduciendo en la mejor calidad disponible (MP4 360p).\n\n"
-                           @"Los dispositivos de 32 bits no pueden decodificar VP9 ni AV1, "
-                           @"por eso no hay 720p.";
+            [self->_vigilante invalidate];
+            self->_vigilante = nil;
+            [self->_girador stopAnimating];
+            self->_estado.text = @"Reproduciendo en la mejor calidad disponible (MP4 360p).\n\n"
+                                 @"Los dispositivos de 32 bits no pueden decodificar VP9 ni AV1, "
+                                 @"por eso no hay 720p.";
         } else if (estado == AVPlayerItemStatusFailed) {
-            NSString *detalle = _elemento.error.localizedDescription ?: @"error desconocido";
-            NSInteger codigo = _elemento.error.code;
+            [self->_vigilante invalidate];
+            self->_vigilante = nil;
+            NSError *fallo = self->_elemento.error;
+            NSString *detalle = fallo.localizedDescription ?: @"error desconocido";
+            NSInteger codigo = fallo.code;
             NSString *pista = @"";
             if (codigo == -11850 || codigo == -11800) {
                 pista = @"\n\nYouTube ha rechazado la descarga (403). Inicia sesion en "
@@ -176,16 +221,19 @@
             [self mostrarError:[NSString stringWithFormat:@"No se pudo reproducir.\n%@%@",
                                 detalle, pista]];
         }
-    }
+    });
 }
 
 - (void)mostrarError:(NSString *)texto {
+    [_vigilante invalidate];
+    _vigilante = nil;
     [_girador stopAnimating];
     _estado.text = texto;
     _reintentar.hidden = NO;
 }
 
 - (void)dealloc {
+    [_vigilante invalidate];
     if (_observando && _elemento) {
         [_elemento removeObserver:self forKeyPath:@"status"];
     }

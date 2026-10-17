@@ -20,3 +20,7 @@ desktop.ini
 
 # IPA descargado para probar en local
 entrega/
+
+# Pagina de ayuda para pasar los ficheros al dispositivo por la red local
+# (lleva la IP de este PC dentro, asi que no se sube al repositorio)
+index.html
