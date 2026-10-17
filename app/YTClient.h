@@ -9,8 +9,24 @@ typedef void (^YTBloqueInfo)(NSDictionary *info, NSError *error);
 
 + (instancetype)compartido;
 
+// Ordenes que acepta YouTube en el campo "params" de una busqueda.
+extern NSString *const YTOrdenPorPopularidad;   // mas vistos primero
+extern NSString *const YTOrdenRecientes;        // subidos hace poco
+
 // Datos
 - (void)buscar:(NSString *)consulta completion:(YTBloqueLista)completion;
+
+// Igual que buscar:, pero permite pedirle a YouTube un orden concreto
+// (YTOrdenPorPopularidad / YTOrdenRecientes) o cualquier otro "params".
+- (void)buscar:(NSString *)consulta
+        params:(NSString *)params
+    completion:(YTBloqueLista)completion;
+
+// Pantalla de YouTube Music (music.youtube.com). Devuelve "carruseles", un
+// arreglo de filas:  @{ @"titulo": NSString, @"videos": NSArray<YTVideo*> }
+// Solo sirve para NAVEGAR: los videos se reproducen siempre con el cliente
+// ANDROID, porque YouTube Music pide JavaScript para descifrar sus enlaces.
+- (void)inicioMusica:(void (^)(NSArray *carruseles, NSError *error))completion;
 
 // Devuelve un diccionario con: url, titulo, autor, cliente.
 // Prueba varios clientes de YouTube en orden hasta que uno responda.

@@ -8,4 +8,7 @@
 
 - (void)configurarCon:(YTVideo *)video;
 
+// Alto que necesita la celda para un ancho dado (miniatura 16:9 + textos).
++ (CGFloat)altoParaAncho:(CGFloat)ancho;
+
 @end

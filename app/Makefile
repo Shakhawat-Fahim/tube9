@@ -25,6 +25,9 @@ Tube9_FILES = \
 	YTTheme.m \
 	YTVideo.m \
 	YTClient.m \
+	YTFeedViewController.m \
+	YTCarruselCell.m \
+	YTTendenciasViewController.m \
 	YTSearchViewController.m \
 	YTVideoCell.m \
 	YTPlayerViewController.m \

@@ -1,6 +1,9 @@
 // AppDelegate.m -- monta la interfaz (todo por codigo, sin storyboards)
 #import "AppDelegate.h"
 #import "YTTheme.h"
+#import "YTClient.h"
+#import "YTFeedViewController.h"
+#import "YTTendenciasViewController.h"
 #import "YTSearchViewController.h"
 #import "YTSettingsViewController.h"
 
@@ -13,62 +16,77 @@
 
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
 
-    // --- Pestana 1: Buscar -------------------------------------------------
+    // --- Pestana 1: Inicio -------------------------------------------------
+    // YouTube no da la portada personalizada sin cuenta (devuelve la pantalla
+    // vacia), asi que Inicio se monta con estantes tematicos: cada uno es una
+    // busqueda ordenada, y el resultado se ve igual que la portada oficial.
+    NSArray *estantesDeInicio = @[
+        @{ @"titulo" : @"Tendencias de hoy", @"consulta" : @"tendencias",
+           @"params" : YTOrdenPorPopularidad },
+        @{ @"titulo" : @"Música",            @"consulta" : @"música",
+           @"params" : YTOrdenPorPopularidad },
+        @{ @"titulo" : @"Noticias",          @"consulta" : @"noticias de hoy",
+           @"params" : YTOrdenRecientes },
+        @{ @"titulo" : @"Deportes",          @"consulta" : @"deportes",
+           @"params" : YTOrdenRecientes },
+        @{ @"titulo" : @"Comedia",           @"consulta" : @"comedia",
+           @"params" : YTOrdenPorPopularidad },
+        @{ @"titulo" : @"Para aprender",     @"consulta" : @"documentales",
+           @"params" : YTOrdenPorPopularidad }
+    ];
+    YTFeedViewController *inicio =
+        [[YTFeedViewController alloc] initConTitulo:@"Inicio" fuentes:estantesDeInicio];
+    UINavigationController *navInicio =
+        [[UINavigationController alloc] initWithRootViewController:inicio];
+    navInicio.tabBarItem = [[UITabBarItem alloc]
+        initWithTitle:@"Inicio"
+                image:[YTTheme icono:@"inicio" lado:26]
+        selectedImage:nil];
+
+    // --- Pestana 2: Musica -------------------------------------------------
+    YTFeedViewController *musica = [[YTFeedViewController alloc] initConMusica];
+    UINavigationController *navMusica =
+        [[UINavigationController alloc] initWithRootViewController:musica];
+    navMusica.tabBarItem = [[UITabBarItem alloc]
+        initWithTitle:@"Música"
+                image:[YTTheme icono:@"musica" lado:26]
+        selectedImage:nil];
+
+    // --- Pestana 3: Tendencias ---------------------------------------------
+    YTTendenciasViewController *tendencias = [[YTTendenciasViewController alloc] init];
+    UINavigationController *navTendencias =
+        [[UINavigationController alloc] initWithRootViewController:tendencias];
+    navTendencias.tabBarItem = [[UITabBarItem alloc]
+        initWithTitle:@"Tendencias"
+                image:[YTTheme icono:@"tendencias" lado:26]
+        selectedImage:nil];
+
+    // --- Pestana 4: Buscar -------------------------------------------------
     YTSearchViewController *buscar = [[YTSearchViewController alloc] init];
     UINavigationController *navBuscar =
         [[UINavigationController alloc] initWithRootViewController:buscar];
     navBuscar.tabBarItem = [[UITabBarItem alloc]
         initWithTitle:@"Buscar"
-                image:[self imagenSimple:@"magnifyingglass" radio:22]
+                image:[YTTheme icono:@"buscar" lado:26]
         selectedImage:nil];
 
-    // --- Pestana 2: Ajustes -----------------------------------------------
+    // --- Pestana 5: Ajustes ------------------------------------------------
     YTSettingsViewController *ajustes = [[YTSettingsViewController alloc] init];
     UINavigationController *navAjustes =
         [[UINavigationController alloc] initWithRootViewController:ajustes];
     navAjustes.tabBarItem = [[UITabBarItem alloc]
         initWithTitle:@"Ajustes"
-                image:[self imagenSimple:@"gear" radio:22]
+                image:[YTTheme icono:@"ajustes" lado:26]
         selectedImage:nil];
 
     UITabBarController *tabs = [[UITabBarController alloc] init];
-    tabs.viewControllers = @[ navBuscar, navAjustes ];
+    tabs.viewControllers = @[ navInicio, navMusica, navTendencias, navBuscar, navAjustes ];
     [YTTheme aplicarEstiloTabBar:tabs.tabBar];
 
     self.window.rootViewController = tabs;
-    self.window.tintColor = [YTTheme acento];
+    self.window.tintColor = [YTTheme textoPrimario];
     [self.window makeKeyAndVisible];
     return YES;
-}
-
-// Dibuja un icono vectorial sencillo (sin depender de ficheros de imagen).
-- (UIImage *)imagenSimple:(NSString *)forma radio:(CGFloat)lado {
-    UIGraphicsBeginImageContextWithOptions(CGSizeMake(lado, lado), NO, 0);
-    CGContextRef ctx = UIGraphicsGetCurrentContext();
-    CGContextSetStrokeColorWithColor(ctx, [UIColor whiteColor].CGColor);
-    CGContextSetLineWidth(ctx, 1.9);
-    CGContextSetLineCap(ctx, kCGLineCapRound);
-    CGRect r = CGRectInset(CGRectMake(0, 0, lado, lado), 3, 3);
-
-    if ([forma isEqualToString:@"magnifyingglass"]) {
-        CGFloat d = lado * 0.60;
-        CGRect circulo = CGRectMake(r.origin.x, r.origin.y, d, d);
-        CGContextStrokeEllipseInRect(ctx, circulo);
-        CGContextMoveToPoint(ctx, CGRectGetMaxX(circulo) - 1.5, CGRectGetMaxY(circulo) - 1.5);
-        CGContextAddLineToPoint(ctx, CGRectGetMaxX(r), CGRectGetMaxY(r));
-        CGContextStrokePath(ctx);
-    } else {
-        CGContextStrokeEllipseInRect(ctx, CGRectInset(r, lado * 0.22, lado * 0.22));
-        CGContextMoveToPoint(ctx, r.origin.x, CGRectGetMidY(r));
-        CGContextAddLineToPoint(ctx, CGRectGetMaxX(r), CGRectGetMidY(r));
-        CGContextStrokePath(ctx);
-        CGFloat y = r.origin.y + (lado - 6) / 4;
-        CGContextStrokeEllipseInRect(ctx, CGRectMake(CGRectGetMidX(r) - 1.4, y - 1.4, 2.8, 2.8));
-    }
-
-    UIImage *img = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-    return [img imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
 }
 
 @end

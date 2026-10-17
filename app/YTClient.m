@@ -4,6 +4,12 @@
 // --- Constantes de YouTube ------------------------------------------------
 static NSString * const kClaveAPI = @"AIzaSyA8eiZmM1FaDVjRy-df2KTyQ_vz_yYM39w";
 static NSString * const kBaseYT   = @"https://www.youtube.com/youtubei/v1";
+static NSString * const kBaseYTMusic = @"https://music.youtube.com/youtubei/v1";
+
+// Ordenes de busqueda. Son "params" en base64 que YouTube ya tenia en su web;
+// no hay que fabricarlos, se envian tal cual en la peticion de busqueda.
+NSString *const YTOrdenPorPopularidad = @"CAMSAhAB";     // ordenar por mas vistos
+NSString *const YTOrdenRecientes      = @"EgIQAQ%3D%3D"; // ordenar por mas nuevos
 
 // Claves de NSUserDefaults
 static NSString * const kDefModo      = @"tube9_modo";
@@ -96,10 +102,34 @@ static NSDictionary *YTClientePrincipal(void) {
     return YTClientes()[0];
 }
 
+// Cliente para la pantalla de YouTube Music. Se usa SOLO para navegar (listar
+// canciones): sus enlaces de video necesitan el reproductor JavaScript, asi que
+// al reproducir siempre se resuelve con ANDROID, el cliente de arriba.
+static NSDictionary *YTClienteMusica(void) {
+    static NSDictionary *cliente = nil;
+    static dispatch_once_t unaVez;
+    dispatch_once(&unaVez, ^{
+        cliente = @{ @"nombre"  : @"WEB_REMIX",
+                     @"version" : @"1.20260707.12.00",
+                     @"id"      : @67,
+                     @"agente"  : @"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                                  @"AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.5 "
+                                  @"Safari/605.1.15,gzip(gfe)",
+                     @"sdk"     : @0,
+                     @"extra"   : @{},
+                     @"base"    : kBaseYTMusic,
+                     @"nota"    : @"YouTube Music (solo navegar)" };
+    });
+    return cliente;
+}
+
 static NSCache *sCacheMiniaturas = nil;
 
 // Declarada al final del fichero; hace falta el prototipo aqui.
 void YTRecogerRenderers(id nodo, NSString *sufijo, NSMutableArray *salida);
+
+// Lo mismo para los carruseles de YouTube Music.
+NSArray *YTCarruselesMusicales(NSDictionary *json);
 
 // ---------------------------------------------------------------------------
 //  NSURLSession entrega los resultados en una cola de fondo, y la interfaz de
@@ -159,7 +189,10 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
         _sesion = [NSURLSession sessionWithConfiguration:cfg];
         if (!sCacheMiniaturas) {
             sCacheMiniaturas = [[NSCache alloc] init];
-            sCacheMiniaturas.countLimit = 220;
+            sCacheMiniaturas.countLimit = 180;
+            // Limite por tamano (no solo por numero): en un iPhone de 512 MB
+            // 180 miniaturas grandes serian demasiada memoria.
+            sCacheMiniaturas.totalCostLimit = 24 * 1024 * 1024;
         }
     }
     return self;
@@ -326,6 +359,12 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
 #pragma mark - Busqueda
 
 - (void)buscar:(NSString *)consulta completion:(YTBloqueLista)completion {
+    [self buscar:consulta params:nil completion:completion];
+}
+
+- (void)buscar:(NSString *)consulta
+        params:(NSString *)params
+    completion:(YTBloqueLista)completion {
     NSString *limpia = [consulta stringByTrimmingCharactersInSet:
                         [NSCharacterSet whitespaceAndNewlineCharacterSet]];
     if (limpia.length == 0) {
@@ -357,10 +396,13 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
     // --- Modo directo: InnerTube -----------------------------------------
     NSDictionary *cliente = YTClientePrincipal();
     [self asegurarVisitante:^{
-        NSDictionary *cuerpo = @{
-            @"query" : limpia,
-            @"context" : @{ @"client" : [self contextoParaCliente:cliente incluirVisitante:YES] }
-        };
+        NSMutableDictionary *cuerpo = [NSMutableDictionary dictionary];
+        cuerpo[@"query"] = limpia;
+        // "params" es el filtro de orden con el que YouTube ordena la lista
+        // (mas vistos, mas nuevos...). Si no viene, YouTube usa su criterio.
+        if (params.length) cuerpo[@"params"] = params;
+        cuerpo[@"context"] = @{ @"client" : [self contextoParaCliente:cliente incluirVisitante:YES] };
+
         [self enviarAlInnerTube:@"search" cliente:cliente cuerpo:cuerpo
             completion:^(NSDictionary *json, NSError *error) {
             if (error) { completion(nil, error); return; }
@@ -375,6 +417,38 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
         }];
     }];
 }
+
+#pragma mark - Pantalla de musica (YouTube Music)
+
+- (void)inicioMusica:(void (^)(NSArray *carruseles, NSError *error))completion {
+    if ([[YTClient modo] isEqualToString:@"relay"]) {
+        completion(nil, [NSError errorWithDomain:@"tube9" code:3
+            userInfo:@{NSLocalizedDescriptionKey :
+                @"La pantalla de Musica necesita el modo directo (sin relay)."}]);
+        return;
+    }
+
+    NSDictionary *cliente = YTClienteMusica();
+    [self asegurarVisitante:^{
+        NSDictionary *cuerpo = @{
+            @"browseId" : @"FEmusic_home",
+            @"context" : @{ @"client" : [self contextoParaCliente:cliente incluirVisitante:YES] }
+        };
+        [self enviarAlInnerTube:@"browse" cliente:cliente cuerpo:cuerpo
+            completion:^(NSDictionary *json, NSError *error) {
+            if (error) { completion(nil, error); return; }
+            NSArray *carruseles = YTCarruselesMusicales(json);
+            if (carruseles.count == 0) {
+                completion(nil, [NSError errorWithDomain:@"tube9" code:9
+                    userInfo:@{NSLocalizedDescriptionKey :
+                        @"YouTube Music no devolvio listas. Vuelve a intentarlo."}]);
+                return;
+            }
+            completion(carruseles, nil);
+        }];
+    }];
+}
+
 
 #pragma mark - Resolucion del video
 
@@ -624,8 +698,14 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
                   cliente:(NSDictionary *)cliente
                    cuerpo:(NSDictionary *)cuerpo
                completion:(void (^)(NSDictionary *json, NSError *error))completion {
+    // Cada cliente tiene su propio servidor: www.youtube.com para todos menos
+    // YouTube Music, que vive en music.youtube.com.
+    NSString *base = cliente[@"base"];
+    if (![base isKindOfClass:[NSString class]] || base.length == 0) base = kBaseYT;
+    NSString *sitio = [base stringByReplacingOccurrencesOfString:@"/youtubei/v1" withString:@""];
+
     NSString *direccion = [NSString stringWithFormat:@"%@/%@?key=%@&prettyPrint=false",
-                           kBaseYT, ruta, kClaveAPI];
+                           base, ruta, kClaveAPI];
     NSMutableURLRequest *peticion = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:direccion]];
     peticion.HTTPMethod = @"POST";
     peticion.cachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
@@ -639,8 +719,8 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
     // "inicia sesion para confirmar que no eres un robot".
     [peticion setValue:[cliente[@"id"] stringValue] forHTTPHeaderField:@"X-YouTube-Client-Name"];
     [peticion setValue:cliente[@"version"] forHTTPHeaderField:@"X-YouTube-Client-Version"];
-    [peticion setValue:@"https://www.youtube.com" forHTTPHeaderField:@"Origin"];
-    [peticion setValue:@"https://www.youtube.com/" forHTTPHeaderField:@"Referer"];
+    [peticion setValue:sitio forHTTPHeaderField:@"Origin"];
+    [peticion setValue:[sitio stringByAppendingString:@"/"] forHTTPHeaderField:@"Referer"];
     NSString *visitante = [YTClient visitante];
     if (visitante.length) [peticion setValue:visitante forHTTPHeaderField:@"X-Goog-Visitor-Id"];
 
@@ -820,7 +900,10 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
     [[sesion dataTaskWithRequest:peticion
                completionHandler:^(NSData *datos, NSURLResponse *respuesta, NSError *error) {
         UIImage *imagen = datos.length ? [UIImage imageWithData:datos] : nil;
-        if (imagen) [sCacheMiniaturas setObject:imagen forKey:url];
+        if (imagen) {
+            NSUInteger coste = (NSUInteger)(imagen.size.width * imagen.size.height * 4.0);
+            [sCacheMiniaturas setObject:imagen forKey:url cost:coste];
+        }
         dispatch_async(dispatch_get_main_queue(), ^{ completion(imagen); });
     }] resume];
 }
@@ -881,4 +964,187 @@ void YTRecogerRenderers(id nodo, NSString *sufijo, NSMutableArray *salida) {
             YTRecogerRenderers(elemento, sufijo, salida);
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+//  YouTube Music
+//
+//  La pantalla de musica NO usa los mismos nodos que la de videos
+//  (videoRenderer): YouTube Music devuelve "estantes" (musicCarouselShelfRenderer
+//  y musicShelfRenderer) con canciones (musicResponsiveListItemRenderer y
+//  musicTwoRowItemRenderer). De cada cancion interesa el videoId (para poder
+//  reproducirla con el cliente ANDROID), el titulo, el artista y la portada.
+// ---------------------------------------------------------------------------
+
+// {"simpleText": "..."} o {"runs": [{"text": "..."}]} -> texto plano
+static NSString *YTTextoDeNodo(id nodo) {
+    if (![nodo isKindOfClass:[NSDictionary class]]) return nil;
+    id simple = ((NSDictionary *)nodo)[@"simpleText"];
+    if ([simple isKindOfClass:[NSString class]]) return simple;
+
+    id runs = ((NSDictionary *)nodo)[@"runs"];
+    if ([runs isKindOfClass:[NSArray class]] && [(NSArray *)runs count] > 0) {
+        NSMutableString *unido = [NSMutableString string];
+        for (id r in (NSArray *)runs) {
+            if (![r isKindOfClass:[NSDictionary class]]) continue;
+            id t = ((NSDictionary *)r)[@"text"];
+            if ([t isKindOfClass:[NSString class]]) [unido appendString:t];
+        }
+        return unido.length ? unido : nil;
+    }
+    return nil;
+}
+
+// Subscripting defensivo: devuelve el valor solo si es un diccionario.
+static id YTDiccionarioEn(id nodo, NSString *clave) {
+    if (![nodo isKindOfClass:[NSDictionary class]]) return nil;
+    id valor = ((NSDictionary *)nodo)[clave];
+    return [valor isKindOfClass:[NSDictionary class]] ? valor : nil;
+}
+
+// Primer valor, a cualquier profundidad, cuya clave sea la buscada.
+static id YTEncontrarPorClave(id nodo, NSString *claveBuscada) {
+    if ([nodo isKindOfClass:[NSDictionary class]]) {
+        NSDictionary *dic = nodo;
+        id directo = dic[claveBuscada];
+        if (directo) return directo;
+        for (NSString *clave in dic) {
+            id hallado = YTEncontrarPorClave(dic[clave], claveBuscada);
+            if (hallado) return hallado;
+        }
+    } else if ([nodo isKindOfClass:[NSArray class]]) {
+        for (id hijo in (NSArray *)nodo) {
+            id hallado = YTEncontrarPorClave(hijo, claveBuscada);
+            if (hallado) return hallado;
+        }
+    }
+    return nil;
+}
+
+// Acumula las canciones de un estante, en el orden en que vienen.
+static void YTRecogerFilasMusicales(id nodo, NSMutableArray *salida) {
+    if ([nodo isKindOfClass:[NSDictionary class]]) {
+        NSDictionary *dic = nodo;
+        NSDictionary *fila = YTDiccionarioEn(dic, @"musicResponsiveListItemRenderer");
+        if (fila) { [salida addObject:fila]; return; }
+        NSDictionary *dosFilas = YTDiccionarioEn(dic, @"musicTwoRowItemRenderer");
+        if (dosFilas) { [salida addObject:dosFilas]; return; }
+        for (NSString *clave in dic) YTRecogerFilasMusicales(dic[clave], salida);
+    } else if ([nodo isKindOfClass:[NSArray class]]) {
+        for (id hijo in (NSArray *)nodo) YTRecogerFilasMusicales(hijo, salida);
+    }
+}
+
+static NSString *YTUrlMiniaturaMusical(NSDictionary *fila) {
+    NSDictionary *render = YTEncontrarPorClave(fila, @"musicThumbnailRenderer");
+    NSArray *lista = nil;
+    if ([render isKindOfClass:[NSDictionary class]]) {
+        lista = YTDiccionarioEn(render, @"thumbnail")[@"thumbnails"];
+    }
+    if ([lista isKindOfClass:[NSArray class]] && lista.count > 0) {
+        NSDictionary *ultima = lista.lastObject;
+        if ([ultima isKindOfClass:[NSDictionary class]]) {
+            id url = ultima[@"url"];
+            if ([url isKindOfClass:[NSString class]]) return url;
+        }
+    }
+    return nil;
+}
+
+static YTVideo *YTVideoDeFilaMusical(NSDictionary *fila) {
+    NSString *identificador = nil;
+
+    // En las listas verticales viene en "playlistItemData"; en las tarjetas,
+    // dentro del punto de navegacion del clic.
+    NSDictionary *datos = YTDiccionarioEn(fila, @"playlistItemData");
+    if (datos) {
+        id vid = datos[@"videoId"];
+        if ([vid isKindOfClass:[NSString class]]) identificador = vid;
+    }
+    if (identificador.length == 0) {
+        NSDictionary *watch = YTEncontrarPorClave(fila, @"watchEndpoint");
+        if (watch) {
+            id vid = watch[@"videoId"];
+            if ([vid isKindOfClass:[NSString class]]) identificador = vid;
+        }
+    }
+    // Sin videoId es un album o una lista de reproduccion: no lo podemos
+    // reproducir, asi que se descarta.
+    if (identificador.length == 0) return nil;
+
+    YTVideo *video = [[YTVideo alloc] init];
+    video.identificador = identificador;
+
+    NSArray *columnas = fila[@"flexColumns"];
+    if ([columnas isKindOfClass:[NSArray class]] && columnas.count > 0) {
+        // Lista vertical: cancion / artista y discos / duracion
+        video.titulo = YTTextoDeNodo(YTDiccionarioEn(
+            YTDiccionarioEn(columnas[0], @"musicResponsiveListItemFlexColumnRenderer"), @"text"));
+        if (columnas.count > 1) {
+            video.canal = YTTextoDeNodo(YTDiccionarioEn(
+                YTDiccionarioEn(columnas[1], @"musicResponsiveListItemFlexColumnRenderer"), @"text"));
+        }
+        if (columnas.count > 2) {
+            NSString *posible = YTTextoDeNodo(YTDiccionarioEn(
+                YTDiccionarioEn(columnas[2], @"musicResponsiveListItemFlexColumnRenderer"), @"text"));
+            if (posible.length <= 8 && [posible rangeOfString:@":"].location != NSNotFound) {
+                video.duracion = posible;
+            }
+        }
+    } else {
+        // Tarjeta horizontal: solo titulo y subtitulo.
+        video.titulo = YTTextoDeNodo(fila[@"title"]);
+        video.canal  = YTTextoDeNodo(fila[@"subtitle"]);
+    }
+    if (video.titulo.length == 0) video.titulo = @"(sin titulo)";
+
+    video.urlMiniatura = YTUrlMiniaturaMusical(fila);
+    if (video.urlMiniatura.length == 0) {
+        video.urlMiniatura = [NSString stringWithFormat:
+            @"https://i.ytimg.com/vi/%@/mqdefault.jpg", identificador];
+    }
+    return video;
+}
+
+static void YTRecorrerEstantes(id nodo, NSMutableArray *filas) {
+    if ([nodo isKindOfClass:[NSDictionary class]]) {
+        NSDictionary *dic = nodo;
+        NSDictionary *carrusel = YTDiccionarioEn(dic, @"musicCarouselShelfRenderer");
+        NSDictionary *estante  = YTDiccionarioEn(dic, @"musicShelfRenderer");
+        NSDictionary *contenedor = carrusel ? carrusel : estante;
+
+        if (contenedor) {
+            NSString *titulo = nil;
+            NSDictionary *cabecera = YTDiccionarioEn(contenedor, @"header");
+            if (cabecera) {
+                NSDictionary *basica =
+                    YTDiccionarioEn(cabecera, @"musicCarouselShelfBasicHeaderRenderer");
+                if (basica) titulo = YTTextoDeNodo(YTDiccionarioEn(basica, @"title"));
+            }
+            if (titulo.length == 0) titulo = YTTextoDeNodo(YTDiccionarioEn(contenedor, @"title"));
+
+            NSMutableArray *candidatas = [NSMutableArray array];
+            YTRecogerFilasMusicales(YTDiccionarioEn(contenedor, @"contents"), candidatas);
+            NSMutableArray *videos = [NSMutableArray array];
+            for (NSDictionary *fila in candidatas) {
+                YTVideo *video = YTVideoDeFilaMusical(fila);
+                if (video) [videos addObject:video];
+            }
+            // Con una o dos canciones no vale la pena una fila entera.
+            if (videos.count >= 3) {
+                [filas addObject:@{ @"titulo" : (titulo.length ? titulo : @"Música"),
+                                    @"videos" : videos }];
+            }
+            return;   // este estante ya esta consumido
+        }
+        for (NSString *clave in dic) YTRecorrerEstantes(dic[clave], filas);
+    } else if ([nodo isKindOfClass:[NSArray class]]) {
+        for (id hijo in (NSArray *)nodo) YTRecorrerEstantes(hijo, filas);
+    }
+}
+
+NSArray *YTCarruselesMusicales(NSDictionary *json) {
+    NSMutableArray *filas = [NSMutableArray array];
+    YTRecorrerEstantes(json, filas);
+    return filas;
 }
