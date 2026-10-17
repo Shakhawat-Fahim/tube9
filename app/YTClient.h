@@ -31,9 +31,23 @@ extern NSString *const YTOrdenRecientes;        // subidos hace poco
 - (void)carruselesDeMusica:(NSString *)browseId
                 completion:(void (^)(NSArray *carruseles, NSError *error))completion;
 
+// Igual que el anterior, pero buscando en el catalogo de YouTube Music. Sirve
+// para rellenar la pestana de Musica con temas de un estilo ("baladas",
+// "reggaeton"...): esas respuestas no traen estantes con nombre, asi que todo
+// lo que aparece se agrupa en un estante titulado con la propia consulta.
+- (void)carruselesDeMusicaBuscando:(NSString *)consulta
+                        completion:(void (^)(NSArray *carruseles, NSError *error))completion;
+
 // Devuelve un diccionario con: url, titulo, autor, cliente.
 // Prueba varios clientes de YouTube en orden hasta que uno responda.
 - (void)resolverVideo:(NSString *)videoId completion:(YTBloqueInfo)completion;
+
+// Videos parecidos a uno dado. YouTube tiene un endpoint propio para esto
+// ("next"), pero su respuesta pesa unos 7 MB (demasiado para un telefono de
+// 32 bits), asi que aqui se busca por el titulo y se descarta el propio video.
+- (void)relacionadosDe:(NSString *)titulo
+           excluyendo:(NSString *)videoId
+            completion:(YTBloqueLista)completion;
 - (void)probarConexion:(void (^)(NSString *informe))completion;
 
 // Miniaturas (con cache en memoria)

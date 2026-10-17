@@ -25,16 +25,20 @@ Tube9_FILES = \
 	YTTheme.m \
 	YTVideo.m \
 	YTClient.m \
+	YTProgreso.m \
+	YTDescargas.m \
 	YTFeedViewController.m \
 	YTCarruselCell.m \
 	YTTendenciasViewController.m \
 	YTSearchViewController.m \
 	YTVideoCell.m \
 	YTPlayerViewController.m \
+	YTDescargasViewController.m \
+	YTCarpetaViewController.m \
 	YTSettingsViewController.m \
 	YTLoginViewController.m
 
-Tube9_FRAMEWORKS = UIKit Foundation CoreGraphics AVFoundation AVKit
+Tube9_FRAMEWORKS = UIKit Foundation CoreGraphics AVFoundation AVKit MediaPlayer
 Tube9_CFLAGS = -fobjc-arc -Wno-deprecated-declarations -Wno-unused-parameter
 Tube9_RESOURCE_DIRS = Resources
 

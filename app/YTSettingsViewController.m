@@ -1,8 +1,12 @@
-// YTSettingsViewController.m -- conexion, cuenta y ayuda
+// YTSettingsViewController.m -- conexion, cuenta, descargas y ayuda
 #import "YTSettingsViewController.h"
 #import "YTTheme.h"
 #import "YTClient.h"
 #import "YTLoginViewController.h"
+#import "YTDescargas.h"
+#import "YTDescargasViewController.h"
+#import "YTCarpetaViewController.h"
+#import "YTProgreso.h"
 
 @implementation YTSettingsViewController
 
@@ -22,17 +26,19 @@
 
 #pragma mark - Estructura
 
-- (NSInteger)numberOfSectionsInTableView:(UITableView *)tabla { return 3; }
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tabla { return 4; }
 
 - (NSInteger)tableView:(UITableView *)tabla numberOfRowsInSection:(NSInteger)seccion {
     if (seccion == 0) return 4;   // conexion
     if (seccion == 1) return 3;   // cuenta
+    if (seccion == 2) return 3;   // videos y descargas
     return 2;                     // ayuda
 }
 
 - (NSString *)tableView:(UITableView *)tabla titleForHeaderInSection:(NSInteger)seccion {
     if (seccion == 0) return @"Conexion";
     if (seccion == 1) return @"Cuenta de YouTube";
+    if (seccion == 2) return @"Videos y descargas";
     return @"Ayuda";
 }
 
@@ -45,6 +51,11 @@
     if (seccion == 1) {
         return @"Iniciar sesion evita que YouTube diga \"confirma que no eres un bot\" "
                 "y mejora mucho la fiabilidad.";
+    }
+    if (seccion == 2) {
+        return @"Las descargas se guardan como MP4 360p en la carpeta que elijas "
+                "(tambien fuera de la app, util con jailbreak). \"Continuar viendo\" "
+                "es la lista de videos a medias que aparece en Inicio.";
     }
     return nil;
 }
@@ -139,6 +150,32 @@
         return c;
     }
 
+    if (indice.section == 2) {
+        UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleValue1];
+        if (indice.row == 0) {
+            NSUInteger cuantas = [[YTDescargas compartido] historial].count;
+            c.textLabel.text = @"Descargas";
+            c.detailTextLabel.text = cuantas
+                ? [NSString stringWithFormat:@"%lu videos", (unsigned long)cuantas]
+                : @"ninguno";
+            c.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+            return c;
+        }
+        if (indice.row == 1) {
+            c.textLabel.text = @"Carpeta de descargas";
+            c.detailTextLabel.text = [YTDescargas nombreBonitoDeCarpeta:[YTDescargas carpeta]];
+            c.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+            return c;
+        }
+        c.textLabel.text = @"Borrar \"Continuar viendo\"";
+        c.textLabel.textColor = [YTTheme acento];
+        NSUInteger cuantos = [YTProgreso continuarViendo].count;
+        c.detailTextLabel.text = cuantos
+            ? [NSString stringWithFormat:@"%lu videos", (unsigned long)cuantos]
+            : @"vacio";
+        return c;
+    }
+
     UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleDefault];
     if (indice.row == 0) {
         c.textLabel.text = @"Arreglar los certificados de iOS 9";
@@ -174,6 +211,43 @@
         [YTClient cerrarSesion];
         [self.tableView reloadData];
         [self alerta:@"Sesion cerrada" texto:@"Ahora las peticiones van sin cuenta."];
+        return;
+    }
+
+    if (indice.section == 2) {
+        if (indice.row == 0) {
+            YTDescargasViewController *lista = [[YTDescargasViewController alloc] init];
+            [self.navigationController pushViewController:lista animated:YES];
+            return;
+        }
+        if (indice.row == 1) {
+            YTCarpetaViewController *selector = [[YTCarpetaViewController alloc] init];
+            [self.navigationController pushViewController:selector animated:YES];
+            return;
+        }
+        NSUInteger cuantos = [YTProgreso continuarViendo].count;
+        if (cuantos == 0) {
+            [self alerta:@"Nada que borrar"
+                   texto:@"\"Continuar viendo\" esta vacio ahora mismo."];
+            return;
+        }
+        UIAlertController *alerta = [UIAlertController
+            alertControllerWithTitle:@"Borrar \"Continuar viendo\""
+                             message:[NSString stringWithFormat:
+                                @"Se olvidaran los %lu videos a medias. Los videos "
+                                @"seguiran en YouTube, solo se pierde por donde ibas.",
+                                (unsigned long)cuantos]
+                      preferredStyle:UIAlertControllerStyleAlert];
+        [alerta addAction:[UIAlertAction actionWithTitle:@"Borrar"
+                                                   style:UIAlertActionStyleDestructive
+                                                 handler:^(UIAlertAction *accion) {
+            [YTProgreso vaciar];
+            [self.tableView reloadData];
+        }]];
+        [alerta addAction:[UIAlertAction actionWithTitle:@"Cancelar"
+                                                   style:UIAlertActionStyleCancel
+                                                 handler:nil]];
+        [self presentViewController:alerta animated:YES completion:nil];
         return;
     }
 

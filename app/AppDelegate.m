@@ -2,6 +2,7 @@
 #import "AppDelegate.h"
 #import "YTTheme.h"
 #import "YTClient.h"
+#import "YTProgreso.h"
 #import "YTFeedViewController.h"
 #import "YTTendenciasViewController.h"
 #import "YTSearchViewController.h"
@@ -20,7 +21,15 @@
     // YouTube no da la portada personalizada sin cuenta (devuelve la pantalla
     // vacia), asi que Inicio se monta con estantes tematicos: cada uno es una
     // busqueda ordenada, y el resultado se ve igual que la portada oficial.
-    NSArray *estantesDeInicio = @[
+    //
+    // El primero es local y no cuesta red: "Continuar viendo", con los videos
+    // que se han quedado a medias (lo apunta el reproductor).
+    NSMutableArray *estantesDeInicio = [NSMutableArray array];
+    [estantesDeInicio addObject:@{
+        @"titulo"  : @"Continuar viendo",
+        @"estante" : @{ @"videos" : [YTProgreso continuarViendo] }
+    }];
+    [estantesDeInicio addObjectsFromArray:@[
         @{ @"titulo" : @"Tendencias de hoy", @"consulta" : @"tendencias",
            @"params" : YTOrdenPorPopularidad },
         @{ @"titulo" : @"Música",            @"consulta" : @"música",
@@ -33,7 +42,7 @@
            @"params" : YTOrdenPorPopularidad },
         @{ @"titulo" : @"Para aprender",     @"consulta" : @"documentales",
            @"params" : YTOrdenPorPopularidad }
-    ];
+    ]];
     YTFeedViewController *inicio =
         [[YTFeedViewController alloc] initConTitulo:@"Inicio" fuentes:estantesDeInicio];
     UINavigationController *navInicio =

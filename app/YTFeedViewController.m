@@ -3,9 +3,17 @@
 // Carga las fuentes de una en una, no todas a la vez: asi la memoria se queda
 // en un solo JSON grande y los estantes van apareciendo poco a poco, que ademas
 // da sensacion de fluidez en un telefono de 32 bits.
+//
+// Cada fuente es un diccionario:
+//   @{ @"consulta" : ..., @"titulo" : ..., @"params" : ... }  busqueda normal
+//   @{ @"browseId" : @"FEmusic_home" }                        pantalla de YT Music
+//   @{ @"consulta" : ..., @"musica" : @YES }                  busqueda en YT Music
+//   @{ @"titulo" : ..., @"estante" : @{...} }                 estante ya hecho
+//                                                             (Continuar viendo)
 #import "YTFeedViewController.h"
 #import "YTTheme.h"
 #import "YTClient.h"
+#import "YTProgreso.h"
 #import "YTCarruselCell.h"
 #import "YTPlayerViewController.h"
 
@@ -14,8 +22,10 @@
 
 @implementation YTFeedViewController {
     NSString *_tituloPantalla;
-    NSArray *_fuentes;          // nil en el modo musica
-    BOOL _esMusica;
+    NSArray *_fuentes;
+    BOOL _esMusica;             // las respuestas son ya estantes de YouTube Music
+    BOOL _usandoRespaldo;       // YouTube Music no dio nada y se tira de busquedas
+    BOOL _hayEstanteLocal;      // la primera fuente es "Continuar viendo"
 
     NSMutableArray *_filas;     // @{ @"titulo": ..., @"videos": ... }
     NSUInteger _indice;
@@ -36,6 +46,7 @@
         _tituloPantalla = [titulo copy];
         _fuentes = [fuentes copy];
         _esMusica = NO;
+        [self mirarSiHayEstanteLocal];
     }
     return self;
 }
@@ -44,16 +55,28 @@
     self = [super init];
     if (self) {
         _tituloPantalla = @"Música";
-        // Tres pantallas de YouTube Music: la portada, explorar y novedades.
-        // Cada una trae sus propios estantes (los titula YouTube).
+        // Cuatro pantallas de YouTube Music y cuatro estilos buscados en su
+        // catalogo. Medido: FEmusic_home 20 canciones, explore 24, novedades 24;
+        // las busquedas, entre 11 y 15 cada una. FEmusic_charts NO vale: sus
+        // listas son de artistas (llevan a un canal, no a un video).
         _fuentes = @[
             @{ @"browseId" : @"FEmusic_home" },
             @{ @"browseId" : @"FEmusic_explore" },
-            @{ @"browseId" : @"FEmusic_new_releases" }
+            @{ @"browseId" : @"FEmusic_new_releases" },
+            @{ @"consulta" : @"Reggaetón",      @"musica" : @YES },
+            @{ @"consulta" : @"Baladas",        @"musica" : @YES },
+            @{ @"consulta" : @"Rock en español", @"musica" : @YES },
+            @{ @"consulta" : @"Pop en español",  @"musica" : @YES }
         ];
         _esMusica = YES;
     }
     return self;
+}
+
+- (void)mirarSiHayEstanteLocal {
+    if (_fuentes.count == 0) return;
+    NSDictionary *primera = _fuentes[0];
+    if ([primera[@"estante"] isKindOfClass:[NSDictionary class]]) _hayEstanteLocal = YES;
 }
 
 - (void)viewDidLoad {
@@ -86,11 +109,16 @@
     _girador.hidesWhenStopped = YES;
 
     _botonRecargar = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh
-                                                                 target:self
-                                                                 action:@selector(recargar)];
+                                                                  target:self
+                                                                  action:@selector(recargar)];
     self.navigationItem.rightBarButtonItem = _botonRecargar;
 
     [self recargar];
+}
+
+- (void)viewWillAppear:(BOOL)animado {
+    [super viewWillAppear:animado];
+    [self refrescarEstanteLocal];
 }
 
 #pragma mark - Carga
@@ -122,6 +150,24 @@
         return;
     }
 
+    // Plan B de Musica: si YouTube Music no devuelve nada (es raro, pero puede
+    // pasar si cambian el formato), la pestana se rellena con busquedas normales
+    // de musica en vez de quedarse vacia.
+    if (_esMusica && !_usandoRespaldo) {
+        _usandoRespaldo = YES;
+        _esMusica = NO;
+        _fuentes = @[
+            @{ @"titulo" : @"Música",          @"consulta" : @"música",
+               @"params" : YTOrdenPorPopularidad },
+            @{ @"titulo" : @"Éxitos ahora",    @"consulta" : @"éxitos",
+               @"params" : YTOrdenPorPopularidad },
+            @{ @"titulo" : @"Baladas",         @"consulta" : @"baladas románticas" },
+            @{ @"titulo" : @"Rock",            @"consulta" : @"rock en español" }
+        ];
+        [self recargar];
+        return;
+    }
+
     _estado.hidden = NO;
     if (_ultimoError) {
         _estado.text = [NSString stringWithFormat:@"%@\n\n%@",
@@ -139,8 +185,8 @@
     NSDictionary *fuente = _fuentes[_indice];
 
     // Lo que devuelve cada carga se trata igual: en el modo de busquedas es una
-    // lista de videos (que se convierte en un estante con titulo propio) y en
-    // el modo de musica son ya estantes con el titulo que pone YouTube.
+    // lista de videos (que se convierte en un estante con titulo propio) y en el
+    // modo de musica son ya estantes con el titulo que pone YouTube.
     __weak YTFeedViewController *deb = self;
     void (^alLlegar)(NSArray *videos, NSError *error) = ^(NSArray *videos, NSError *error) {
         YTFeedViewController *yo = deb;
@@ -161,13 +207,60 @@
         [yo cargarSiguienteFuente];
     };
 
-    if (_esMusica) {
-        [[YTClient compartido] carruselesDeMusica:fuente[@"browseId"] completion:alLlegar];
-    } else {
-        [[YTClient compartido] buscar:fuente[@"consulta"]
-                               params:fuente[@"params"]
-                           completion:alLlegar];
+    // Estante ya hecho (Continuar viendo): no hay que pedir nada a YouTube.
+    NSDictionary *estante = fuente[@"estante"];
+    if ([estante isKindOfClass:[NSDictionary class]]) {
+        NSArray *videos = estante[@"videos"];
+        alLlegar([videos isKindOfClass:[NSArray class]] ? videos : @[], nil);
+        return;
     }
+
+    if (_esMusica) {
+        NSString *browseId = fuente[@"browseId"];
+        if ([browseId isKindOfClass:[NSString class]] && browseId.length) {
+            [[YTClient compartido] carruselesDeMusica:browseId completion:alLlegar];
+        } else {
+            [[YTClient compartido] carruselesDeMusicaBuscando:fuente[@"consulta"]
+                                                   completion:alLlegar];
+        }
+        return;
+    }
+
+    [[YTClient compartido] buscar:fuente[@"consulta"]
+                           params:fuente[@"params"]
+                       completion:alLlegar];
+}
+
+// Al volver a Inicio se refresca solo el estante "Continuar viendo": es local y
+// puede haber cambiado mientras se veia un video.
+- (void)refrescarEstanteLocal {
+    if (!_hayEstanteLocal || _cargando) return;
+
+    NSArray *videos = [YTProgreso continuarViendo];
+    NSInteger posicion = -1;
+    for (NSUInteger i = 0; i < _filas.count; i++) {
+        NSDictionary *fila = _filas[i];
+        if (fila[@"local"] || [fila[@"titulo"] isEqualToString:@"Continuar viendo"]) {
+            posicion = (NSInteger)i;
+            break;
+        }
+    }
+
+    if (videos.count == 0) {
+        if (posicion >= 0) {
+            [_filas removeObjectAtIndex:(NSUInteger)posicion];
+            [_tabla reloadData];
+        }
+        return;
+    }
+
+    NSDictionary *fila = @{ @"titulo" : @"Continuar viendo", @"videos" : videos, @"local" : @YES };
+    if (posicion >= 0) {
+        _filas[(NSUInteger)posicion] = fila;
+    } else {
+        [_filas insertObject:fila atIndex:0];
+    }
+    [_tabla reloadData];
 }
 
 #pragma mark - Tabla

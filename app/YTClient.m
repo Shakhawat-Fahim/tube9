@@ -128,8 +128,9 @@ static NSCache *sCacheMiniaturas = nil;
 // Declarada al final del fichero; hace falta el prototipo aqui.
 void YTRecogerRenderers(id nodo, NSString *sufijo, NSMutableArray *salida);
 
-// Lo mismo para los carruseles de YouTube Music.
-NSArray *YTCarruselesMusicales(NSDictionary *json);
+// Lo mismo para los carruseles de YouTube Music. "tituloRespaldo" se usa para
+// agrupar las canciones que vienen sin estante con nombre.
+NSArray *YTCarruselesMusicales(NSDictionary *json, NSString *tituloRespaldo);
 
 // ---------------------------------------------------------------------------
 //  NSURLSession entrega los resultados en una cola de fondo, y la interfaz de
@@ -166,6 +167,20 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
                completion:(void (^)(NSDictionary *json, NSError *error))completion;
 - (NSString *)describir:(NSArray *)videos error:(NSError *)error desde:(NSDate *)inicio;
 - (void)probarBytesDe:(NSString *)enlace completion:(void (^)(NSString *resultado))completion;
+- (void)pedirMusica:(NSString *)ruta
+              clave:(NSString *)clave
+              valor:(NSString *)valor
+     tituloRespaldo:(NSString *)respaldo
+         completion:(void (^)(NSArray *carruseles, NSError *error))completion;
+
+// Miniaturas: el estado (cola de espera, descargas en curso) solo se toca desde
+// el hilo principal, que es desde donde llaman las celdas.
++ (void)prepararMiniaturas;
++ (void)bombearMiniaturas;
++ (void)descargarMiniatura:(NSString *)limpia
+                candidatos:(NSArray *)candidatos
+                     indice:(NSUInteger)indice;
++ (void)terminarMiniatura:(NSString *)limpia imagen:(UIImage *)imagen;
 @end
 
 @implementation YTClient
@@ -422,7 +437,22 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
 
 - (void)carruselesDeMusica:(NSString *)browseId
                 completion:(void (^)(NSArray *carruseles, NSError *error))completion {
-    if (browseId.length == 0) {
+    [self pedirMusica:@"browse" clave:@"browseId" valor:browseId
+       tituloRespaldo:nil completion:completion];
+}
+
+- (void)carruselesDeMusicaBuscando:(NSString *)consulta
+                        completion:(void (^)(NSArray *carruseles, NSError *error))completion {
+    [self pedirMusica:@"search" clave:@"query" valor:consulta
+       tituloRespaldo:consulta completion:completion];
+}
+
+- (void)pedirMusica:(NSString *)ruta
+              clave:(NSString *)clave
+              valor:(NSString *)valor
+     tituloRespaldo:(NSString *)respaldo
+         completion:(void (^)(NSArray *carruseles, NSError *error))completion {
+    if (valor.length == 0) {
         completion(@[], nil);
         return;
     }
@@ -436,14 +466,35 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
     NSDictionary *cliente = YTClienteMusica();
     [self asegurarVisitante:^{
         NSDictionary *cuerpo = @{
-            @"browseId" : browseId,
+            clave : valor,
             @"context" : @{ @"client" : [self contextoParaCliente:cliente incluirVisitante:YES] }
         };
-        [self enviarAlInnerTube:@"browse" cliente:cliente cuerpo:cuerpo
+        [self enviarAlInnerTube:ruta cliente:cliente cuerpo:cuerpo
             completion:^(NSDictionary *json, NSError *error) {
             if (error) { completion(nil, error); return; }
-            completion(YTCarruselesMusicales(json), nil);
+            completion(YTCarruselesMusicales(json, respaldo), nil);
         }];
+    }];
+}
+
+#pragma mark - Videos relacionados
+
+- (void)relacionadosDe:(NSString *)titulo
+           excluyendo:(NSString *)videoId
+            completion:(YTBloqueLista)completion {
+    NSString *limpio = [titulo stringByTrimmingCharactersInSet:
+                        [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    if (limpio.length == 0) { completion(@[], nil); return; }
+
+    [self buscar:limpio params:nil completion:^(NSArray *videos, NSError *error) {
+        if (error) { completion(nil, error); return; }
+        NSMutableArray *salida = [NSMutableArray array];
+        for (YTVideo *v in videos) {
+            if (videoId.length && [v.identificador isEqualToString:videoId]) continue;
+            if (salida.count >= 12) break;
+            [salida addObject:v];
+        }
+        completion(salida, nil);
     }];
 }
 
@@ -730,11 +781,37 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
                             completionHandler:^(NSData *datos, NSURLResponse *respuesta,
                                                 NSError *error) {
         if (error) { YTEnPrincipal(^{ completion(nil, error); }); return; }
-        NSError *jsonError = nil;
-        id objeto = [NSJSONSerialization JSONObjectWithData:datos options:0 error:&jsonError];
-        if (![objeto isKindOfClass:[NSDictionary class]]) {
+
+        NSInteger codigo = [respuesta isKindOfClass:[NSHTTPURLResponse class]]
+            ? ((NSHTTPURLResponse *)respuesta).statusCode : 0;
+        id objeto = datos.length
+            ? [NSJSONSerialization JSONObjectWithData:datos options:0 error:nil] : nil;
+        BOOL esDiccionario = [objeto isKindOfClass:[NSDictionary class]];
+
+        // Un error HTTP se quedaba invisible: la app decia "no hay nada que
+        // mostrar" en vez de contar lo que habia pasado de verdad.
+        if (codigo >= 400) {
+            NSString *detalle = @"";
+            if (esDiccionario) {
+                id err = ((NSDictionary *)objeto)[@"error"];
+                if ([err isKindOfClass:[NSDictionary class]]) {
+                    NSString *mensaje = ((NSDictionary *)err)[@"message"];
+                    NSString *estado  = ((NSDictionary *)err)[@"status"];
+                    if (mensaje.length) detalle = [NSString stringWithFormat:@" (%@)", mensaje];
+                    else if (estado.length) detalle = [NSString stringWithFormat:@" (%@)", estado];
+                }
+            }
             YTEnPrincipal(^{
-                completion(nil, jsonError ?: [NSError errorWithDomain:@"tube9" code:8
+                completion(nil, [NSError errorWithDomain:@"tube9" code:10 userInfo:@{
+                    NSLocalizedDescriptionKey : [NSString stringWithFormat:
+                        @"YouTube respondio HTTP %ld al pedir %@.%@",
+                        (long)codigo, ruta, detalle]}]); });
+            return;
+        }
+
+        if (!esDiccionario) {
+            YTEnPrincipal(^{
+                completion(nil, [NSError errorWithDomain:@"tube9" code:8
                     userInfo:@{NSLocalizedDescriptionKey : @"YouTube devolvio algo inesperado"}]);
             });
             return;
@@ -880,30 +957,205 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
 
 #pragma mark - Miniaturas
 
+// ---------------------------------------------------------------------------
+//  iOS 9 no sabe decodificar WebP, y YouTube devuelve bastantes miniaturas en
+//  ese formato (https://i.ytimg.com/vi_webp/<id>/sddefault.webp). La imagen se
+//  descarga bien pero UIImage la rechaza y la celda se queda en blanco: eso era
+//  el "unas cargan y otras no". Aqui se reescribe la direccion a la version
+//  JPEG equivalente, que siempre existe.
+// ---------------------------------------------------------------------------
+static NSString *YTMiniaturaJpeg(NSString *url) {
+    if (url.length == 0) return url;
+
+    // Portadas de YouTube Music (lh3.googleusercontent.com): "-rw" pide WebP,
+    // "-rj" pide JPEG.
+    if ([url rangeOfString:@"googleusercontent.com"].location != NSNotFound) {
+        if ([url hasSuffix:@"-rw"]) {
+            return [[url substringToIndex:url.length - 3] stringByAppendingString:@"-rj"];
+        }
+        return url;
+    }
+
+    NSString *minusculas = [url lowercaseString];
+    BOOL eraWebp = ([minusculas rangeOfString:@"/vi_webp/"].location != NSNotFound) ||
+                   ([minusculas rangeOfString:@".webp"].location != NSNotFound);
+    if (!eraWebp) return url;
+
+    NSString *sinConsulta = url;
+    NSRange interrogacion = [url rangeOfString:@"?"];
+    if (interrogacion.location != NSNotFound) {
+        sinConsulta = [url substringToIndex:interrogacion.location];
+    }
+    NSString *base = [sinConsulta stringByReplacingOccurrencesOfString:@"/vi_webp/"
+                                                           withString:@"/vi/"];
+    if ([[base lowercaseString] hasSuffix:@".webp"]) {
+        base = [[base substringToIndex:base.length - 5] stringByAppendingString:@".jpg"];
+    }
+    // Se tira la parte "?sqp=..." a proposito: esa firma vale para la ruta
+    // original, y al cambiar webp por jpg podria dejar de ser valida. Las rutas
+    // i.ytimg.com/vi/<id>/<nombre>.jpg funcionan sin firma.
+    return base;
+}
+
+// Saca el videoId de una direccion de miniatura, para poder pedir la version
+// .jpg de i.ytimg.com cuando la original falla.
+static NSString *YTVideoIdDeMiniatura(NSString *url) {
+    NSUInteger inicio = NSNotFound;
+    NSRange marca = [url rangeOfString:@"/vi_webp/"];
+    if (marca.location == NSNotFound) marca = [url rangeOfString:@"/vi/"];
+    if (marca.location != NSNotFound) {
+        inicio = marca.location + marca.length;
+    } else {
+        NSRange v = [url rangeOfString:@"?v="];
+        if (v.location == NSNotFound) v = [url rangeOfString:@"&v="];
+        if (v.location != NSNotFound) inicio = v.location + v.length;
+    }
+    if (inicio == NSNotFound || inicio + 11 > url.length) return nil;
+
+    NSString *posible = [url substringWithRange:NSMakeRange(inicio, 11)];
+    NSCharacterSet *validos = [NSCharacterSet characterSetWithCharactersInString:
+        @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"];
+    if ([posible rangeOfCharacterFromSet:[validos invertedSet]].location != NSNotFound) return nil;
+    return posible;
+}
+
+// Lista de direcciones a probar, en orden, para una misma miniatura.
+static NSArray *YTCandidatosDeMiniatura(NSString *url) {
+    NSMutableArray *candidatos = [NSMutableArray arrayWithObject:url];
+    NSString *videoId = YTVideoIdDeMiniatura(url);
+    if (videoId.length == 11) {
+        for (NSString *nombre in @[ @"sddefault.jpg", @"hqdefault.jpg", @"mqdefault.jpg" ]) {
+            NSString *candidato = [NSString stringWithFormat:
+                @"https://i.ytimg.com/vi/%@/%@", videoId, nombre];
+            if (![candidatos containsObject:candidato]) [candidatos addObject:candidato];
+        }
+    }
+    return candidatos;
+}
+
+static NSURLSession *sSesionMiniaturas = nil;
+static NSMutableDictionary *sMiniaturasEnCurso = nil;   // url -> bloques en espera
+static NSMutableArray *sMiniaturasEnCola = nil;         // urls pendientes
+static NSUInteger sMiniaturasActivas = 0;
+static const NSUInteger kMiniaturasSimultaneas = 4;
+
++ (void)prepararMiniaturas {
+    static dispatch_once_t unaVez;
+    dispatch_once(&unaVez, ^{
+        NSURLSessionConfiguration *cfg = [NSURLSessionConfiguration defaultSessionConfiguration];
+        cfg.timeoutIntervalForRequest = 20.0;
+        cfg.timeoutIntervalForResource = 40.0;
+        // Cache en disco: al volver a una pantalla las miniaturas ya estan y no
+        // se vuelve a pedir nada a Google.
+        cfg.URLCache = [[NSURLCache alloc] initWithMemoryCapacity:4 * 1024 * 1024
+                                                     diskCapacity:32 * 1024 * 1024
+                                                         diskPath:@"tube9_miniaturas"];
+        cfg.requestCachePolicy = NSURLRequestReturnCacheDataElseLoad;
+        sSesionMiniaturas = [NSURLSession sessionWithConfiguration:cfg];
+        sMiniaturasEnCurso = [NSMutableDictionary dictionary];
+        sMiniaturasEnCola = [NSMutableArray array];
+        // Con poca memoria lo primero que sobra es la cache de imagenes.
+        [[NSNotificationCenter defaultCenter]
+            addObserverForName:UIApplicationDidReceiveMemoryWarningNotification
+                        object:nil
+                         queue:[NSOperationQueue mainQueue]
+                    usingBlock:^(NSNotification *nota) {
+            [sCacheMiniaturas removeAllObjects];
+        }];
+    });
+}
+
 + (void)cargarMiniatura:(NSString *)url
              completion:(void (^)(UIImage *imagen))completion {
-    if (url.length == 0) { completion(nil); return; }
+    if (completion == nil) return;
+    [self prepararMiniaturas];
 
-    UIImage *guardada = [sCacheMiniaturas objectForKey:url];
-    if (guardada) { completion(guardada); return; }
+    NSString *limpia = YTMiniaturaJpeg(url);
+    if (limpia.length == 0) { completion(nil); return; }
 
-    NSURLSessionConfiguration *cfg = [NSURLSessionConfiguration defaultSessionConfiguration];
-    cfg.timeoutIntervalForRequest = 20.0;
-    NSURLSession *sesion = [NSURLSession sessionWithConfiguration:cfg];
+    void (^empezar)(void) = ^{
+        UIImage *guardada = [sCacheMiniaturas objectForKey:limpia];
+        if (guardada) { completion(guardada); return; }
 
-    NSMutableURLRequest *peticion = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:url]];
+        NSMutableArray *esperando = sMiniaturasEnCurso[limpia];
+        if (esperando) {
+            // Ya se esta descargando: se apunta a la lista en vez de pedirla otra vez.
+            [esperando addObject:[completion copy]];
+            return;
+        }
+        sMiniaturasEnCurso[limpia] = [NSMutableArray arrayWithObject:[completion copy]];
+        [sMiniaturasEnCola addObject:limpia];
+        [self bombearMiniaturas];
+    };
+    if ([NSThread isMainThread]) empezar();
+    else dispatch_async(dispatch_get_main_queue(), empezar);
+}
+
++ (void)bombearMiniaturas {
+    if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{ [self bombearMiniaturas]; });
+        return;
+    }
+    while (sMiniaturasActivas < kMiniaturasSimultaneas && sMiniaturasEnCola.count > 0) {
+        NSString *siguiente = sMiniaturasEnCola[0];
+        [sMiniaturasEnCola removeObjectAtIndex:0];
+        if (!sMiniaturasEnCurso[siguiente]) continue;   // ya no interesa a nadie
+        sMiniaturasActivas++;
+        [self descargarMiniatura:siguiente
+                      candidatos:YTCandidatosDeMiniatura(siguiente)
+                           indice:0];
+    }
+}
+
++ (void)descargarMiniatura:(NSString *)limpia
+                candidatos:(NSArray *)candidatos
+                     indice:(NSUInteger)indice {
+    NSString *candidato = candidatos[indice];
+    NSMutableURLRequest *peticion = [NSMutableURLRequest requestWithURL:
+        [NSURL URLWithString:candidato]];
+    peticion.cachePolicy = NSURLRequestReturnCacheDataElseLoad;
+    peticion.timeoutInterval = 20.0;
+    // Se piden JPEG explicitamente: asi Google no devuelve WebP ni aunque el
+    // dispositivo lo pidiera.
+    [peticion setValue:@"image/jpeg,image/png;q=0.9,*/*;q=0.5"
+        forHTTPHeaderField:@"Accept"];
     [peticion setValue:@"Mozilla/5.0 (iPhone; CPU iPhone OS 9_3_5 like Mac OS X)"
         forHTTPHeaderField:@"User-Agent"];
 
-    [[sesion dataTaskWithRequest:peticion
-               completionHandler:^(NSData *datos, NSURLResponse *respuesta, NSError *error) {
-        UIImage *imagen = datos.length ? [UIImage imageWithData:datos] : nil;
+    [[sSesionMiniaturas dataTaskWithRequest:peticion
+        completionHandler:^(NSData *datos, NSURLResponse *respuesta, NSError *error) {
+        NSInteger codigo = [respuesta isKindOfClass:[NSHTTPURLResponse class]]
+            ? ((NSHTTPURLResponse *)respuesta).statusCode : 0;
+        UIImage *imagen = (error == nil && (codigo == 0 || codigo == 200) && datos.length)
+            ? [UIImage imageWithData:datos] : nil;
+
         if (imagen) {
-            NSUInteger coste = (NSUInteger)(imagen.size.width * imagen.size.height * 4.0);
-            [sCacheMiniaturas setObject:imagen forKey:url cost:coste];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                NSUInteger coste = (NSUInteger)(imagen.size.width * imagen.size.height * 4.0);
+                if (coste > 0) [sCacheMiniaturas setObject:imagen forKey:limpia cost:coste];
+                else [sCacheMiniaturas setObject:imagen forKey:limpia];
+                [self terminarMiniatura:limpia imagen:imagen];
+            });
+            return;
         }
-        dispatch_async(dispatch_get_main_queue(), ^{ completion(imagen); });
+
+        // Fallo o formato que iOS 9 no entiende: se prueba el siguiente tamano.
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (indice + 1 < candidatos.count) {
+                [self descargarMiniatura:limpia candidatos:candidatos indice:indice + 1];
+            } else {
+                [self terminarMiniatura:limpia imagen:nil];
+            }
+        });
     }] resume];
+}
+
++ (void)terminarMiniatura:(NSString *)limpia imagen:(UIImage *)imagen {
+    NSArray *esperando = sMiniaturasEnCurso[limpia];
+    [sMiniaturasEnCurso removeObjectForKey:limpia];
+    if (sMiniaturasActivas > 0) sMiniaturasActivas--;
+    for (void (^bloque)(UIImage *) in esperando) bloque(imagen);
+    [self bombearMiniaturas];
 }
 
 + (void)vaciarCacheMiniaturas {
@@ -1019,7 +1271,25 @@ static id YTEncontrarPorClave(id nodo, NSString *claveBuscada) {
     return nil;
 }
 
-// Acumula las canciones de un estante, en el orden en que vienen.
+// ¿Cuelga de aqui otro estante? Entonces este nodo es solo un envoltorio (en
+// YouTube Music los estantes van dentro de estantes) y no se debe consumir
+// entero: hay que bajar y tratar cada estante de dentro por separado.
+static BOOL YTContieneEstante(id nodo) {
+    if ([nodo isKindOfClass:[NSDictionary class]]) {
+        NSDictionary *dic = nodo;
+        if (YTDiccionarioEn(dic, @"musicCarouselShelfRenderer") ||
+            YTDiccionarioEn(dic, @"musicShelfRenderer") ||
+            YTDiccionarioEn(dic, @"musicPlaylistShelfRenderer")) return YES;
+        for (NSString *clave in dic) if (YTContieneEstante(dic[clave])) return YES;
+    } else if ([nodo isKindOfClass:[NSArray class]]) {
+        for (id hijo in (NSArray *)nodo) if (YTContieneEstante(hijo)) return YES;
+    }
+    return NO;
+}
+
+// Acumula las canciones de un estante, en el orden en que vienen. No se entra
+// en estantes anidados (eso lo hace YTRecorrerEstantes) ni en cabeceras/pies,
+// que traen botones y menus y solo ensuciarian la lista.
 static void YTRecogerFilasMusicales(id nodo, NSMutableArray *salida) {
     if ([nodo isKindOfClass:[NSDictionary class]]) {
         NSDictionary *dic = nodo;
@@ -1027,7 +1297,11 @@ static void YTRecogerFilasMusicales(id nodo, NSMutableArray *salida) {
         if (fila) { [salida addObject:fila]; return; }
         NSDictionary *dosFilas = YTDiccionarioEn(dic, @"musicTwoRowItemRenderer");
         if (dosFilas) { [salida addObject:dosFilas]; return; }
-        for (NSString *clave in dic) YTRecogerFilasMusicales(dic[clave], salida);
+        for (NSString *clave in dic) {
+            if ([clave isEqualToString:@"header"] || [clave isEqualToString:@"footer"]) continue;
+            if (YTContieneEstante(dic[clave])) continue;
+            YTRecogerFilasMusicales(dic[clave], salida);
+        }
     } else if ([nodo isKindOfClass:[NSArray class]]) {
         for (id hijo in (NSArray *)nodo) YTRecogerFilasMusicales(hijo, salida);
     }
@@ -1059,6 +1333,16 @@ static YTVideo *YTVideoDeFilaMusical(NSDictionary *fila) {
         id vid = datos[@"videoId"];
         if ([vid isKindOfClass:[NSString class]]) identificador = vid;
     }
+    if (identificador.length == 0) {
+        NSDictionary *punto = YTDiccionarioEn(fila, @"navigationEndpoint");
+        NSDictionary *watch = YTDiccionarioEn(punto, @"watchEndpoint");
+        if (watch) {
+            id vid = watch[@"videoId"];
+            if ([vid isKindOfClass:[NSString class]]) identificador = vid;
+        }
+    }
+    // Ultimo recurso: cualquier watchEndpoint del nodo (los menus y botones
+    // traen uno, pero suele ser el mismo video).
     if (identificador.length == 0) {
         NSDictionary *watch = YTEncontrarPorClave(fila, @"watchEndpoint");
         if (watch) {
@@ -1104,45 +1388,78 @@ static YTVideo *YTVideoDeFilaMusical(NSDictionary *fila) {
     return video;
 }
 
-static void YTRecorrerEstantes(id nodo, NSMutableArray *filas) {
-    if ([nodo isKindOfClass:[NSDictionary class]]) {
-        NSDictionary *dic = nodo;
-        NSDictionary *carrusel = YTDiccionarioEn(dic, @"musicCarouselShelfRenderer");
-        NSDictionary *estante  = YTDiccionarioEn(dic, @"musicShelfRenderer");
-        NSDictionary *contenedor = carrusel ? carrusel : estante;
+// Convierte un estante ya localizado (carrusel o lista) en una fila de la
+// pantalla: titulo que pone YouTube + canciones reproducibles.
+static void YTConsumirEstante(NSDictionary *contenedor, NSMutableArray *filas,
+                              NSMutableSet *vistos) {
+    NSString *titulo = nil;
+    NSDictionary *cabecera = YTDiccionarioEn(contenedor, @"header");
+    if (cabecera) {
+        NSDictionary *basica =
+            YTDiccionarioEn(cabecera, @"musicCarouselShelfBasicHeaderRenderer");
+        if (basica) titulo = YTTextoDeNodo(YTDiccionarioEn(basica, @"title"));
+    }
+    if (titulo.length == 0) titulo = YTTextoDeNodo(YTDiccionarioEn(contenedor, @"title"));
 
-        if (contenedor) {
-            NSString *titulo = nil;
-            NSDictionary *cabecera = YTDiccionarioEn(contenedor, @"header");
-            if (cabecera) {
-                NSDictionary *basica =
-                    YTDiccionarioEn(cabecera, @"musicCarouselShelfBasicHeaderRenderer");
-                if (basica) titulo = YTTextoDeNodo(YTDiccionarioEn(basica, @"title"));
-            }
-            if (titulo.length == 0) titulo = YTTextoDeNodo(YTDiccionarioEn(contenedor, @"title"));
-
-            NSMutableArray *candidatas = [NSMutableArray array];
-            YTRecogerFilasMusicales(YTDiccionarioEn(contenedor, @"contents"), candidatas);
-            NSMutableArray *videos = [NSMutableArray array];
-            for (NSDictionary *fila in candidatas) {
-                YTVideo *video = YTVideoDeFilaMusical(fila);
-                if (video) [videos addObject:video];
-            }
-            // Con una o dos canciones no vale la pena una fila entera.
-            if (videos.count >= 3) {
-                [filas addObject:@{ @"titulo" : (titulo.length ? titulo : @"Música"),
-                                    @"videos" : videos }];
-            }
-            return;   // este estante ya esta consumido
-        }
-        for (NSString *clave in dic) YTRecorrerEstantes(dic[clave], filas);
-    } else if ([nodo isKindOfClass:[NSArray class]]) {
-        for (id hijo in (NSArray *)nodo) YTRecorrerEstantes(hijo, filas);
+    // OJO: "contents" es un ARRAY. Con un ayudante que exigiera diccionario,
+    // como estaba antes, no se veia ni una cancion y la pestana salia vacia.
+    NSMutableArray *candidatas = [NSMutableArray array];
+    YTRecogerFilasMusicales(contenedor[@"contents"], candidatas);
+    NSMutableArray *videos = [NSMutableArray array];
+    for (NSDictionary *fila in candidatas) {
+        YTVideo *video = YTVideoDeFilaMusical(fila);
+        if (video) [videos addObject:video];
+    }
+    // Con una o dos canciones no vale la pena una fila entera.
+    if (videos.count >= 3) {
+        for (YTVideo *v in videos) [vistos addObject:v.identificador];
+        [filas addObject:@{ @"titulo" : (titulo.length ? titulo : @"Música"),
+                            @"videos" : videos }];
     }
 }
 
-NSArray *YTCarruselesMusicales(NSDictionary *json) {
+static void YTRecorrerEstantes(id nodo, NSMutableArray *filas, NSMutableSet *vistos) {
+    if ([nodo isKindOfClass:[NSDictionary class]]) {
+        NSDictionary *dic = nodo;
+
+        NSDictionary *carrusel = YTDiccionarioEn(dic, @"musicCarouselShelfRenderer");
+        if (carrusel) { YTConsumirEstante(carrusel, filas, vistos); return; }
+
+        NSDictionary *estante = YTDiccionarioEn(dic, @"musicShelfRenderer");
+        if (estante) {
+            if (YTContieneEstante(estante[@"contents"])) {
+                YTRecorrerEstantes(estante[@"contents"], filas, vistos);
+                return;
+            }
+            YTConsumirEstante(estante, filas, vistos);
+            return;
+        }
+        for (NSString *clave in dic) YTRecorrerEstantes(dic[clave], filas, vistos);
+    } else if ([nodo isKindOfClass:[NSArray class]]) {
+        for (id hijo in (NSArray *)nodo) YTRecorrerEstantes(hijo, filas, vistos);
+    }
+}
+
+NSArray *YTCarruselesMusicales(NSDictionary *json, NSString *tituloRespaldo) {
     NSMutableArray *filas = [NSMutableArray array];
-    YTRecorrerEstantes(json, filas);
+    NSMutableSet *vistos = [NSMutableSet set];
+    YTRecorrerEstantes(json, filas, vistos);
+
+    // Muchas respuestas de YouTube Music (sobre todo las busquedas) no traen
+    // estantes con nombre: las canciones cuelgan de un "itemSectionRenderer".
+    // Lo que queda suelto se agrupa en un unico estante para no perderlo.
+    NSMutableArray *sueltas = [NSMutableArray array];
+    YTRecogerFilasMusicales(json, sueltas);
+    NSMutableArray *restantes = [NSMutableArray array];
+    for (NSDictionary *fila in sueltas) {
+        YTVideo *video = YTVideoDeFilaMusical(fila);
+        if (video == nil || [vistos containsObject:video.identificador]) continue;
+        [vistos addObject:video.identificador];
+        [restantes addObject:video];
+    }
+    if (restantes.count >= 3) {
+        [filas addObject:@{ @"titulo" : (tituloRespaldo.length ? tituloRespaldo : @"Música"),
+                            @"videos" : restantes }];
+    }
     return filas;
 }
