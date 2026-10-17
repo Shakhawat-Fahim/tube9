@@ -35,6 +35,7 @@ Tube9_FILES = \
 	YTPlayerViewController.m \
 	YTDescargasViewController.m \
 	YTCarpetaViewController.m \
+	YTTemaViewController.m \
 	YTSettingsViewController.m \
 	YTLoginViewController.m
 

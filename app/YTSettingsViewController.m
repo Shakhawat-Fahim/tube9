@@ -6,6 +6,7 @@
 #import "YTDescargas.h"
 #import "YTDescargasViewController.h"
 #import "YTCarpetaViewController.h"
+#import "YTTemaViewController.h"
 #import "YTProgreso.h"
 
 @implementation YTSettingsViewController
@@ -26,12 +27,13 @@
 
 #pragma mark - Estructura
 
-- (NSInteger)numberOfSectionsInTableView:(UITableView *)tabla { return 4; }
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tabla { return 5; }
 
 - (NSInteger)tableView:(UITableView *)tabla numberOfRowsInSection:(NSInteger)seccion {
     if (seccion == 0) return 4;   // conexion
     if (seccion == 1) return 3;   // cuenta
     if (seccion == 2) return 3;   // videos y descargas
+    if (seccion == 3) return 1;   // apariencia
     return 2;                     // ayuda
 }
 
@@ -39,6 +41,7 @@
     if (seccion == 0) return @"Conexion";
     if (seccion == 1) return @"Cuenta de YouTube";
     if (seccion == 2) return @"Videos y descargas";
+    if (seccion == 3) return @"Apariencia";
     return @"Ayuda";
 }
 
@@ -56,6 +59,10 @@
         return @"Las descargas se guardan como MP4 360p en la carpeta que elijas "
                 "(tambien fuera de la app, util con jailbreak). \"Continuar viendo\" "
                 "es la lista de videos a medias que aparece en Inicio.";
+    }
+    if (seccion == 3) {
+        return @"Dos fondos (oscuro y claro) y siete colores de botones: catorce "
+                "combinaciones. Al cambiarlo, la app se repinta sola.";
     }
     return nil;
 }
@@ -176,6 +183,16 @@
         return c;
     }
 
+    if (indice.section == 3) {
+        UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleValue1];
+        c.textLabel.text = @"Tema y color";
+        c.detailTextLabel.text = [NSString stringWithFormat:@"%@ · %@",
+            [YTTheme tituloDeFondo:[YTTheme fondoClave]],
+            [YTTheme tituloDeAcento:[YTTheme acentoClave]]];
+        c.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+        return c;
+    }
+
     UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleDefault];
     if (indice.row == 0) {
         c.textLabel.text = @"Arreglar los certificados de iOS 9";
@@ -248,6 +265,12 @@
                                                    style:UIAlertActionStyleCancel
                                                  handler:nil]];
         [self presentViewController:alerta animated:YES completion:nil];
+        return;
+    }
+
+    if (indice.section == 3) {
+        [self.navigationController pushViewController:[[YTTemaViewController alloc] init]
+                                             animated:YES];
         return;
     }
 

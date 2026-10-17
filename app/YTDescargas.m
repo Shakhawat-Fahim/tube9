@@ -45,7 +45,12 @@ static NSString *YTTamanoLegible(unsigned long long bytes) {
     if (bytes >= 1024ULL * 1024ULL) {
         return [NSString stringWithFormat:@"%.1f MB", bytes / (1024.0 * 1024.0)];
     }
-    return [NSString stringWithFormat:@"%llu KB", bytes / 1024ULL];
+    if (bytes >= 1024ULL) {
+        return [NSString stringWithFormat:@"%llu KB", bytes / 1024ULL];
+    }
+    // Menos de un KB se dice en bytes. Un fichero de 2 bytes se veia como
+    // "0 KB" y parecia una descarga vacia; dicho asi se entiende al instante.
+    return [NSString stringWithFormat:@"%llu bytes", bytes];
 }
 
 @interface YTDescargas () <NSURLSessionDownloadDelegate>
@@ -69,8 +74,17 @@ static NSString *YTTamanoLegible(unsigned long long bytes) {
     if (self) {
         NSURLSessionConfiguration *cfg =
             [NSURLSessionConfiguration defaultSessionConfiguration];
-        cfg.timeoutIntervalForRequest = 30.0;
-        cfg.timeoutIntervalForResource = 3600.0;   // un video puede tardar
+        // Sin cache, ni en memoria ni en disco. Ojo con esto: YTClient comprueba
+        // que el enlace sirve pidiendo dos bytes ("Range: bytes=0-1"), y esa
+        // respuesta parcial de 2 bytes se queda en la cache compartida. Si la
+        // descarga mirase ahi, guardaria un fichero de 2 bytes (que luego se
+        // veia como "0 KB"). Con una cache de cero bytes eso no puede pasar.
+        cfg.URLCache = [[NSURLCache alloc] initWithMemoryCapacity:0
+                                                     diskCapacity:0
+                                                         diskPath:nil];
+        cfg.requestCachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
+        cfg.timeoutIntervalForRequest = 60.0;
+        cfg.timeoutIntervalForResource = 7200.0;   // un video puede tardar
         // Cola principal: asi los avisos de progreso llegan ya listos para
         // tocar la interfaz y no hace falta proteger nada con candados.
         _sesion = [NSURLSession sessionWithConfiguration:cfg
@@ -241,23 +255,56 @@ static NSString *YTTamanoLegible(unsigned long long bytes) {
         NSString *destino = [carpeta stringByAppendingPathComponent:
             YTNombreDeArchivo(video.titulo, video.identificador)];
 
-        NSMutableURLRequest *peticion = [NSMutableURLRequest requestWithURL:
-            [NSURL URLWithString:enlace]];
-        peticion.timeoutInterval = 60.0;
-        NSURLSessionDownloadTask *tarea = [yo->_sesion downloadTaskWithRequest:peticion];
-
         NSMutableDictionary *datos = [NSMutableDictionary dictionary];
-        datos[@"video"]      = video;
-        datos[@"tarea"]      = tarea;
-        datos[@"ruta"]       = destino;
-        datos[@"hecho"]      = @NO;
-        datos[@"error"]      = @"";
+        datos[@"video"]    = video;
+        datos[@"enlace"]   = enlace;
+        datos[@"ruta"]     = destino;
+        // Cuanto deberia pesar, segun YouTube. Sirve para darse cuenta de que
+        // la descarga se ha quedado corta (un fichero de 2 bytes, por ejemplo).
+        datos[@"esperado"] = info[@"bytes"] ?: @0;
+        datos[@"intento"]  = @0;
         if (progreso) datos[@"progreso"] = [progreso copy];
         if (completion) datos[@"completion"] = [completion copy];
-        yo->_tareas[@(tarea.taskIdentifier)] = datos;
 
-        [tarea resume];
+        [yo lanzarDescarga:datos];
     }];
+}
+
+// Crea la tarea de descarga. La primera vez se pide "desde el byte 0 hasta el
+// final" (Range: bytes=0-), que devuelve 206 con el fichero entero: asi la
+// respuesta no se puede confundir con la sonda de 2 bytes de la cache.
+- (void)lanzarDescarga:(NSDictionary *)datos {
+    NSURL *url = [NSURL URLWithString:datos[@"enlace"]];
+    if (!url) {
+        [self fallar:datos motivo:@"La direccion del video no es valida."];
+        return;
+    }
+    BOOL conRango = ([datos[@"intento"] integerValue] == 0);
+
+    NSMutableURLRequest *peticion = [NSMutableURLRequest
+        requestWithURL:url
+           cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
+       timeoutInterval:60.0];
+    if (conRango) [peticion setValue:@"bytes=0-" forHTTPHeaderField:@"Range"];
+
+    NSURLSessionDownloadTask *tarea = [_sesion downloadTaskWithRequest:peticion];
+
+    NSMutableDictionary *d = [datos mutableCopy];
+    d[@"tarea"] = tarea;
+    d[@"hecho"] = @NO;
+    d[@"error"] = @"";
+    d[@"rango"] = @(conRango);
+    _tareas[@(tarea.taskIdentifier)] = d;
+    [tarea resume];
+}
+
+// Un final que no es el normal: se quita el video de "activos" y se avisa.
+- (void)fallar:(NSDictionary *)datos motivo:(NSString *)motivo {
+    YTVideo *video = datos[@"video"];
+    if (video.identificador.length) [_activos removeObject:video.identificador];
+    [self avisaCambio];
+    void (^completion)(BOOL, NSString *, NSString *) = datos[@"completion"];
+    if (completion) completion(NO, motivo, nil);
 }
 
 - (void)cancelarVideo:(NSString *)videoId {
@@ -313,6 +360,25 @@ didFinishDownloadingToURL:(NSURL *)ubicacion {
     NSMutableDictionary *datos = _tareas[@(tarea.taskIdentifier)];
     if (!datos) return;
 
+    // Un 403 (o la pagina de aviso de YouTube) tambien llega aqui como
+    // "descarga terminada", con el cuerpo del error dentro. Solo 200 y 206 son
+    // un video de verdad; cualquier otra cosa se rechaza antes de guardarla.
+    NSInteger codigo = 0;
+    if ([tarea.response isKindOfClass:[NSHTTPURLResponse class]]) {
+        codigo = ((NSHTTPURLResponse *)tarea.response).statusCode;
+    }
+    datos[@"http"] = @(codigo);
+    if (codigo != 200 && codigo != 206) {
+        datos[@"error"] = [NSString stringWithFormat:
+            @"YouTube ha contestado HTTP %ld al pedir el video.", (long)codigo];
+        return;
+    }
+
+    // Cuanto deberia pesar. Normalmente lo dice la propia respuesta; si no,
+    // se usa el dato que dio YouTube al resolver el video.
+    long long declarado = [tarea.response expectedContentLength];
+    if (declarado <= 0) declarado = [datos[@"esperado"] longLongValue];
+
     NSString *destino = datos[@"ruta"];
     NSFileManager *ficheros = [NSFileManager defaultManager];
     [ficheros removeItemAtPath:destino error:nil];   // si ya existia, se reemplaza
@@ -322,6 +388,19 @@ didFinishDownloadingToURL:(NSURL *)ubicacion {
     datos[@"hecho"] = @(ok);
     if (!ok) {
         datos[@"error"] = error.localizedDescription ?: @"no se pudo guardar el fichero";
+        return;
+    }
+
+    // Y, por si acaso, se comprueba que lo guardado pesa lo que debe. Un
+    // fichero de 2 bytes (la respuesta de la sonda) ya no cuela como exito.
+    NSDictionary *atributos = [ficheros attributesOfItemAtPath:destino error:nil];
+    unsigned long long tamano = [atributos[NSFileSize] unsignedLongLongValue];
+    datos[@"tamanoReal"] = @(tamano);
+    if (tamano == 0) {
+        datos[@"error"] = @"La descarga llego vacia (0 bytes).";
+    } else if (declarado > 1024 && tamano + 1024 < (unsigned long long)declarado) {
+        datos[@"error"] = [NSString stringWithFormat:@"La descarga se quedo corta: %@ de %@.",
+                           YTTamanoLegible(tamano), YTTamanoLegible((unsigned long long)declarado)];
     }
 }
 
@@ -333,12 +412,10 @@ didCompleteWithError:(NSError *)error {
     [_tareas removeObjectForKey:@(tarea.taskIdentifier)];
 
     YTVideo *video = datos[@"video"];
-    if (video.identificador.length) [_activos removeObject:video.identificador];
-
     void (^completion)(BOOL, NSString *, NSString *) = datos[@"completion"];
-    NSString *destino = datos[@"ruta"];
 
     if (error) {
+        if (video.identificador.length) [_activos removeObject:video.identificador];
         [self avisaCambio];
         if (completion) {
             if (error.code == NSURLErrorCancelled) {
@@ -351,21 +428,40 @@ didCompleteWithError:(NSError *)error {
         return;
     }
 
-    if (![datos[@"hecho"] boolValue]) {
-        [self avisaCambio];
-        if (completion) {
-            NSString *motivo = datos[@"error"];
-            completion(NO, [NSString stringWithFormat:@"No se pudo guardar el fichero en %@.%@",
-                [YTDescargas nombreBonitoDeCarpeta:destino],
-                motivo.length ? [NSString stringWithFormat:@"\n\n(%@)", motivo] : @""], nil);
+    NSString *fallo = datos[@"error"];
+    if ([fallo length]) {
+        // Segundo intento, esta vez sin la cabecera Range. Si el primero se
+        // quedo corto o vino vacio (una respuesta parcial cacheada, un 403
+        // disfrazado), por aqui suele resolverse.
+        if ([datos[@"intento"] integerValue] == 0) {
+            NSString *ruta = datos[@"ruta"];
+            if (ruta.length) [[NSFileManager defaultManager] removeItemAtPath:ruta error:nil];
+            NSMutableDictionary *otra = [datos mutableCopy];
+            otra[@"intento"] = @1;
+            otra[@"error"] = @"";
+            [self lanzarDescarga:otra];
+            return;
         }
+        [self fallar:datos motivo:[NSString stringWithFormat:
+            @"No se pudo guardar el video en %@.\n\n(%@)",
+            [YTDescargas nombreBonitoDeCarpeta:datos[@"ruta"]], fallo]];
         return;
     }
 
+    if (![datos[@"hecho"] boolValue]) {
+        [self fallar:datos motivo:[NSString stringWithFormat:
+            @"No se pudo guardar el fichero en %@.",
+            [YTDescargas nombreBonitoDeCarpeta:datos[@"ruta"]]]];
+        return;
+    }
+
+    if (video.identificador.length) [_activos removeObject:video.identificador];
+
     // Queda apuntado en el historial, para poder verlo y reproducirlo luego.
+    NSString *destino = datos[@"ruta"];
     NSDictionary *atributos = [[NSFileManager defaultManager]
         attributesOfItemAtPath:destino error:nil];
-    NSNumber *tamano = atributos[NSFileSize];
+    NSNumber *tamano = atributos[NSFileSize] ?: @0;
 
     NSMutableDictionary *entrada = [NSMutableDictionary dictionary];
     entrada[@"id"]      = video.identificador ?: @"";
@@ -374,7 +470,7 @@ didCompleteWithError:(NSError *)error {
     entrada[@"mini"]    = video.urlMiniatura ?: @"";
     entrada[@"ruta"]    = destino;
     entrada[@"archivo"] = [destino lastPathComponent];
-    entrada[@"bytes"]   = tamano ?: @0;
+    entrada[@"bytes"]   = tamano;
     entrada[@"fecha"]   = @([[NSDate date] timeIntervalSince1970]);
 
     NSMutableArray *historial = [[self historial] mutableCopy];

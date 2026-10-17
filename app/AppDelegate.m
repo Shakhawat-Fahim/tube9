@@ -8,7 +8,9 @@
 #import "YTSearchViewController.h"
 #import "YTSettingsViewController.h"
 
-@implementation AppDelegate
+@implementation AppDelegate {
+    NSTimer *_rebote;   // espera corta antes de rehacer las pestanas
+}
 
 - (BOOL)application:(UIApplication *)application
         didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
@@ -16,7 +18,22 @@
     [YTTheme prepararAparienciaGlobal];
 
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+    self.window.rootViewController = [self montarPestanas];
+    self.window.tintColor = [YTTheme textoPrimario];
+    [self.window makeKeyAndVisible];
 
+    // Cuando cambia el tema, se vuelven a montar las pestanas enteras. Es mas
+    // simple (y mas seguro) que ir repintando pantalla por pantalla.
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(alCambiarTema:)
+                                                 name:YTThemaCambio
+                                               object:nil];
+    return YES;
+}
+
+#pragma mark - Interfaz
+
+- (UITabBarController *)montarPestanas {
     // --- Pestana 1: Inicio -------------------------------------------------
     // YouTube no da la portada personalizada sin cuenta (devuelve la pantalla
     // vacia), asi que Inicio se monta con estantes tematicos: cada uno es una
@@ -91,11 +108,39 @@
     UITabBarController *tabs = [[UITabBarController alloc] init];
     tabs.viewControllers = @[ navInicio, navMusica, navTendencias, navBuscar, navAjustes ];
     [YTTheme aplicarEstiloTabBar:tabs.tabBar];
+    return tabs;
+}
 
-    self.window.rootViewController = tabs;
+#pragma mark - Cambio de tema
+
+- (void)alCambiarTema:(NSNotification *)aviso {
+    // Se aplaza un poco a proposito: el aviso llega desde una pantalla que vive
+    // DENTRO de las pestanas (el selector de temas). Desmontarlas en mitad de
+    // ese toque seria pedir problemas, asi que se deja terminar primero.
+    [_rebote invalidate];
+    _rebote = [NSTimer scheduledTimerWithTimeInterval:0.15
+                                               target:self
+                                             selector:@selector(rehacerPestanas)
+                                             userInfo:nil
+                                              repeats:NO];
+}
+
+- (void)rehacerPestanas {
+    UITabBarController *viejas = (UITabBarController *)self.window.rootViewController;
+    NSInteger cual = 0;
+    if ([viejas isKindOfClass:[UITabBarController class]]) {
+        cual = viejas.selectedIndex;   // no perder la pestana en la que estabas
+    }
+    if (viejas.presentedViewController) {
+        [viejas dismissViewControllerAnimated:NO completion:nil];
+    }
+
+    [YTTheme prepararAparienciaGlobal];
+    UITabBarController *nuevas = [self montarPestanas];
+    nuevas.selectedIndex = (cual >= 0 && cual < (NSInteger)nuevas.viewControllers.count) ? cual : 0;
+    self.window.rootViewController = nuevas;
     self.window.tintColor = [YTTheme textoPrimario];
     [self.window makeKeyAndVisible];
-    return YES;
 }
 
 @end

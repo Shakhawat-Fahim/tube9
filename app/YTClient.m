@@ -647,6 +647,10 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
             completion(@{ @"url" : enlace,
                           @"titulo" : detalles[@"title"] ?: @"",
                           @"autor" : detalles[@"author"] ?: @"",
+                          @"itag" : elegido[@"itag"] ?: @0,
+                          // Cuanto pesa el video segun YouTube: la descarga lo
+                          // usa para darse cuenta de que algo se ha quedado corto.
+                          @"bytes" : elegido[@"contentLength"] ?: @0,
                           @"cliente" : cliente[@"nombre"] ?: @"",
                           @"comprobacion" : detalle ?: @"" }, nil);
         }];
@@ -655,14 +659,19 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
 
 // Pide los dos primeros bytes del video. Es la unica forma de saber que la URL
 // sirve de verdad: YouTube devuelve URLs validas que luego rechaza con 403.
+// Importante: esta respuesta NO se puede cachear. Es una respuesta parcial de
+// 2 bytes, y si quedara guardada, la descarga (misma URL) la reutilizaria y
+// acabaria con un fichero de 2 bytes.
 - (void)comprobarEnlace:(NSString *)enlace
              completion:(void (^)(BOOL vale, NSString *detalle))completion {
     NSURL *url = [NSURL URLWithString:enlace];
     if (!url) { completion(NO, @"la direccion no es valida"); return; }
 
-    NSMutableURLRequest *peticion = [NSMutableURLRequest requestWithURL:url];
+    NSMutableURLRequest *peticion = [NSMutableURLRequest
+        requestWithURL:url
+           cachePolicy:NSURLRequestReloadIgnoringLocalCacheData
+       timeoutInterval:12.0];
     [peticion setValue:@"bytes=0-1" forHTTPHeaderField:@"Range"];
-    peticion.timeoutInterval = 12.0;
     NSDate *inicio = [NSDate date];
     [[self.sesion dataTaskWithRequest:peticion
         completionHandler:^(NSData *datos, NSURLResponse *respuesta, NSError *error) {
