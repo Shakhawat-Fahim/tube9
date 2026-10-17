@@ -1,0 +1,9 @@
+Package: com.lofturb.tube9
+Name: Tube9
+Version: 1.0.0
+Architecture: iphoneos-arm
+Description: Cliente de YouTube ligero y moderno para iOS 9.3.5 (armv7).
+Homepage: https://github.com/lofturb/tube9
+Maintainer: lofturb
+Author: lofturb
+Section: Applications
