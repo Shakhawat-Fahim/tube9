@@ -245,9 +245,24 @@ cabecera `Cookie` de `youtube.com` copiada desde un navegador de tu PC
 
 ### Diagnóstico
 
-**Ajustes → Probar conexion** prueba la ruta configurada y devuelve un informe
-en castellano: modo, cliente usado, si hay sesión iniciada, y el resultado real
-de la conexión. Si falla un certificado, te lo dice explícitamente.
+**Ajustes → Probar conexión** recorre los tres pasos de los que depende la
+reproducción, **con los tiempos de cada uno** para saber dónde está el atasco:
+
+| Paso | Qué prueba | Si falla significa |
+|---|---|---|
+| **1** | Buscar en `youtube.com` | Red, DNS o certificados. |
+| **2** | Pedir la URL del vídeo | Vídeo bloqueado o sesión: si sale `LOGIN_REQUIRED`, hay que iniciar sesión. |
+| **3** | Descargar los primeros KB de `googlevideo.com` | **El proveedor de Internet** dando largas con el servidor de vídeo (es el paso que la app no puede esquivar sola), o el DNS. |
+
+El paso 3 es el importante: la app puede fallar en la búsqueda y funcionar en el
+vídeo, o al contrario. Si los pasos 1 y 2 van bien y el 3 falla o tarda
+muchísimo, el problema no es la app sino la conexión a `googlevideo.com`, y ahí
+el **modo relay** es la solución (el vídeo lo descarga el servidor y llega al
+dispositivo por la red local).
+
+Por eso también el reproductor ya no se queda mudo: mientras carga muestra los
+segundos que lleva y el servidor implicado, y a los 30 segundos explica qué ha
+pasado en vez de dejar un «Cargando…» infinito.
 
 ---
 
