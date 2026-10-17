@@ -8,12 +8,12 @@ static NSString *YTTexto(NSDictionary *nodo) {
     if ([simple isKindOfClass:[NSString class]]) return simple;
     NSArray *runs = nodo[@"runs"];
     if ([runs isKindOfClass:[NSArray class]] && runs.count > 0) {
-        NSMutableString *union = [NSMutableString string];
+        NSMutableString *unido = [NSMutableString string];
         for (NSDictionary *r in runs) {
             NSString *t = r[@"text"];
-            if ([t isKindOfClass:[NSString class]]) [union appendString:t];
+            if ([t isKindOfClass:[NSString class]]) [unido appendString:t];
         }
-        return union.length ? union : nil;
+        return unido.length ? unido : nil;
     }
     return nil;
 }

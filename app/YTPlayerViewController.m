@@ -112,22 +112,24 @@
     _estado.text = @"Buscando el video...";
     [_girador startAnimating];
 
+    NSString *identificador = _video.identificador;
     __weak YTPlayerViewController *deb = self;
-    [[YTClient compartido] resolverVideo:_video.identificador
+    [[YTClient compartido] resolverVideo:identificador
         completion:^(NSDictionary *info, NSError *error) {
-        if (!deb) return;
+        YTPlayerViewController *yo = deb;   // ARC no deja usar '->' sobre un __weak
+        if (!yo) return;
         if (error) {
-            [deb mostrarError:[YTClient explicarError:error]];
+            [yo mostrarError:[YTClient explicarError:error]];
             return;
         }
         NSString *enlace = info[@"url"];
         if (info[@"titulo"] && [(NSString *)info[@"titulo"] length]) {
-            deb->_titulo.text = info[@"titulo"];
+            yo->_titulo.text = info[@"titulo"];
         }
         if (info[@"autor"] && [(NSString *)info[@"autor"] length]) {
-            deb->_autor.text = info[@"autor"];
+            yo->_autor.text = info[@"autor"];
         }
-        [deb reproducir:enlace];
+        [yo reproducir:enlace];
     }];
 }
 

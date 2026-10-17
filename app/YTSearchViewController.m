@@ -109,25 +109,26 @@
 
     __weak YTSearchViewController *deb = self;
     [[YTClient compartido] buscar:consulta completion:^(NSArray *videos, NSError *error) {
-        if (!deb) return;
-        deb->_cargando = NO;
-        [deb->_girador stopAnimating];
+        YTSearchViewController *yo = deb;   // ARC no deja usar '->' sobre un __weak
+        if (!yo) return;
+        yo->_cargando = NO;
+        [yo->_girador stopAnimating];
         if (error) {
-            deb->_videos = @[];
-            [deb->_tabla reloadData];
-            deb->_tabla.hidden = YES;
-            deb->_estado.hidden = NO;
-            deb->_estado.text = [NSString stringWithFormat:@"%@\n\n%@",
+            yo->_videos = @[];
+            [yo->_tabla reloadData];
+            yo->_tabla.hidden = YES;
+            yo->_estado.hidden = NO;
+            yo->_estado.text = [NSString stringWithFormat:@"%@\n\n%@",
                 [YTClient explicarError:error],
                 @"Ajustes > Probar conexion para mas detalle."];
             return;
         }
-        deb->_videos = videos;
-        [deb->_tabla reloadData];
-        deb->_tabla.hidden = (videos.count == 0);
-        deb->_estado.hidden = (videos.count > 0);
+        yo->_videos = videos;
+        [yo->_tabla reloadData];
+        yo->_tabla.hidden = (videos.count == 0);
+        yo->_estado.hidden = (videos.count > 0);
         if (videos.count == 0) {
-            deb->_estado.text = @"Sin resultados.\nPrueba otra busqueda.";
+            yo->_estado.text = @"Sin resultados.\nPrueba otra busqueda.";
         }
     }];
 }

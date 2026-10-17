@@ -94,8 +94,9 @@
 
     __weak YTVideoCell *deb = self;
     [YTClient cargarMiniatura:video.urlMiniatura completion:^(UIImage *imagen) {
-        if (deb && imagen && [deb->_urlPendiente isEqualToString:video.urlMiniatura]) {
-            deb->_imagen.image = imagen;
+        YTVideoCell *yo = deb;   // ARC no deja usar '->' sobre un puntero __weak
+        if (yo && imagen && [yo->_urlPendiente isEqualToString:video.urlMiniatura]) {
+            yo->_imagen.image = imagen;
         }
     }];
 }
