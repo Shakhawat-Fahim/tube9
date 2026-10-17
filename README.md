@@ -14,9 +14,18 @@ El resultado es un `.ipa` que se descarga y se instala en el dispositivo.
 > [Condiciones de Servicio de YouTube](https://www.youtube.com/t/terms).
 > Es un proyecto educativo y de uso personal.
 
-> **Novedades de la última entrega.** Se arreglaron las tres cosas que fallaban y
-> se amplió el reproductor:
+> **Novedades de la última entrega.**
 >
+> * **Descargas arregladas.** Terminaban pesando «0 KB». La causa: antes de
+>   descargar, la app comprueba que el enlace sirve pidiendo **2 bytes**
+>   (`Range: bytes=0-1`); esa respuesta parcial de 2 bytes se quedaba en la
+>   caché compartida y la descarga, al pedir **la misma URL**, recibía esa
+>   respuesta en lugar del vídeo. Ahora la comprobación no se cachea, la
+>   descarga usa una sesión sin caché, pide el fichero entero desde el byte 0 y,
+>   además, **comprueba que lo guardado pesa lo que debe** (con un reintento
+>   automático si se queda corta).
+> * **Temas.** Dos fondos (oscuro y claro) y siete colores de botones:
+>   **catorce combinaciones** en Ajustes → *Tema y color*.
 > * **Miniaturas.** Se veían unas sí y otras no porque YouTube devuelve **9 de
 >   cada 20 en formato WebP** y iOS 9 no sabe decodificarlo. Ahora se piden en
 >   JPEG y, si una falla, se prueban otros tamaños del mismo vídeo.
@@ -28,6 +37,8 @@ El resultado es un `.ipa` que se descarga y se instala en el dispositivo.
 > * **Reproductor**: continuar donde lo dejaste, ±10 s con dos toques, volumen
 >   arrastrando el dedo, velocidad, bucle, descargar, compartir, pantalla de
 >   bloqueo y «Parecidos».
+> * **Documentación del proceso**: [`docs/PROCESO.md`](docs/PROCESO.md) explica
+>   con qué se compila el `.ipa`, paso a paso, y qué hacer si falla.
 
 ---
 
@@ -43,6 +54,7 @@ El resultado es un `.ipa` que se descarga y se instala en el dispositivo.
 8. [Problemas frecuentes](#problemas-frecuentes)
 9. [Estructura del repositorio](#estructura-del-repositorio)
 10. [Compilar en tu propio ordenador (opcional)](#compilar-en-tu-propio-ordenador-opcional)
+11. [Cómo se compila el `.ipa` (proceso completo)](docs/PROCESO.md)
 
 ---
 
@@ -56,7 +68,7 @@ El resultado es un `.ipa` que se descarga y se instala en el dispositivo.
 | **Buscar** | Campo de búsqueda, sugerencias en chips y lista de resultados con miniatura, título, canal, duración, visitas y fecha. |
 | **Reproductor** | A pantalla completa, con **lo que se espera de un reproductor de YouTube**: reanuda donde lo dejaste, ±10 s con dos toques, volumen arrastrando el dedo, velocidad 0,5×–2×, bucle, descargar, compartir, mandos en la pantalla de bloqueo y una lista de **Parecidos** debajo. |
 | **Descargas** | Guarda el vídeo en MP4 360p en **la carpeta que elijas** (también fuera de la app: `/var/mobile/Documents`, `/var/mobile/Media`…). Luego se reproduce en la app o se abre con otra. |
-| **Ajustes** | Modo directo/relay, dirección del relay, inicio de sesión en YouTube, **descargas y carpeta**, borrar «Continuar viendo», diagnóstico de conexión y guía de certificados. |
+| **Ajustes** | Modo directo/relay, dirección del relay, inicio de sesión en YouTube, **tema y color**, **descargas y carpeta**, borrar «Continuar viendo», diagnóstico de conexión y guía de certificados. |
 
 ### El reproductor, en detalle
 
@@ -306,6 +318,26 @@ Alternativa: **Ajustes → Pegar cookies manualmente**, donde puedes pegar la
 cabecera `Cookie` de `youtube.com` copiada desde un navegador de tu PC
 (`SID=…; HSID=…; …`).
 
+### Tema y color
+
+**Ajustes → Tema y color.** Hay **dos fondos** y **siete colores de botones**:
+**catorce combinaciones** en total.
+
+| Fondo | Cómo es |
+|---|---|
+| **Oscuro** | El de siempre (casi negro), para ver vídeos de noche. |
+| **Claro** | Fondo blanco, para el sol de la calle. |
+
+| Color de botones |
+|---|
+| Rojo (el de YouTube), Azul, Verde, Morado, Turquesa, Ámbar y Rosa |
+
+El color de los botones se usa en los filtros de las listas, la pestaña elegida,
+los interruptores y los botones de las ventanas. **No se aplica tal cual**: se le
+ajusta el brillo para que se lea sobre el fondo elegido (el ámbar sobre blanco se
+oscurece; el azul sobre negro se aclara) y el texto de dentro del botón se pone
+blanco o negro según lo claro que quede. Al cambiarlo, la app se repinta sola.
+
 ### Descargas y carpeta de destino
 
 **Ajustes → Descargas** (también hay un botón **Descargar** bajo el
@@ -500,6 +532,7 @@ escríbelo también en Ajustes.
 | **Música** dice «no hay nada que mostrar» | Pulsa **recargar** (arriba a la derecha). Si sigue, YouTube Music ha cambiado el formato: la pestaña pasa sola a búsquedas de música como plan B. |
 | «No se puede escribir en *carpeta*» al descargar | Esa carpeta no da permiso. En **Ajustes → Descargas → Carpeta** las que valen llevan un **visto**. |
 | La descarga se corta al bloquear el móvil | Las descargas siguen **mientras la app está abierta**; deja la app en primer plano hasta que termine. |
+| Una descarga acaba pesando **0 KB** | Ya no debería pasar (el fichero se verifica al guardarlo y se reintenta solo). Si vuelve a ocurrir, el mensaje ahora dice lo que pasó: cuánto llegó y cuánto se esperaba. |
 
 ---
 
@@ -526,6 +559,7 @@ escríbelo también en Ajustes.
 │   ├── YTPlayerViewController.{h,m}  Reproductor (gestos, velocidad, bloqueo)
 │   ├── YTDescargasViewController.{h,m}  Lista de descargas
 │   ├── YTCarpetaViewController.{h,m} Explorador para elegir la carpeta
+│   ├── YTTemaViewController.{h,m}    Selector de tema (fondo y color)
 │   ├── YTSettingsViewController.{h,m} Ajustes, descargas y diagnóstico
 │   ├── YTLoginViewController.{h,m}   Inicio de sesión (UIWebView)
 │   └── Resources/                    Info.plist, iconos, imágenes de arranque
@@ -533,7 +567,8 @@ escríbelo también en Ajustes.
 │   └── CertificadosModernos.mobileconfig   Perfil listo para las raíces nuevas
 ├── relay/relay.py                    Relay opcional (Python 3, sin dependencias)
 ├── docs/
-│   └── vista-previa.html             Maqueta de las pantallas (abrir en el navegador)
+│   ├── vista-previa.html             Maqueta de las pantallas (abrir en el navegador)
+│   └── PROCESO.md                    Cómo se compila el .ipa, paso a paso
 └── tools/
     ├── generar_recursos.py           Genera iconos y arranques (PNG a mano)
     ├── generar_certificados.py       Genera el perfil .mobileconfig
@@ -558,6 +593,10 @@ cd app
 make package FINALPACKAGE=1 PACKAGE_FORMAT=ipa
 # → app/packages/com.lofturb.tube9_1.0.0_iphoneos-arm.ipa
 ```
+
+> El proceso completo (herramientas, los cuatro comandos de preparación, la
+> trampa de `liblaunch.tbd`, los errores típicos y cómo montar otra app desde
+> cero) está en **[`docs/PROCESO.md`](docs/PROCESO.md)**.
 
 ---
 

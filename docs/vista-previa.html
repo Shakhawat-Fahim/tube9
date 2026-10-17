@@ -104,6 +104,20 @@
   .descarga .izq { padding-right:10px; }
   .descarga .sub { color:var(--txt2); font-size:11.5px; margin-top:3px; }
   .pista { color:var(--txt2); font-size:11.5px; padding:10px 14px; line-height:1.45; }
+
+  /* --- los temas --- */
+  h1.aparte { margin-top:40px; }
+  .temas { display:flex; flex-wrap:wrap; gap:14px; }
+  .bloque-tema { text-align:center; }
+  .tema { width:198px; border:1px solid; border-radius:12px; padding:12px;
+          text-align:left; }
+  .chip-tema { display:inline-block; font-size:12px; font-weight:500;
+               padding:5px 13px; border-radius:14px; margin-bottom:9px; }
+  .t-tema { font-size:14px; font-weight:600; }
+  .s-tema { font-size:11.5px; margin-top:2px; }
+  .pestanas { display:flex; gap:6px; margin-top:12px; }
+  .pestanas span { width:20px; height:4px; border-radius:2px; }
+  .pie-tema { color:var(--txt2); font-size:11.5px; margin-top:6px; }
 </style>
 </head>
 <body>
@@ -118,6 +132,16 @@
 </p>
 
 <div class="tira" id="tira"></div>
+
+<h1 class="aparte">Los temas: catorce combinaciones</h1>
+<p class="nota">
+  Dos fondos (oscuro y claro) y siete colores de botones. El color no se aplica
+  tal cual: se le <b>ajusta el brillo</b> para que se lea sobre el fondo elegido
+  (el ámbar sobre blanco se oscurece, el azul sobre negro se aclara) y el texto
+  del botón se pone blanco o negro según lo claro que quede. Se elige en
+  <b>Ajustes → Tema y color</b>, y al cambiarlo la app se repinta sola.
+</p>
+<div class="temas" id="temas"></div>
 
 <script>
 var C = { fondo:'#0F0F0F', sup:'#181818', alta:'#272727', borde:'#303030',
@@ -323,6 +347,93 @@ pantallas.forEach(function (p) {
   b.appendChild(telefono(p.t, p.cuerpo, p.activo, p.recargar, p.sinTabs, p.atras));
   var pie = document.createElement('div'); pie.className = 'pie'; pie.innerHTML = p.pie;
   b.appendChild(pie); tira.appendChild(b);
+});
+
+/* ---------- Los temas: 2 fondos x 7 colores de botones -------------------
+   Se calcula igual que en YTTheme.m: el brillo del acento se mueve hasta que
+   contrasta con el fondo, y el texto del boton se pone blanco o negro segun lo
+   claro que quede el acento. Asi la maqueta enseña lo mismo que la app. */
+var FONDOS = {
+  oscuro: { fondo:'#0F0F0F', sup:'#181818', alta:'#272727', borde:'#303030',
+            texto:'#F1F1F1', texto2:'#AAAAAA' },
+  claro:  { fondo:'#FFFFFF', sup:'#F6F6F6', alta:'#E9E9E9', borde:'#D8D8D8',
+            texto:'#0F0F0F', texto2:'#5F5F5F' }
+};
+var ACENTOS = [
+  { clave:'rojo',     titulo:'Rojo',     hex:0xFF0033 },
+  { clave:'azul',     titulo:'Azul',     hex:0x1A73E8 },
+  { clave:'verde',    titulo:'Verde',    hex:0x1FA34A },
+  { clave:'morado',   titulo:'Morado',   hex:0x7C4DFF },
+  { clave:'turquesa', titulo:'Turquesa', hex:0x00A6A6 },
+  { clave:'ambar',    titulo:'Ambar',    hex:0xFFAB00 },
+  { clave:'rosa',     titulo:'Rosa',     hex:0xE91E8C }
+];
+
+function rgb2hsv(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  var max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min, h = 0;
+  if (d) {
+    if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h /= 6;
+  }
+  return [h, max === 0 ? 0 : d / max, max];
+}
+function hsv2rgb(h, s, v) {
+  var i = Math.floor(h * 6), f = h * 6 - i;
+  var p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s);
+  var r, g, b;
+  switch (i % 6) {
+    case 0: r = v; g = t; b = p; break;
+    case 1: r = q; g = v; b = p; break;
+    case 2: r = p; g = v; b = t; break;
+    case 3: r = p; g = q; b = v; break;
+    case 4: r = t; g = p; b = v; break;
+    default: r = v; g = p; b = q;
+  }
+  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+function luminancia(c) { return (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255; }
+function aCSS(c) { return 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')'; }
+function acentoAjustado(hex, claro) {
+  var hsv = rgb2hsv((hex >> 16) & 255, (hex >> 8) & 255, hex & 255);
+  var h = hsv[0], s = hsv[1], v = hsv[2];
+  if (claro) {
+    while (v > 0.30 && luminancia(hsv2rgb(h, s, v)) > 0.34) v -= 0.02;
+    s = Math.min(1, s + 0.06);
+  } else {
+    while (v < 1.0 && luminancia(hsv2rgb(h, s, v)) < 0.20) v += 0.02;
+  }
+  return hsv2rgb(h, s, v);
+}
+
+function tarjetaTema(fondoClave, acento) {
+  var p = FONDOS[fondoClave];
+  var acc = acentoAjustado(acento.hex, fondoClave === 'claro');
+  var sobre = luminancia(acc) > 0.58 ? '#101010' : '#FFFFFF';
+  return '<div class="tema" style="background:' + p.fondo + ';border-color:' + p.borde + '">' +
+    '<span class="chip-tema" style="background:' + aCSS(acc) + ';color:' + sobre + '">Boton</span>' +
+    '<div class="t-tema" style="color:' + p.texto + '">Titulo del video</div>' +
+    '<div class="s-tema" style="color:' + p.texto2 + '">Canal  ·  1,2 M de visitas</div>' +
+    '<div class="pestanas">' +
+      '<span style="background:' + aCSS(acc) + '"></span>' +
+      '<span style="background:' + p.texto2 + '"></span>' +
+      '<span style="background:' + p.borde + '"></span>' +
+    '</div>' +
+  '</div>';
+}
+
+var rejilla = document.getElementById('temas');
+['oscuro', 'claro'].forEach(function (fondo) {
+  ACENTOS.forEach(function (a) {
+    var bloque = document.createElement('div');
+    bloque.className = 'bloque-tema';
+    bloque.innerHTML = tarjetaTema(fondo, a) +
+      '<div class="pie-tema">' + (fondo === 'oscuro' ? 'Oscuro' : 'Claro') +
+      ' &middot; ' + a.titulo + '</div>';
+    rejilla.appendChild(bloque);
+  });
 });
 </script>
 </body>
