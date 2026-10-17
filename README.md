@@ -35,7 +35,10 @@ El resultado es un `.ipa` que se descarga y se instala en el dispositivo.
 
 | Pantalla | Qué ofrece |
 |---|---|
-| **Buscar** | Campo de búsqueda y lista de resultados con miniatura, título, canal, duración, visitas y fecha. |
+| **Inicio** | Portada con **estantes deslizables**: Tendencias de hoy, Música, Noticias, Deportes, Comedia y Para aprender. |
+| **Música** | La portada real de **YouTube Music**: Selecciones rápidas, Vídeos musicales nuevos y Novedades. |
+| **Tendencias** | Lo más visto, con **chips** para cambiar de categoría (música, videojuegos, noticias, deportes, cine…). |
+| **Buscar** | Campo de búsqueda, sugerencias en chips y lista de resultados con miniatura, título, canal, duración, visitas y fecha. |
 | **Reproductor** | Reproduce el vídeo a pantalla completa con los controles nativos, con audio aunque el interruptor de silencio esté activado. |
 | **Ajustes** | Modo directo/relay, dirección del relay, inicio de sesión en YouTube, diagnóstico de conexión y guía de certificados. |
 
@@ -43,9 +46,22 @@ Calidad de vídeo: **MP4/H.264 a 360p (itag 18, con audio incluido)**.
 Es la máxima calidad reproducible en estos dispositivos: los chips de 32 bits
 (A5/A6) **no pueden decodificar VP9 ni AV1** en hardware, así que no hay 720p.
 
-Diseño: tema oscuro, tarjetas con esquinas redondeadas, tipografía del sistema,
-rojo de marca `#FF0033` como único acento, cero degradados y cero efectos de
-desenfoque (que además van mal en un A5).
+Diseño: tema oscuro con los colores de YouTube, **miniaturas 16:9 a todo el
+ancho** con la duración encima, estantes que se deslizan de lado, chips de
+filtro, tipografía del sistema y **todos los iconos dibujados por código**
+(vectoriales, sin ficheros de imagen). Cero degradados, cero desenfoques y cero
+animaciones caras: todo eso funciona mal en un A5.
+
+**Lo que YouTube no da sin cuenta.** La portada personalizada de YouTube
+(`FEwhat_to_watch`) y el listado de tendencias (`FEtrending`) contestan vacío o
+`400` a quien no tiene sesión. Como no se puede fingir lo que no hay:
+
+* **Inicio** se arma con búsquedas temáticas ordenadas (por visitas o por fecha),
+  que es lo que mejor se parece a la portada oficial.
+* **Tendencias** pide la búsqueda **ordenada por número de visitas**, que es el
+  equivalente medible de «lo más visto».
+* **Música** sí es auténtico: son las pantallas de `music.youtube.com`
+  (`FEmusic_home`, `FEmusic_explore`, `FEmusic_new_releases`).
 
 ---
 
@@ -61,14 +77,17 @@ desenfoque (que además van mal en un A5).
       (recomendado, HTTPS)   │   (HTTP plano)
                              ▼
               ┌──────────────────────────────┐        ┌────────────────────┐
-              │  youtubei/v1/player          │        │  relay.py en tu PC │
-              │  cliente ANDROID_VR          │  ◄──►  │  (o un servidor)   │
+              │  youtubei/v1/{search,player} │        │  relay.py en tu PC │
+              │  cliente ANDROID             │  ◄──►  │  (o un servidor)   │
               └──────────────────────────────┘        └────────────────────┘
 ```
 
-* **InnerTube `ANDROID_VR`.** De los clientes públicos que expone YouTube, es el
+* **InnerTube `ANDROID`.** De los clientes públicos que expone YouTube, es el
   único que hoy devuelve **URLs directas de MP4 muxado** sin obligar a descifrar
-  la firma `nsig` (que es lo que hacen NewPipe con Rhino o `yt-dlp` con Node).
+  la firma `nsig` (que es lo que hacen NewPipe con Rhino o `yt-dlp` con Node) y
+  que además descarga los bytes siempre (medido: 12 de 12 vídeos). También es el
+  que se usa para buscar y para la pantalla de **Música**, que va contra
+  `music.youtube.com` con el cliente `WEB_REMIX` **sólo para navegar**.
 * **`AVPlayer`** reproduce la URL directamente. Se comprobó que el servidor de
   vídeo responde `206 Partial Content` con `accept-ranges: bytes`, así que el
   *seeking* funciona sin descargar el archivo entero.
@@ -420,9 +439,12 @@ escríbelo también en Ajustes.
 │   ├── control                       Metadatos del paquete (nombre del .ipa)
 │   ├── main.m                        Punto de entrada
 │   ├── AppDelegate.{h,m}             Monta la interfaz (sin storyboards)
-│   ├── YTTheme.{h,m}                 Paleta y estilos planos
+│   ├── YTTheme.{h,m}                 Paleta, estilos planos e iconos vectoriales
 │   ├── YTVideo.{h,m}                 Modelo de un resultado
 │   ├── YTClient.{h,m}                InnerTube + relay + cookies + caché
+│   ├── YTFeedViewController.{h,m}    Estantes deslizables (Inicio y Música)
+│   ├── YTCarruselCell.{h,m}          Fila de estante + tarjeta pequeña
+│   ├── YTTendenciasViewController.{h,m}  Lo más visto, con chips
 │   ├── YTSearchViewController.{h,m}  Búsqueda y lista
 │   ├── YTVideoCell.{h,m}             Tarjeta de resultado
 │   ├── YTPlayerViewController.{h,m}  Reproductor AVPlayer

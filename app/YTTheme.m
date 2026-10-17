@@ -126,8 +126,8 @@
             CGContextStrokePath(ctx);
 
             CGFloat x = posiciones[i] * L;
-            CGContextFillEllipseInRect(ctx, CGRectMake(x - 0.065 * L, y - 0.065 * L,
-                                                       0.13 * L, 0.13 * L));
+            CGContextFillEllipseInRect(ctx, CGRectMake(x - 0.095 * L, y - 0.095 * L,
+                                                       0.19 * L, 0.19 * L));
         }
 
     } else if ([forma isEqualToString:@"reproducir"]) {

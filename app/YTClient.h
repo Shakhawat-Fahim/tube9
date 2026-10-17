@@ -22,11 +22,14 @@ extern NSString *const YTOrdenRecientes;        // subidos hace poco
         params:(NSString *)params
     completion:(YTBloqueLista)completion;
 
-// Pantalla de YouTube Music (music.youtube.com). Devuelve "carruseles", un
-// arreglo de filas:  @{ @"titulo": NSString, @"videos": NSArray<YTVideo*> }
+// Estantes de YouTube Music (music.youtube.com) para un identificador de
+// pantalla: "FEmusic_home", "FEmusic_explore", "FEmusic_new_releases".
+// Devuelve "carruseles", un arreglo de filas:
+//   @{ @"titulo": NSString, @"videos": NSArray<YTVideo*> }
 // Solo sirve para NAVEGAR: los videos se reproducen siempre con el cliente
 // ANDROID, porque YouTube Music pide JavaScript para descifrar sus enlaces.
-- (void)inicioMusica:(void (^)(NSArray *carruseles, NSError *error))completion;
+- (void)carruselesDeMusica:(NSString *)browseId
+                completion:(void (^)(NSArray *carruseles, NSError *error))completion;
 
 // Devuelve un diccionario con: url, titulo, autor, cliente.
 // Prueba varios clientes de YouTube en orden hasta que uno responda.

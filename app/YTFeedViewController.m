@@ -44,7 +44,13 @@
     self = [super init];
     if (self) {
         _tituloPantalla = @"Música";
-        _fuentes = nil;
+        // Tres pantallas de YouTube Music: la portada, explorar y novedades.
+        // Cada una trae sus propios estantes (los titula YouTube).
+        _fuentes = @[
+            @{ @"browseId" : @"FEmusic_home" },
+            @{ @"browseId" : @"FEmusic_explore" },
+            @{ @"browseId" : @"FEmusic_new_releases" }
+        ];
         _esMusica = YES;
     }
     return self;
@@ -102,11 +108,7 @@
     self.navigationItem.rightBarButtonItem =
         [[UIBarButtonItem alloc] initWithCustomView:_girador];
 
-    if (_esMusica) {
-        [self cargarMusica];
-    } else {
-        [self cargarSiguienteFuente];
-    }
+    [self cargarSiguienteFuente];
 }
 
 - (void)terminarCarga {
@@ -135,39 +137,37 @@
     if (_indice >= _fuentes.count) { [self terminarCarga]; return; }
 
     NSDictionary *fuente = _fuentes[_indice];
-    NSString *consulta = fuente[@"consulta"];
-    NSString *params = fuente[@"params"];
 
+    // Lo que devuelve cada carga se trata igual: en el modo de busquedas es una
+    // lista de videos (que se convierte en un estante con titulo propio) y en
+    // el modo de musica son ya estantes con el titulo que pone YouTube.
     __weak YTFeedViewController *deb = self;
-    [[YTClient compartido] buscar:consulta params:params completion:^(NSArray *videos,
-                                                                    NSError *error) {
+    void (^alLlegar)(NSArray *videos, NSError *error) = ^(NSArray *videos, NSError *error) {
         YTFeedViewController *yo = deb;
         if (!yo) return;
         if (error) {
             yo->_ultimoError = error;
         } else if (videos.count > 0) {
-            [yo->_filas addObject:@{ @"titulo" : (fuente[@"titulo"] ?: consulta),
-                                     @"videos" : videos }];
+            if (yo->_esMusica) {
+                [yo->_filas addObjectsFromArray:videos];
+            } else {
+                [yo->_filas addObject:@{ @"titulo" : (fuente[@"titulo"] ?: fuente[@"consulta"]),
+                                         @"videos" : videos }];
+            }
             yo->_estado.hidden = YES;
             [yo->_tabla reloadData];
         }
         yo->_indice++;
         [yo cargarSiguienteFuente];
-    }];
-}
+    };
 
-- (void)cargarMusica {
-    __weak YTFeedViewController *deb = self;
-    [[YTClient compartido] inicioMusica:^(NSArray *carruseles, NSError *error) {
-        YTFeedViewController *yo = deb;
-        if (!yo) return;
-        if (error) {
-            yo->_ultimoError = error;
-        } else {
-            [yo->_filas addObjectsFromArray:carruseles];
-        }
-        [yo terminarCarga];
-    }];
+    if (_esMusica) {
+        [[YTClient compartido] carruselesDeMusica:fuente[@"browseId"] completion:alLlegar];
+    } else {
+        [[YTClient compartido] buscar:fuente[@"consulta"]
+                               params:fuente[@"params"]
+                           completion:alLlegar];
+    }
 }
 
 #pragma mark - Tabla

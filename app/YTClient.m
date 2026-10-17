@@ -420,7 +420,12 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
 
 #pragma mark - Pantalla de musica (YouTube Music)
 
-- (void)inicioMusica:(void (^)(NSArray *carruseles, NSError *error))completion {
+- (void)carruselesDeMusica:(NSString *)browseId
+                completion:(void (^)(NSArray *carruseles, NSError *error))completion {
+    if (browseId.length == 0) {
+        completion(@[], nil);
+        return;
+    }
     if ([[YTClient modo] isEqualToString:@"relay"]) {
         completion(nil, [NSError errorWithDomain:@"tube9" code:3
             userInfo:@{NSLocalizedDescriptionKey :
@@ -431,20 +436,13 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
     NSDictionary *cliente = YTClienteMusica();
     [self asegurarVisitante:^{
         NSDictionary *cuerpo = @{
-            @"browseId" : @"FEmusic_home",
+            @"browseId" : browseId,
             @"context" : @{ @"client" : [self contextoParaCliente:cliente incluirVisitante:YES] }
         };
         [self enviarAlInnerTube:@"browse" cliente:cliente cuerpo:cuerpo
             completion:^(NSDictionary *json, NSError *error) {
             if (error) { completion(nil, error); return; }
-            NSArray *carruseles = YTCarruselesMusicales(json);
-            if (carruseles.count == 0) {
-                completion(nil, [NSError errorWithDomain:@"tube9" code:9
-                    userInfo:@{NSLocalizedDescriptionKey :
-                        @"YouTube Music no devolvio listas. Vuelve a intentarlo."}]);
-                return;
-            }
-            completion(carruseles, nil);
+            completion(YTCarruselesMusicales(json), nil);
         }];
     }];
 }
