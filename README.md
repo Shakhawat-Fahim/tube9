@@ -111,6 +111,15 @@ gh run list --repo lofturb/tube9
 gh run download --repo lofturb/tube9 --name Tube9-ipa-armv7
 ```
 
+### Comprobar el `.ipa` descargado (opcional)
+
+```powershell
+python tools\verificar_ipa.py entrega\Tube9.ipa
+```
+
+Te dice la arquitectura, la versión mínima de iOS y si va firmado. Debe poner
+`armv7`, `minimo 9.0` y `pseudo-firmado`.
+
 ---
 
 ## Parte B — Preparar el dispositivo
@@ -282,7 +291,9 @@ escríbelo también en Ajustes.
 │   ├── YTLoginViewController.{h,m}   Inicio de sesión (UIWebView)
 │   └── Resources/                    Info.plist, iconos, imágenes de arranque
 ├── relay/relay.py                    Relay opcional (Python 3, sin dependencias)
-└── tools/generar_recursos.py         Genera iconos y arranques (PNG a mano)
+└── tools/
+    ├── generar_recursos.py           Genera iconos y arranques (PNG a mano)
+    └── verificar_ipa.py              Comprueba arquitectura y versión del .ipa
 ```
 
 ---

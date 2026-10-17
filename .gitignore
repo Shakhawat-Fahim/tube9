@@ -17,3 +17,6 @@ packages/
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# IPA descargado para probar en local
+entrega/
