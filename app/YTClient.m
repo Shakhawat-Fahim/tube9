@@ -12,18 +12,29 @@ static NSString * const kDefToken     = @"tube9_token";
 static NSString * const kDefVisitante = @"tube9_visitante";
 
 // --- Clientes de InnerTube ------------------------------------------------
-//  Tabla tomada de yt-dlp (yt_dlp/extractor/youtube/_base.py). De cada cliente
-//  importan dos cosas:
+//  Tabla tomada de yt-dlp (yt_dlp/extractor/youtube/_base.py), que a su vez la
+//  mantiene contra los cambios de YouTube. Hay dos filtros y entre los dos
+//  quedan muy pocos clientes utilizables desde un iPhone con iOS 9:
 //
-//   * No exigir el reproductor JavaScript: asi entrega la direccion del MP4
-//     muxado (itag 18) directamente, SIN obligar a descifrar la firma "nsig"
-//     del reproductor, que en iOS 9 seria imposible (no hay motor de JS).
-//     ANDROID_VR, IOS y ANDROID cumplen esa condicion.
+//  1) El reproductor JavaScript ("nsig"). En yt-dlp, REQUIRE_JS_PLAYER vale
+//     True POR DEFECTO, y solo android, android_vr, ios y visionos lo ponen en
+//     False. En esos cuatro la URL del MP4 muxado (itag 18, 360p con audio)
+//     llega ya lista. En el resto (WEB, MWEB, TVHTML5...) hay que ejecutar el
+//     JavaScript del reproductor para descifrar la firma, y en iOS 9 no hay
+//     motor de JavaScript con el que hacerlo. O sea: solo valen esos cuatro.
 //
-//   * Cada cliente tiene su propio umbral antibot. YouTube contesta
-//     "LOGIN_REQUIRED" ("Inicia sesion para confirmar que no eres un bot") de
-//     forma distinta segun quien pregunte, asi que probar varios clientes es
-//     justo lo que hacen NewPipe y yt-dlp. Antes la app solo probaba uno.
+//  2) El "po token" de descarga. YouTube exige a veces un token extra para
+//     servir los bytes de googlevideo, y ese token SOLO se puede fabricar
+//     ejecutando el JavaScript de BotGuard de Google (Node.js o un navegador
+//     completo). De los cuatro clientes de arriba, android, android_vr e ios
+//     lo tienen marcado como OBLIGATORIO, y **visionos no**. VisionOS es por
+//     tanto el unico cliente que hoy puede descargar video sin servidor.
+//
+//  Ademas, cada cliente tiene su propio umbral antibot: YouTube contesta
+//  "LOGIN_REQUIRED" ("Inicia sesion para confirmar que no eres un bot") de
+//  forma distinta segun quien pregunte. Por eso se prueban todos, en orden, y
+//  se comprueba que la URL se descargue de verdad antes de darsela al
+//  reproductor.
 static NSArray *YTClientes(void) {
     static NSArray *lista = nil;
     static dispatch_once_t unaVez;
@@ -35,7 +46,23 @@ static NSArray *YTClientes(void) {
                @"agente"  : @"com.google.android.apps.youtube.vr.oculus/1.65.10 "
                             @"(Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip",
                @"sdk"     : @32,
-               @"nota"    : @"gafas VR" },
+               @"extra"   : @{ @"deviceMake" : @"Oculus", @"deviceModel" : @"Quest 3",
+                               @"osName" : @"Android", @"osVersion" : @"12L" },
+               @"nota"    : @"gafas VR (pide po token para descargar)" },
+
+            // Unico cliente sin po token: el que se usa cuando los demas
+            // devuelven una URL que YouTube luego rechaza.
+            @{ @"nombre"  : @"VISIONOS",
+               @"version" : @"1.02",
+               @"id"      : @101,
+               @"agente"  : @"Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) "
+                            @"AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 "
+                            @"Safari/605.1.15",
+               @"sdk"     : @0,
+               @"extra"   : @{ @"deviceMake" : @"Apple", @"deviceModel" : @"RealityDevice17,1",
+                               @"osName" : @"visionOS", @"osVersion" : @"26.5.23O471" },
+               @"nota"    : @"gafas Vision Pro (sin po token; no sirve para "
+                            @"contenido \"para ninos\")" },
 
             @{ @"nombre"  : @"IOS",
                @"version" : @"21.26.4",
@@ -43,21 +70,17 @@ static NSArray *YTClientes(void) {
                @"agente"  : @"com.google.ios.youtube/21.26.4 (iPhone16,2; U; CPU iOS 18_3_2 "
                             @"like Mac OS X;)",
                @"sdk"     : @0,
-               @"nota"    : @"app de iPhone" },
+               @"extra"   : @{ @"deviceMake" : @"Apple", @"deviceModel" : @"iPhone16,2",
+                               @"osName" : @"iPhone", @"osVersion" : @"18.3.2.22D82" },
+               @"nota"    : @"app de iPhone (pide po token para descargar)" },
 
             @{ @"nombre"  : @"ANDROID",
                @"version" : @"21.26.364",
                @"id"      : @3,
                @"agente"  : @"com.google.android.youtube/21.26.364 (Linux; U; Android 11) gzip",
                @"sdk"     : @30,
-               @"nota"    : @"app de Android" },
-
-            @{ @"nombre"  : @"TVHTML5_SIMPLY",
-               @"version" : @"1.0",
-               @"id"      : @75,
-               @"agente"  : @"",
-               @"sdk"     : @0,
-               @"nota"    : @"television" }
+               @"extra"   : @{ @"osName" : @"Android", @"osVersion" : @"11" },
+               @"nota"    : @"app de Android (pide po token para descargar)" }
         ];
     });
     return lista;
@@ -100,6 +123,8 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
            completion:(YTBloqueInfo)completion;
 - (NSDictionary *)contextoParaCliente:(NSDictionary *)cliente
                     incluirVisitante:(BOOL)incluirVisitante;
+- (void)comprobarEnlace:(NSString *)enlace
+             completion:(void (^)(BOOL vale, NSString *detalle))completion;
 - (void)asegurarVisitante:(void (^)(void))completion;
 - (void)enviarAlInnerTube:(NSString *)ruta
                   cliente:(NSDictionary *)cliente
@@ -476,12 +501,59 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
             return;
         }
 
-        NSDictionary *detalles = json[@"videoDetails"];
-        completion(@{ @"url" : elegido[@"url"],
-                      @"titulo" : detalles[@"title"] ?: @"",
-                      @"autor" : detalles[@"author"] ?: @"",
-                      @"cliente" : cliente[@"nombre"] ?: @"" }, nil);
+        NSString *enlace = elegido[@"url"];
+        // No basta con que YouTube devuelva una URL: tambien puede devolverla
+        // y luego contestar 403 al pedir los bytes (es el caso del po token que
+        // los clientes de app exigen y visionos no). Se piden 2 bytes y, si no
+        // vienen, se prueba el cliente siguiente.
+        [self comprobarEnlace:enlace completion:^(BOOL vale, NSString *detalle) {
+            if (!vale) {
+                [errores addObject:[NSError errorWithDomain:@"tube9" code:9 userInfo:@{
+                    NSLocalizedDescriptionKey :
+                        [NSString stringWithFormat:@"%@ dio una URL que no se puede "
+                         @"descargar (%@)", cliente[@"nombre"], detalle]}]];
+                [self resolverVideo:videoId conClientes:clientes indice:indice + 1
+                            errores:errores completion:completion];
+                return;
+            }
+            NSDictionary *detalles = json[@"videoDetails"];
+            completion(@{ @"url" : enlace,
+                          @"titulo" : detalles[@"title"] ?: @"",
+                          @"autor" : detalles[@"author"] ?: @"",
+                          @"cliente" : cliente[@"nombre"] ?: @"",
+                          @"comprobacion" : detalle ?: @"" }, nil);
+        }];
     }];
+}
+
+// Pide los dos primeros bytes del video. Es la unica forma de saber que la URL
+// sirve de verdad: YouTube devuelve URLs validas que luego rechaza con 403.
+- (void)comprobarEnlace:(NSString *)enlace
+             completion:(void (^)(BOOL vale, NSString *detalle))completion {
+    NSURL *url = [NSURL URLWithString:enlace];
+    if (!url) { completion(NO, @"la direccion no es valida"); return; }
+
+    NSMutableURLRequest *peticion = [NSMutableURLRequest requestWithURL:url];
+    [peticion setValue:@"bytes=0-1" forHTTPHeaderField:@"Range"];
+    peticion.timeoutInterval = 12.0;
+    NSDate *inicio = [NSDate date];
+    [[self.sesion dataTaskWithRequest:peticion
+        completionHandler:^(NSData *datos, NSURLResponse *respuesta, NSError *error) {
+        double segundos = -[inicio timeIntervalSinceNow];
+        if (error) {
+            completion(NO, [NSString stringWithFormat:@"%@ (en %.1f s)",
+                [YTClient explicarError:error], segundos]);
+            return;
+        }
+        NSInteger codigo = [respuesta isKindOfClass:[NSHTTPURLResponse class]]
+            ? ((NSHTTPURLResponse *)respuesta).statusCode : 0;
+        if (codigo == 200 || codigo == 206) {
+            completion(YES, [NSString stringWithFormat:@"HTTP %ld en %.1f s",
+                             (long)codigo, segundos]);
+        } else {
+            completion(NO, [NSString stringWithFormat:@"HTTP %ld", (long)codigo]);
+        }
+    }] resume];
 }
 
 #pragma mark - InnerTube
@@ -495,6 +567,12 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
     ctx[@"gl"] = @"ES";
     NSNumber *sdk = cliente[@"sdk"];
     if (sdk.integerValue > 0) ctx[@"androidSdkVersion"] = sdk;
+    // deviceMake/deviceModel/osName/osVersion: YouTube los usa para decidir si
+    // el cliente es de verdad, y algunos formatos solo se ofrecen si cuadran.
+    NSDictionary *extra = cliente[@"extra"];
+    if ([extra isKindOfClass:[NSDictionary class]]) {
+        [ctx addEntriesFromDictionary:extra];
+    }
     if (incluirVisitante) {
         NSString *visitante = [YTClient visitante];
         if (visitante.length) ctx[@"visitorData"] = visitante;
@@ -655,6 +733,10 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
             NSString *quien = info[@"cliente"];
             [informe appendFormat:@"   OK  URL obtenida en %.1f s%@\n", segundos,
                 (quien.length ? [NSString stringWithFormat:@" con el cliente %@", quien] : @"")];
+            NSString *comprobacion = info[@"comprobacion"];
+            if (comprobacion.length) {
+                [informe appendFormat:@"   descarga comprobada: %@\n", comprobacion];
+            }
             [informe appendFormat:@"   servidor de video: %@\n", url.host ?: @"(desconocido)"];
             [informe appendString:@"\n3) Descargando los primeros KB del video...\n"];
             [self probarBytesDe:enlace completion:^(NSString *resultado) {

@@ -251,8 +251,11 @@ reproducción, **con los tiempos de cada uno** para saber dónde está el atasco
 | Paso | Qué prueba | Si falla significa |
 |---|---|---|
 | **1** | Buscar en `youtube.com` | Red, DNS o certificados. |
-| **2** | Pedir la URL del vídeo | Vídeo bloqueado o sesión: si sale `LOGIN_REQUIRED`, hay que iniciar sesión. |
+| **2** | Pedir la URL del vídeo **probando los cuatro clientes** y comprobando que los dos primeros bytes se descarguen | Vídeo bloqueado o sesión: si sale `LOGIN_REQUIRED`, hay que iniciar sesión. Si sale «dio una URL que no se puede descargar (HTTP 403)», es el *po token*. |
 | **3** | Descargar los primeros KB de `googlevideo.com` | **El proveedor de Internet** dando largas con el servidor de vídeo (es el paso que la app no puede esquivar sola), o el DNS. |
+
+El informe dice también **con qué cliente** se resolvió el vídeo (`ANDROID_VR`,
+`VISIONOS`…) y **cuánto tardó la comprobación**.
 
 El paso 3 es el importante: la app puede fallar en la búsqueda y funcionar en el
 vídeo, o al contrario. Si los pasos 1 y 2 van bien y el 3 falla o tarda
@@ -276,26 +279,54 @@ mismas tres armas que usan los proyectos libres de referencia.
 | Proyecto | Qué hace |
 |---|---|
 | **NewPipe** (`YoutubeParsingHelper.java`) | Manda en cada petición las cabeceras `X-YouTube-Client-Name`, `X-YouTube-Client-Version`, `Origin` y `Referer`; pide un **`visitorData`** a `/youtubei/v1/visitor_id` y lo mete dentro de `context.client`; y elige entre varios clientes (ANDROID, IOS, WEB…). **No** implementa *po tokens*. |
-| **yt-dlp** (`extractor/youtube/_base.py`) | Igual que NewPipe, y además manda el `visitorData` como cabecera `X-Goog-Visitor-Id`. Su tabla de clientes marca `REQUIRE_JS_PLAYER = False` en **ANDROID_VR, IOS y ANDROID**: sólo esos entregan la dirección del MP4 sin obligar a descifrar la firma `nsig` (WEB, MWEB y TVHTML5 no). |
+| **yt-dlp** (`extractor/youtube/_base.py`) | Igual que NewPipe, y además manda el `visitorData` como cabecera `X-Goog-Visitor-Id`. Su tabla de clientes es la referencia mundial: cada cliente declara si necesita el reproductor JavaScript y si exige *po token*. |
+
+**Los dos filtros que dejan a iOS 9 casi sin opciones.** En yt-dlp,
+`REQUIRE_JS_PLAYER` vale **`True` por defecto**, y sólo cuatro clientes lo ponen
+en `False`:
+
+| Cliente | Reproductor JS | *Po token* para descargar | ¿Sirve en iOS 9? |
+|---|---|---|---|
+| `ANDROID_VR` | no hace falta | **obligatorio** | sí, si no lo exige |
+| `IOS` | no hace falta | **obligatorio** | sí, si no lo exige |
+| `ANDROID` | no hace falta | **obligatorio** | sí, si no lo exige |
+| `VISIONOS` | no hace falta | no lo exige | **sí, siempre** |
+| `WEB`, `MWEB`, `TVHTML5`, `TVHTML5_SIMPLY`… | **sí hace falta** | — | **no** |
+
+O sea: los clientes web y de televisión quedan descartados de entrada, porque
+exigen ejecutar el JavaScript del reproductor para descifrar la firma `nsig`, y
+en iOS 9 no hay motor de JavaScript para eso. Y de los cuatro que quedan, tres
+piden *po token* para servir los bytes del vídeo.
 
 **Qué hace Tube9 con eso:**
 
 1. **Pide un `visitorData`** una vez (`/youtubei/v1/visitor_id`), lo guarda entre
    arranques y lo manda en el contexto y en `X-Goog-Visitor-Id`.
 2. **Manda las cabeceras de cliente** (`X-YouTube-Client-Name/Version`, `Origin`,
-   `Referer`) en todas las peticiones.
-3. **Rota entre cuatro clientes** al pedir el vídeo: `ANDROID_VR`, `IOS`,
-   `ANDROID` y `TVHTML5_SIMPLY`. Como cada uno tiene su propio umbral antibot, el
-   que rechaza a uno suele dar el vídeo a otro. El informe de diagnóstico dice
-   **con qué cliente** se consiguió.
+   `Referer`) y los datos de dispositivo (`deviceMake`, `deviceModel`, `osName`,
+   `osVersion`) de cada cliente.
+3. **Rota entre los cuatro clientes útiles**: `ANDROID_VR`, `VISIONOS`, `IOS` y
+   `ANDROID`. Como cada uno tiene su propio umbral antibot, el que rechaza a uno
+   suele dar el vídeo a otro.
+4. **Comprueba la descarga antes de reproducir**: pide los dos primeros bytes de
+   la URL. YouTube devuelve a veces una URL perfectamente válida que luego
+   contesta `403` (es el caso del maldito *po token*) — con esa comprobación, si
+   el cliente elegido no sirve, la app pasa sola al siguiente. El vídeo empieza
+   sólo cuando los bytes llegan de verdad. El informe de diagnóstico dice **con
+   qué cliente** se consiguió y **cómo fue la comprobación**.
 
-**Lo que no se puede hacer sin un servidor** (*po tokens*): desde 2024 YouTube
-pidió a los clientes web un *token* extra (`poToken`) que sólo se puede fabricar
-ejecutando el JavaScript de BotGuard de Google — con Node.js o con el motor de
-un navegador. **iOS 9 no puede ejecutar ese JavaScript** (y el dispositivo no
-corre Node), así que la única vía real es **iniciar sesión**: con la sesión
-iniciada, YouTube ya no hace esas preguntas. Por eso el arreglo importante es
-que **la pantalla de inicio de sesión sea legible**.
+**Lo que no se puede hacer sin un servidor** (*po tokens*): YouTube exige a
+menudo un token extra (`poToken`) para servir los bytes, y ese token **sólo** se
+puede fabricar ejecutando el JavaScript de BotGuard de Google — con Node.js o
+con el motor de un navegador completo. **iOS 9 no puede ejecutar ese JavaScript**
+y el dispositivo no corre Node. Por eso `VISIONOS` (que no lo pide) es el cliente
+de rescate, y por eso la otra vía es **iniciar sesión**: con la sesión iniciada
+YouTube deja de hacer preguntas de robot. De ahí que sea tan importante que **la
+pantalla de inicio de sesión sea legible**.
+
+Si aun así algún vídeo se resiste, la solución definitiva es el **modo relay**
+(abajo): el vídeo lo resuelve y lo descarga un servidor, donde sí se puede tener
+Node y por tanto *po tokens*.
 
 ### Iniciar sesión
 
