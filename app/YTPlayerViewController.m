@@ -66,7 +66,11 @@ static const NSUInteger kNumeroDeVelocidades = 5;
 
     NSArray *_relacionados;
     BOOL _pidiendoRelacionados;
-    NSMutableArray *_tokensMando;
+    id _mandoPlay;
+    id _mandoPause;
+    id _mandoAlternar;
+    id _mandoAdelante;
+    id _mandoAtras;
 }
 
 #pragma mark - Arranque
@@ -97,7 +101,6 @@ static const NSUInteger kNumeroDeVelocidades = 5;
     self.automaticallyAdjustsScrollViewInsets = NO;
 
     _velocidad = 1.0f;
-    _tokensMando = [NSMutableArray array];
 
     _tabla = [[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStylePlain];
     _tabla.dataSource = self;
@@ -241,11 +244,11 @@ static const NSUInteger kNumeroDeVelocidades = 5;
     // Los mandos de la pantalla de bloqueo se quitan al salir de aqui; si no,
     // seguirian apuntando a un reproductor que ya no existe.
     MPRemoteCommandCenter *centro = [MPRemoteCommandCenter sharedCommandCenter];
-    [centro.playCommand removeTarget:nil];
-    [centro.pauseCommand removeTarget:nil];
-    [centro.togglePlayPauseCommand removeTarget:nil];
-    [centro.skipForwardCommand removeTarget:nil];
-    [centro.skipBackwardCommand removeTarget:nil];
+    if (_mandoPlay)     [centro.playCommand removeTarget:_mandoPlay];
+    if (_mandoPause)    [centro.pauseCommand removeTarget:_mandoPause];
+    if (_mandoAlternar) [centro.togglePlayPauseCommand removeTarget:_mandoAlternar];
+    if (_mandoAdelante) [centro.skipForwardCommand removeTarget:_mandoAdelante];
+    if (_mandoAtras)    [centro.skipBackwardCommand removeTarget:_mandoAtras];
     [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = nil;
     [UIApplication sharedApplication].idleTimerDisabled = NO;
 }
@@ -404,7 +407,7 @@ static const NSUInteger kNumeroDeVelocidades = 5;
                                                  name:AVPlayerItemDidPlayToEndTimeNotification
                                                object:_elemento];
 
-    if (!_reproductor.player) _reproductor.player = [AVPlayer player];
+    if (!_reproductor.player) _reproductor.player = [[AVPlayer alloc] init];
     [_reproductor.player replaceCurrentItemWithPlayerItem:_elemento];
     [_reproductor.player play];
     [_girador startAnimating];
@@ -722,7 +725,7 @@ static const NSUInteger kNumeroDeVelocidades = 5;
     MPRemoteCommandCenter *centro = [MPRemoteCommandCenter sharedCommandCenter];
     __weak YTPlayerViewController *deb = self;
 
-    [centro.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *e) {
+    _mandoPlay = [centro.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *e) {
         YTPlayerViewController *yo = deb;
         if (!yo) return MPRemoteCommandHandlerStatusCommandFailed;
         [yo->_reproductor.player play];
@@ -730,7 +733,7 @@ static const NSUInteger kNumeroDeVelocidades = 5;
         [yo actualizarInfoBloqueo];
         return MPRemoteCommandHandlerStatusSuccess;
     }];
-    [centro.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *e) {
+    _mandoPause = [centro.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *e) {
         YTPlayerViewController *yo = deb;
         if (!yo) return MPRemoteCommandHandlerStatusCommandFailed;
         [yo->_reproductor.player pause];
@@ -738,7 +741,7 @@ static const NSUInteger kNumeroDeVelocidades = 5;
         [yo actualizarInfoBloqueo];
         return MPRemoteCommandHandlerStatusSuccess;
     }];
-    [centro.togglePlayPauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *e) {
+    _mandoAlternar = [centro.togglePlayPauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *e) {
         YTPlayerViewController *yo = deb;
         if (!yo) return MPRemoteCommandHandlerStatusCommandFailed;
         if (yo->_reproductor.player.rate > 0.01f) {
@@ -751,11 +754,11 @@ static const NSUInteger kNumeroDeVelocidades = 5;
         [yo actualizarInfoBloqueo];
         return MPRemoteCommandHandlerStatusSuccess;
     }];
-    [centro.skipForwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *e) {
+    _mandoAdelante = [centro.skipForwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *e) {
         [deb saltarAdelante];
         return MPRemoteCommandHandlerStatusSuccess;
     }];
-    [centro.skipBackwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *e) {
+    _mandoAtras = [centro.skipBackwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *e) {
         [deb saltarAtras];
         return MPRemoteCommandHandlerStatusSuccess;
     }];
