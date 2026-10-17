@@ -22,6 +22,7 @@
     NSTimer *_vigilante;      // evita quedarse en "Cargando..." para siempre
     NSDate *_inicioCarga;
     NSString *_hostVideo;
+    NSString *_clienteVideo;
 }
 
 - (instancetype)initWithVideo:(YTVideo *)video {
@@ -132,6 +133,9 @@
         if (info[@"autor"] && [(NSString *)info[@"autor"] length]) {
             yo->_autor.text = info[@"autor"];
         }
+        if (info[@"cliente"] && [(NSString *)info[@"cliente"] length]) {
+            yo->_clienteVideo = info[@"cliente"];
+        }
         [yo reproducir:enlace];
     }];
 }
@@ -204,9 +208,14 @@
             [self->_vigilante invalidate];
             self->_vigilante = nil;
             [self->_girador stopAnimating];
-            self->_estado.text = @"Reproduciendo en la mejor calidad disponible (MP4 360p).\n\n"
-                                 @"Los dispositivos de 32 bits no pueden decodificar VP9 ni AV1, "
-                                 @"por eso no hay 720p.";
+            self->_estado.text = [NSString stringWithFormat:
+                @"Reproduciendo en la mejor calidad disponible (MP4 360p).\n\n"
+                 "Los dispositivos de 32 bits no pueden decodificar VP9 ni AV1, "
+                 "por eso no hay 720p.%@",
+                (self->_clienteVideo.length
+                    ? [NSString stringWithFormat:@"\n\nResuelto con el cliente %@.",
+                                                self->_clienteVideo]
+                    : @"")];
         } else if (estado == AVPlayerItemStatusFailed) {
             [self->_vigilante invalidate];
             self->_vigilante = nil;

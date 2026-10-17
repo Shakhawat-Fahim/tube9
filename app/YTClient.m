@@ -2,19 +2,72 @@
 #import "YTClient.h"
 
 // --- Constantes de YouTube ------------------------------------------------
-// ANDROID_VR es hoy el cliente que todavia entrega URLs directas de MP4
-// muxado (itag 18, 360p con audio) sin obligar a descifrar la firma "nsig".
-static NSString * const kClaveAPI   = @"AIzaSyA8eiZmM1FaDVjRy-df2KTyQ_vz_yYM39w";
-static NSString * const kBaseYT     = @"https://www.youtube.com/youtubei/v1";
-static NSString * const kClienteYT  = @"ANDROID_VR";
-static NSString * const kVersionYT  = @"1.60.19";
-static NSString * const kAgenteYT   =
-    @"com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12; en_US) gzip";
+static NSString * const kClaveAPI = @"AIzaSyA8eiZmM1FaDVjRy-df2KTyQ_vz_yYM39w";
+static NSString * const kBaseYT   = @"https://www.youtube.com/youtubei/v1";
 
 // Claves de NSUserDefaults
-static NSString * const kDefModo  = @"tube9_modo";
-static NSString * const kDefRelay = @"tube9_relay";
-static NSString * const kDefToken = @"tube9_token";
+static NSString * const kDefModo      = @"tube9_modo";
+static NSString * const kDefRelay     = @"tube9_relay";
+static NSString * const kDefToken     = @"tube9_token";
+static NSString * const kDefVisitante = @"tube9_visitante";
+
+// --- Clientes de InnerTube ------------------------------------------------
+//  Tabla tomada de yt-dlp (yt_dlp/extractor/youtube/_base.py). De cada cliente
+//  importan dos cosas:
+//
+//   * No exigir el reproductor JavaScript: asi entrega la direccion del MP4
+//     muxado (itag 18) directamente, SIN obligar a descifrar la firma "nsig"
+//     del reproductor, que en iOS 9 seria imposible (no hay motor de JS).
+//     ANDROID_VR, IOS y ANDROID cumplen esa condicion.
+//
+//   * Cada cliente tiene su propio umbral antibot. YouTube contesta
+//     "LOGIN_REQUIRED" ("Inicia sesion para confirmar que no eres un bot") de
+//     forma distinta segun quien pregunte, asi que probar varios clientes es
+//     justo lo que hacen NewPipe y yt-dlp. Antes la app solo probaba uno.
+static NSArray *YTClientes(void) {
+    static NSArray *lista = nil;
+    static dispatch_once_t unaVez;
+    dispatch_once(&unaVez, ^{
+        lista = @[
+            @{ @"nombre"  : @"ANDROID_VR",
+               @"version" : @"1.65.10",
+               @"id"      : @28,
+               @"agente"  : @"com.google.android.apps.youtube.vr.oculus/1.65.10 "
+                            @"(Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip",
+               @"sdk"     : @32,
+               @"nota"    : @"gafas VR" },
+
+            @{ @"nombre"  : @"IOS",
+               @"version" : @"21.26.4",
+               @"id"      : @5,
+               @"agente"  : @"com.google.ios.youtube/21.26.4 (iPhone16,2; U; CPU iOS 18_3_2 "
+                            @"like Mac OS X;)",
+               @"sdk"     : @0,
+               @"nota"    : @"app de iPhone" },
+
+            @{ @"nombre"  : @"ANDROID",
+               @"version" : @"21.26.364",
+               @"id"      : @3,
+               @"agente"  : @"com.google.android.youtube/21.26.364 (Linux; U; Android 11) gzip",
+               @"sdk"     : @30,
+               @"nota"    : @"app de Android" },
+
+            @{ @"nombre"  : @"TVHTML5_SIMPLY",
+               @"version" : @"1.0",
+               @"id"      : @75,
+               @"agente"  : @"",
+               @"sdk"     : @0,
+               @"nota"    : @"television" }
+        ];
+    });
+    return lista;
+}
+
+// El primero de la lista es el que se usa para buscar y para pedir el
+// "visitorData" (el identificador anonimo que YouTube espera en cada peticion).
+static NSDictionary *YTClientePrincipal(void) {
+    return YTClientes()[0];
+}
 
 static NSCache *sCacheMiniaturas = nil;
 
@@ -37,6 +90,23 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
 
 @interface YTClient ()
 @property (nonatomic, strong) NSURLSession *sesion;
+
+// Adelantos: la implementacion de estos metodos esta mas abajo en el fichero.
+- (void)obtener:(NSURL *)url completion:(void (^)(NSDictionary *json, NSError *error))completion;
+- (void)resolverVideo:(NSString *)videoId
+          conClientes:(NSArray *)clientes
+               indice:(NSUInteger)indice
+              errores:(NSMutableArray *)errores
+           completion:(YTBloqueInfo)completion;
+- (NSDictionary *)contextoParaCliente:(NSDictionary *)cliente
+                    incluirVisitante:(BOOL)incluirVisitante;
+- (void)asegurarVisitante:(void (^)(void))completion;
+- (void)enviarAlInnerTube:(NSString *)ruta
+                  cliente:(NSDictionary *)cliente
+                   cuerpo:(NSDictionary *)cuerpo
+               completion:(void (^)(NSDictionary *json, NSError *error))completion;
+- (NSString *)describir:(NSArray *)videos error:(NSError *)error desde:(NSDate *)inicio;
+- (void)probarBytesDe:(NSString *)enlace completion:(void (^)(NSString *resultado))completion;
 @end
 
 @implementation YTClient
@@ -90,7 +160,33 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
     [d synchronize];
 }
 
-+ (NSString *)clienteYT { return kClienteYT; }
++ (NSString *)clienteYT { return YTClientePrincipal()[@"nombre"]; }
+
++ (NSString *)listaDeClientes {
+    NSMutableArray *nombres = [NSMutableArray array];
+    for (NSDictionary *c in YTClientes()) [nombres addObject:c[@"nombre"]];
+    return [nombres componentsJoinedByString:@", "];
+}
+
+// Identificador anonimo de visitante. NewPipe y yt-dlp se lo piden a YouTube y
+// lo mandan en cada peticion (dentro del contexto y en la cabecera
+// X-Goog-Visitor-Id). Sin el, YouTube contesta "LOGIN_REQUIRED" mucho mas a
+// menudo porque no reconoce al visitante como un navegador normal.
++ (NSString *)visitante {
+    return [[NSUserDefaults standardUserDefaults] stringForKey:kDefVisitante] ?: @"";
+}
+
++ (void)guardarVisitante:(NSString *)visitante {
+    NSUserDefaults *d = [NSUserDefaults standardUserDefaults];
+    if (visitante.length) [d setObject:visitante forKey:kDefVisitante];
+    [d synchronize];
+}
+
++ (void)olvidarVisitante {
+    NSUserDefaults *d = [NSUserDefaults standardUserDefaults];
+    [d removeObjectForKey:kDefVisitante];
+    [d synchronize];
+}
 
 #pragma mark - Sesion (cookies)
 
@@ -128,6 +224,9 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
     }
     [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"tube9_usuario"];
     [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"tube9_cookies_manuales"];
+    // Visitante nuevo tras cerrar sesion: YouTube identifica asi una conexion
+    // limpia en vez de arrastrar la anterior.
+    [self olvidarVisitante];
 }
 
 + (void)guardarCookiesManuales:(NSString *)crudo {
@@ -227,20 +326,24 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
     }
 
     // --- Modo directo: InnerTube -----------------------------------------
-    NSDictionary *cuerpo = @{
-        @"query" : limpia,
-        @"context" : @{ @"client" : [self contextoDeCliente] }
-    };
-    [self enviarAlInnerTube:@"search" cuerpo:cuerpo completion:^(NSDictionary *json, NSError *error) {
-        if (error) { completion(nil, error); return; }
-        NSMutableArray *renderers = [NSMutableArray array];
-        YTRecogerRenderers(json, @"VideoRenderer", renderers);
-        NSMutableArray *videos = [NSMutableArray array];
-        for (NSDictionary *r in renderers) {
-            YTVideo *v = [YTVideo desdeRenderer:r];
-            if (v) [videos addObject:v];
-        }
-        completion(videos, nil);
+    NSDictionary *cliente = YTClientePrincipal();
+    [self asegurarVisitante:^{
+        NSDictionary *cuerpo = @{
+            @"query" : limpia,
+            @"context" : @{ @"client" : [self contextoParaCliente:cliente incluirVisitante:YES] }
+        };
+        [self enviarAlInnerTube:@"search" cliente:cliente cuerpo:cuerpo
+            completion:^(NSDictionary *json, NSError *error) {
+            if (error) { completion(nil, error); return; }
+            NSMutableArray *renderers = [NSMutableArray array];
+            YTRecogerRenderers(json, @"VideoRenderer", renderers);
+            NSMutableArray *videos = [NSMutableArray array];
+            for (NSDictionary *r in renderers) {
+                YTVideo *v = [YTVideo desdeRenderer:r];
+                if (v) [videos addObject:v];
+            }
+            completion(videos, nil);
+        }];
     }];
 }
 
@@ -283,25 +386,69 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
     }
 
     // --- Modo directo ----------------------------------------------------
+    // Se prueba cliente por cliente: YouTube trata cada uno con un umbral
+    // antibot distinto, asi que el que contesta "LOGIN_REQUIRED" a uno puede
+    // responder bien a otro. Es lo que hacen NewPipe y yt-dlp.
+    [self asegurarVisitante:^{
+        [self resolverVideo:videoId
+                conClientes:YTClientes()
+                     indice:0
+                    errores:[NSMutableArray array]
+                 completion:completion];
+    }];
+}
+
+- (void)resolverVideo:(NSString *)videoId
+          conClientes:(NSArray *)clientes
+               indice:(NSUInteger)indice
+              errores:(NSMutableArray *)errores
+           completion:(YTBloqueInfo)completion {
+    if (indice >= clientes.count) {
+        // Se agotaron los clientes: un solo mensaje con los motivos distintos.
+        NSMutableArray *motivos = [NSMutableArray array];
+        for (NSError *e in errores) {
+            NSString *texto = e.localizedDescription;
+            if (texto.length && ![motivos containsObject:texto]) [motivos addObject:texto];
+        }
+        NSString *resumen = motivos.count ? [motivos componentsJoinedByString:@" | "] : @"sin detalle";
+        NSString *ayuda = @"";
+        if ([resumen rangeOfString:@"LOGIN_REQUIRED"].location != NSNotFound ||
+            [resumen rangeOfString:@"inicia sesion"].location != NSNotFound ||
+            [resumen rangeOfString:@"bot"].location != NSNotFound) {
+            ayuda = @"\n\nYouTube desconfia de esta conexion. Entra en "
+                     "Ajustes > Iniciar sesion en YouTube: con la sesion iniciada "
+                     "este aviso desaparece.";
+        }
+        completion(nil, [NSError errorWithDomain:@"tube9" code:6 userInfo:@{
+            NSLocalizedDescriptionKey : [NSString stringWithFormat:@"%@%@", resumen, ayuda]}]);
+        return;
+    }
+
+    NSDictionary *cliente = clientes[indice];
     NSDictionary *cuerpo = @{
         @"videoId" : videoId,
         @"contentCheckOk" : @YES,
         @"racyCheckOk" : @YES,
-        @"context" : @{ @"client" : [self contextoDeCliente] }
+        @"context" : @{ @"client" : [self contextoParaCliente:cliente incluirVisitante:YES] }
     };
-    [self enviarAlInnerTube:@"player" cuerpo:cuerpo completion:^(NSDictionary *json, NSError *error) {
-        if (error) { completion(nil, error); return; }
+
+    [self enviarAlInnerTube:@"player" cliente:cliente cuerpo:cuerpo
+        completion:^(NSDictionary *json, NSError *error) {
+        if (error) {
+            [errores addObject:error];
+            [self resolverVideo:videoId conClientes:clientes indice:indice + 1
+                        errores:errores completion:completion];
+            return;
+        }
 
         NSDictionary *estado = json[@"playabilityStatus"];
         NSString *nombreEstado = estado[@"status"];
         if (![nombreEstado isEqualToString:@"OK"]) {
             NSString *motivo = estado[@"reason"] ?: nombreEstado ?: @"desconocido";
-            NSString *ayuda = @"Vuelve a intentarlo o inicia sesion desde Ajustes.";
-            if ([nombreEstado isEqualToString:@"LOGIN_REQUIRED"]) {
-                ayuda = @"YouTube pide iniciar sesion. Entra en Ajustes > Iniciar sesion en YouTube.";
-            }
-            completion(nil, [NSError errorWithDomain:@"tube9" code:6 userInfo:@{
-                NSLocalizedDescriptionKey : [NSString stringWithFormat:@"%@  %@", motivo, ayuda]}]);
+            [errores addObject:[NSError errorWithDomain:@"tube9" code:6 userInfo:@{
+                NSLocalizedDescriptionKey : motivo}]];
+            [self resolverVideo:videoId conClientes:clientes indice:indice + 1
+                        errores:errores completion:completion];
             return;
         }
 
@@ -321,32 +468,78 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
             }
         }
         if (!elegido) {
-            completion(nil, [NSError errorWithDomain:@"tube9" code:7 userInfo:@{
+            [errores addObject:[NSError errorWithDomain:@"tube9" code:7 userInfo:@{
                 NSLocalizedDescriptionKey :
-                    @"YouTube no devolvio un formato reproducible para este video."}]);
+                    @"YouTube no devolvio un formato reproducible para este video."}]];
+            [self resolverVideo:videoId conClientes:clientes indice:indice + 1
+                        errores:errores completion:completion];
             return;
         }
 
         NSDictionary *detalles = json[@"videoDetails"];
         completion(@{ @"url" : elegido[@"url"],
                       @"titulo" : detalles[@"title"] ?: @"",
-                      @"autor" : detalles[@"author"] ?: @"" }, nil);
+                      @"autor" : detalles[@"author"] ?: @"",
+                      @"cliente" : cliente[@"nombre"] ?: @"" }, nil);
     }];
 }
 
 #pragma mark - InnerTube
 
-- (NSDictionary *)contextoDeCliente {
-    return @{
-        @"clientName" : kClienteYT,
-        @"clientVersion" : kVersionYT,
-        @"androidSdkVersion" : @32,
-        @"hl" : @"es",
-        @"gl" : @"ES"
-    };
+- (NSDictionary *)contextoParaCliente:(NSDictionary *)cliente
+                    incluirVisitante:(BOOL)incluirVisitante {
+    NSMutableDictionary *ctx = [NSMutableDictionary dictionary];
+    ctx[@"clientName"] = cliente[@"nombre"];
+    ctx[@"clientVersion"] = cliente[@"version"];
+    ctx[@"hl"] = @"es";
+    ctx[@"gl"] = @"ES";
+    NSNumber *sdk = cliente[@"sdk"];
+    if (sdk.integerValue > 0) ctx[@"androidSdkVersion"] = sdk;
+    if (incluirVisitante) {
+        NSString *visitante = [YTClient visitante];
+        if (visitante.length) ctx[@"visitorData"] = visitante;
+    }
+    return ctx;
+}
+
+// Pide una sola vez el "visitorData" y lo guarda. Si YouTube no lo da, la app
+// sigue funcionando sin el (solo con menos proteccion antibot).
+- (void)asegurarVisitante:(void (^)(void))completion {
+    if ([YTClient visitante].length) { completion(); return; }
+
+    NSDictionary *cliente = YTClientePrincipal();
+    NSString *direccion = [NSString stringWithFormat:@"%@/visitor_id?key=%@&prettyPrint=false",
+                           kBaseYT, kClaveAPI];
+    NSMutableURLRequest *peticion = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:direccion]];
+    peticion.HTTPMethod = @"POST";
+    peticion.cachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
+    [peticion setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+    NSString *agente = cliente[@"agente"];
+    if (agente.length) [peticion setValue:agente forHTTPHeaderField:@"User-Agent"];
+    peticion.HTTPBody = [NSJSONSerialization dataWithJSONObject:
+        @{ @"context" : @{ @"client" : [self contextoParaCliente:cliente incluirVisitante:NO] } }
+        options:0 error:nil];
+
+    [[self.sesion dataTaskWithRequest:peticion
+        completionHandler:^(NSData *datos, NSURLResponse *respuesta, NSError *error) {
+        if (!error && datos.length) {
+            id objeto = [NSJSONSerialization JSONObjectWithData:datos options:0 error:nil];
+            if ([objeto isKindOfClass:[NSDictionary class]]) {
+                id contexto = ((NSDictionary *)objeto)[@"responseContext"];
+                if ([contexto isKindOfClass:[NSDictionary class]]) {
+                    NSString *visitante = ((NSDictionary *)contexto)[@"visitorData"];
+                    if ([visitante isKindOfClass:[NSString class]] && visitante.length) {
+                        [YTClient guardarVisitante:visitante];
+                    }
+                }
+            }
+        }
+        YTEnPrincipal(^{ completion(); });
+    }] resume];
 }
 
 - (void)enviarAlInnerTube:(NSString *)ruta
+                  cliente:(NSDictionary *)cliente
                    cuerpo:(NSDictionary *)cuerpo
                completion:(void (^)(NSDictionary *json, NSError *error))completion {
     NSString *direccion = [NSString stringWithFormat:@"%@/%@?key=%@&prettyPrint=false",
@@ -355,8 +548,20 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
     peticion.HTTPMethod = @"POST";
     peticion.cachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
     [peticion setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
-    [peticion setValue:kAgenteYT forHTTPHeaderField:@"User-Agent"];
+    NSString *agente = cliente[@"agente"];
+    if (agente.length) [peticion setValue:agente forHTTPHeaderField:@"User-Agent"];
     [peticion setValue:@"es-ES,es;q=0.9" forHTTPHeaderField:@"Accept-Language"];
+
+    // Las mismas cabeceras que manda NewPipe en cada peticion. Si no van,
+    // YouTube no sabe con que cliente habla y responde mucho mas a menudo con
+    // "inicia sesion para confirmar que no eres un robot".
+    [peticion setValue:[cliente[@"id"] stringValue] forHTTPHeaderField:@"X-YouTube-Client-Name"];
+    [peticion setValue:cliente[@"version"] forHTTPHeaderField:@"X-YouTube-Client-Version"];
+    [peticion setValue:@"https://www.youtube.com" forHTTPHeaderField:@"Origin"];
+    [peticion setValue:@"https://www.youtube.com/" forHTTPHeaderField:@"Referer"];
+    NSString *visitante = [YTClient visitante];
+    if (visitante.length) [peticion setValue:visitante forHTTPHeaderField:@"X-Goog-Visitor-Id"];
+
     NSString *manuales = [YTClient cookiesManuales];
     if (manuales.length) [peticion setValue:manuales forHTTPHeaderField:@"Cookie"];
     peticion.HTTPBody = [NSJSONSerialization dataWithJSONObject:cuerpo options:0 error:nil];
@@ -383,7 +588,7 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
 - (void)probarConexion:(void (^)(NSString *informe))completion {
     NSMutableString *informe = [NSMutableString string];
     [informe appendFormat:@"Modo: %@\n", [YTClient modo]];
-    [informe appendFormat:@"Cliente: %@\n", kClienteYT];
+    [informe appendFormat:@"Clientes: %@\n", [YTClient listaDeClientes]];
     [informe appendFormat:@"Sesion iniciada: %@  (%lu cookies)\n",
         ([YTClient haySesion] ? @"SI" : @"NO"), (unsigned long)[YTClient numeroDeCookies]];
 
@@ -414,6 +619,8 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
     [self buscar:@"prueba" completion:^(NSArray *videos, NSError *error) {
         [informe appendFormat:@"   %@\n", [self describir:videos error:error
                                                      desde:principioBusqueda]];
+        [informe appendFormat:@"   visitante anonimo: %@\n",
+            ([YTClient visitante].length ? @"obtenido" : @"NO disponible")];
         if (error) {
             [informe appendString:@"\nSi es un error de certificado, instala las raices "
                                @"actualizadas en el dispositivo (mira el README)."];
@@ -438,12 +645,16 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
             if (error || enlace.length == 0) {
                 [informe appendFormat:@"   FALLO tras %.1f s: %@\n", segundos,
                     [YTClient explicarError:error] ?: @"YouTube no devolvio URL"];
-                [informe appendString:@"\nSi aparece LOGIN_REQUIRED, inicia sesion en Ajustes."];
+                [informe appendString:@"\nYa se han probado todos los clientes. Si el motivo "
+                                   "es LOGIN_REQUIRED, inicia sesion en Ajustes > "
+                                   "Iniciar sesion en YouTube."];
                 completion(informe);
                 return;
             }
             NSURL *url = [NSURL URLWithString:enlace];
-            [informe appendFormat:@"   OK  URL obtenida en %.1f s\n", segundos];
+            NSString *quien = info[@"cliente"];
+            [informe appendFormat:@"   OK  URL obtenida en %.1f s%@\n", segundos,
+                (quien.length ? [NSString stringWithFormat:@" con el cliente %@", quien] : @"")];
             [informe appendFormat:@"   servidor de video: %@\n", url.host ?: @"(desconocido)"];
             [informe appendString:@"\n3) Descargando los primeros KB del video...\n"];
             [self probarBytesDe:enlace completion:^(NSString *resultado) {

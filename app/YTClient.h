@@ -11,6 +11,9 @@ typedef void (^YTBloqueInfo)(NSDictionary *info, NSError *error);
 
 // Datos
 - (void)buscar:(NSString *)consulta completion:(YTBloqueLista)completion;
+
+// Devuelve un diccionario con: url, titulo, autor, cliente.
+// Prueba varios clientes de YouTube en orden hasta que uno responda.
 - (void)resolverVideo:(NSString *)videoId completion:(YTBloqueInfo)completion;
 - (void)probarConexion:(void (^)(NSString *informe))completion;
 
@@ -31,7 +34,13 @@ typedef void (^YTBloqueInfo)(NSDictionary *info, NSError *error);
 + (BOOL)haySesion;
 + (NSUInteger)numeroDeCookies;
 + (void)cerrarSesion;
-+ (NSString *)clienteYT;
++ (NSString *)clienteYT;       // el que se usa para buscar
++ (NSString *)listaDeClientes; // todos los que se prueban al resolver el video
+
+// Identificador anonimo de visitante ("visitorData"). YouTube lo pide y, sin
+// el, contesta "LOGIN_REQUIRED" mucho mas a menudo. Se guarda entre arranques.
++ (NSString *)visitante;
++ (void)olvidarVisitante;
 
 // Cookies pegadas a mano (alternativa al inicio de sesion con formulario).
 // Se envian como cabecera Cookie en cada peticion.
