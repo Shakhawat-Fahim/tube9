@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Tube9 — vista previa de las pantallas nuevas</title>
+<style>
+  :root {
+    --fondo:#0F0F0F; --sup:#181818; --sup-alta:#272727; --borde:#303030;
+    --acento:#FF0033; --txt:#F1F1F1; --txt2:#AAAAAA;
+  }
+  body { background:#050505; color:#F1F1F1; margin:0; padding:28px;
+         font:14px -apple-system,"Segoe UI",Roboto,sans-serif; }
+  h1 { font-size:19px; margin:0 0 6px; }
+  .nota { color:#AAAAAA; max-width:900px; line-height:1.5; margin:0 0 26px; }
+  .tira { display:flex; gap:26px; align-items:flex-start; flex-wrap:wrap; }
+  .bloque { text-align:center; }
+  .pie { color:#AAAAAA; font-size:12px; margin-top:10px; max-width:320px; line-height:1.45; }
+  .pie b { color:#F1F1F1; font-weight:600; }
+
+  /* --- telefono --- */
+  .telefono { width:320px; height:568px; background:var(--fondo); border:1px solid var(--borde);
+              border-radius:22px; overflow:hidden; display:flex; flex-direction:column;
+              text-align:left; box-shadow:0 10px 30px rgba(0,0,0,.6); }
+  .estado { height:20px; background:var(--fondo); color:var(--txt); font-size:11px;
+            display:flex; justify-content:space-between; align-items:center; padding:0 10px;
+            flex:0 0 auto; }
+  .nav { height:44px; flex:0 0 auto; display:flex; align-items:center; justify-content:center;
+         position:relative; background:var(--fondo); border-bottom:1px solid var(--borde); }
+  .nav .titulo { font-size:17px; font-weight:600; }
+  .nav .accion { position:absolute; right:12px; top:0; height:44px; display:flex; align-items:center;
+                 color:var(--txt); }
+  .cuerpo { flex:1 1 auto; overflow:hidden; position:relative; }
+
+  /* --- pestañas --- */
+  .tabs { height:49px; flex:0 0 auto; background:var(--sup); border-top:1px solid var(--borde);
+          display:flex; }
+  .tab { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+         gap:2px; color:var(--txt2); }
+  .tab.activo { color:var(--txt); }
+  .tab span { font-size:10px; }
+
+  /* --- chips --- */
+  .chips { display:flex; gap:8px; padding:8px 12px; overflow:hidden; height:46px;
+           box-sizing:border-box; align-items:center; }
+  .chip { font-size:13px; font-weight:500; padding:6px 14px; border-radius:15px;
+          background:var(--sup-alta); border:1px solid var(--borde); white-space:nowrap; }
+  .chip.on { background:var(--acento); border-color:var(--acento); color:#fff; }
+
+  /* --- estantes --- */
+  .estante { padding:4px 0 10px; }
+  .estante h2 { font-size:17px; font-weight:700; margin:0 0 6px 12px; }
+  .carril { display:flex; gap:10px; padding:0 12px; }
+  .tarjeta { width:200px; flex:0 0 200px; }
+  .tarjeta .marco { position:relative; width:200px; height:112px; }
+  .tarjeta img { width:200px; height:112px; object-fit:cover; border-radius:8px; display:block;
+                 background:var(--sup); }
+  .tarjeta .t { font-size:13.5px; font-weight:600; margin-top:6px; line-height:1.25;
+                height:34px; overflow:hidden; }
+  .tarjeta .s { font-size:11.5px; color:var(--txt2); margin-top:2px; height:16px;
+                overflow:hidden; white-space:nowrap; }
+
+  /* --- lista grande --- */
+  .fila { padding:6px 12px 8px; }
+  .fila .marco { position:relative; }
+  .fila img { width:296px; height:167px; object-fit:cover; border-radius:10px; display:block;
+              background:var(--sup); }
+  .fila .t { font-size:15px; font-weight:600; margin-top:9px; line-height:1.3;
+             height:40px; overflow:hidden; }
+  .fila .s { font-size:12.5px; color:var(--txt2); margin-top:2px; height:16px; overflow:hidden; }
+
+  .duracion { position:absolute; right:6px; bottom:6px; background:rgba(0,0,0,.8);
+              color:#fff; font-size:11px; font-weight:600; padding:2px 6px; border-radius:4px; }
+
+  /* --- ajustes --- */
+  .ajuste { display:flex; align-items:center; justify-content:space-between;
+            padding:14px 14px; border-bottom:1px solid var(--borde); font-size:15px; }
+  .ajuste .sub { color:var(--txt2); font-size:12px; margin-top:3px; }
+  .ajuste.rojo { color:var(--acento); }
+  .cabecera { color:var(--txt2); font-size:12px; padding:16px 14px 6px; text-transform:uppercase;
+              letter-spacing:.4px; }
+  .buscar { display:flex; align-items:center; gap:8px; margin:6px 12px; background:var(--sup-alta);
+            border-radius:10px; padding:7px 10px; color:var(--txt2); font-size:14px; }
+</style>
+</head>
+<body>
+<h1>Tube9 — así se ven las pantallas nuevas</h1>
+<p class="nota">
+  Dibujo hecho a escala real (320 × 568 puntos, el tamaño de un iPhone 5; en un
+  iPhone 4S se ve igual pero con 88 puntos menos de alto). Los colores, los
+  tamaños de letra, los márgenes, las tarjetas y los iconos son <b>los mismos</b>
+  que lleva la app: es una maqueta del código, no un diseño aparte.
+  Las miniaturas son reales (las sirve YouTube).
+</p>
+
+<div class="tira" id="tira"></div>
+
+<script>
+var C = { fondo:'#0F0F0F', sup:'#181818', alta:'#272727', borde:'#303030',
+          acento:'#FF0033', txt:'#F1F1F1', txt2:'#AAAAAA' };
+
+/* ---------- iconos: las mismas formas que YTTheme.m ---------- */
+function dibujar(ctx, forma, L, trazo, color) {
+  ctx.strokeStyle = color; ctx.fillStyle = color;
+  ctx.lineWidth = trazo; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath();
+  if (forma === 'inicio') {
+    ctx.moveTo(0.13*L, 0.48*L); ctx.lineTo(0.50*L, 0.16*L); ctx.lineTo(0.87*L, 0.48*L); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0.25*L, 0.45*L); ctx.lineTo(0.25*L, 0.84*L);
+    ctx.lineTo(0.75*L, 0.84*L); ctx.lineTo(0.75*L, 0.45*L); ctx.stroke();
+  } else if (forma === 'tendencias') {
+    ctx.moveTo(0.12*L, 0.74*L); ctx.lineTo(0.38*L, 0.47*L);
+    ctx.lineTo(0.56*L, 0.63*L); ctx.lineTo(0.85*L, 0.31*L); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0.64*L, 0.31*L); ctx.lineTo(0.85*L, 0.31*L); ctx.lineTo(0.85*L, 0.52*L); ctx.stroke();
+  } else if (forma === 'musica') {
+    ctx.ellipse(0.38*L, 0.73*L, 0.16*L, 0.13*L, 0, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0.54*L, 0.73*L); ctx.lineTo(0.54*L, 0.16*L);
+    ctx.quadraticCurveTo(0.86*L, 0.19*L, 0.79*L, 0.45*L); ctx.stroke();
+  } else if (forma === 'buscar') {
+    var d = L*0.56, x = 0.15*L, y = 0.15*L;
+    ctx.ellipse(x+d/2, y+d/2, d/2, d/2, 0, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x+d-0.07*L, y+d-0.07*L); ctx.lineTo(0.86*L, 0.86*L); ctx.stroke();
+  } else if (forma === 'ajustes') {
+    var pos = [0.68, 0.36, 0.58];
+    for (var i = 0; i < 3; i++) {
+      var yy = (0.26 + 0.24*i)*L;
+      ctx.beginPath(); ctx.moveTo(0.16*L, yy); ctx.lineTo(0.84*L, yy); ctx.stroke();
+      ctx.beginPath(); ctx.arc(pos[i]*L, yy, 0.19*L/2, 0, Math.PI*2); ctx.fill();
+    }
+  } else if (forma === 'reproducir') {
+    ctx.moveTo(0.30*L, 0.18*L); ctx.lineTo(0.30*L, 0.82*L);
+    ctx.lineTo(0.82*L, 0.50*L); ctx.closePath(); ctx.fill();
+  } else if (forma === 'recargar') {
+    ctx.arc(0.5*L, 0.5*L, 0.32*L, -Math.PI*0.35, Math.PI*1.25); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0.86*L, 0.05*L); ctx.lineTo(0.86*L, 0.32*L); ctx.lineTo(0.60*L, 0.32*L);
+    ctx.closePath(); ctx.fill();
+  }
+}
+function icono(forma, lado, color) {
+  var e = 2, cv = document.createElement('canvas');
+  cv.width = lado*e; cv.height = lado*e;
+  cv.style.width = lado+'px'; cv.style.height = lado+'px';
+  var ctx = cv.getContext('2d'); ctx.scale(e, e);
+  dibujar(ctx, forma, lado, Math.max(1.6, lado*0.082), color || C.txt);
+  return cv;
+}
+
+/* ---------- trozos de interfaz ---------- */
+function miniatura(id, duracion, ancho, alto) {
+  return '<div class="marco" style="width:' + ancho + 'px;height:' + alto + 'px">' +
+         '<img src="https://i.ytimg.com/vi/' + id + '/mqdefault.jpg" alt="">' +
+         (duracion ? '<div class="duracion">' + duracion + '</div>' : '') + '</div>';
+}
+function tarjeta(v) {
+  return '<div class="tarjeta">' + miniatura(v.id, v.dur, 200, 112) +
+         '<div class="t">' + v.t + '</div>' +
+         '<div class="s">' + v.s + '</div></div>';
+}
+function filaGrande(v) {
+  return '<div class="fila">' + miniatura(v.id, v.dur, 296, 167) +
+         '<div class="t">' + v.t + '</div>' +
+         '<div class="s">' + v.s + '</div></div>';
+}
+function estante(titulo, lista) {
+  return '<div class="estante"><h2>' + titulo + '</h2><div class="carril">' +
+         lista.map(tarjeta).join('') + '</div></div>';
+}
+function chips(lista, activo) {
+  return '<div class="chips">' + lista.map(function (t, i) {
+    return '<div class="chip' + (i === activo ? ' on' : '') + '">' + t + '</div>';
+  }).join('') + '</div>';
+}
+function telefono(titulo, cuerpo, activo, conRecargar) {
+  var t = document.createElement('div'); t.className = 'telefono';
+  var tabs = ['inicio','musica','tendencias','buscar','ajustes'].map(function (f, i) {
+    var nombre = ['Inicio','Música','Tendencias','Buscar','Ajustes'][i];
+    var d = document.createElement('div');
+    d.className = 'tab' + (i === activo ? ' activo' : '');
+    d.appendChild(icono(f, 24, i === activo ? C.txt : C.txt2));
+    var s = document.createElement('span'); s.textContent = nombre; d.appendChild(s);
+    return d;
+  });
+  t.innerHTML =
+    '<div class="estado"><span>9:41</span><span>100%</span></div>' +
+    '<div class="nav"><span class="titulo">' + titulo + '</span>' +
+    (conRecargar ? '<span class="accion"></span>' : '') + '</div>' +
+    '<div class="cuerpo">' + cuerpo + '</div>';
+  if (conRecargar) t.querySelector('.accion').appendChild(icono('recargar', 20));
+  var barra = document.createElement('div'); barra.className = 'tabs';
+  tabs.forEach(function (x) { barra.appendChild(x); });
+  t.appendChild(barra);
+  return t;
+}
+
+/* ---------- datos de ejemplo ---------- */
+var V = {
+  t1: { id:'6DuvxZ-NReA', dur:'12:04', t:'Resumen del año: lo más visto en YouTube', s:'YouTube España' },
+  t2: { id:'Mroued07Z2U', dur:'3:45',  t:'Perreo Salvaje (vídeo oficial)', s:'Latin Hits' },
+  t3: { id:'kE1-O0tU-UU', dur:'18:22', t:'Ruta por la costa en 4K: 200 km sin prisa', s:'Viajes con Juan' },
+  t4: { id:'PTS2gFbZYnw', dur:'7:51',  t:'Cómo se hace el pan de masa madre paso a paso', s:'Cocina fácil' },
+  t5: { id:'xCkf2L7gFnI', dur:'4:12',  t:'El gol que dio la vuelta al partido', s:'Deportes 24' },
+  m1: { id:'w7pjt9ZH3NM', dur:'3:18',  t:'Noche de rumba', s:'Selecciones rápidas' },
+  m2: { id:'4ejzzT8_AE0', dur:'4:02',  t:'Clásicos de salsa y merengue', s:'Latin' },
+  m3: { id:'ZgTVJlDtBEU', dur:'2:57',  t:'Lunariae — I carry the wind', s:'Indie' },
+  m4: { id:'i34pFNr42mc', dur:'3:31',  t:'Temas relajantes para estudiar', s:'Focus' },
+  e1: { id:'EZrT6rhniLg', dur:'1:24:10', t:'Película completa en español', s:'Cine clásico' },
+  e2: { id:'RAxqUFIDlYw', dur:'9:33',  t:'Vídeos musicales nuevos de la semana', s:'YouTube Music' }
+};
+
+var pantallas = [
+  { pie:'<b>Inicio</b> — estantes que se deslizan de lado. Cada uno es una búsqueda ordenada por visitas o por fecha; aparecen de uno en uno.',
+    t:'Inicio', activo:0, recargar:true,
+    cuerpo: estante('Tendencias de hoy', [V.t1, V.t2, V.t3]) + estante('Música', [V.m1, V.m2, V.m3]) },
+
+  { pie:'<b>Música</b> — las pantallas reales de YouTube Music. Los títulos de cada estante los pone YouTube.',
+    t:'Música', activo:1, recargar:true,
+    cuerpo: estante('Selecciones rápidas', [V.m1, V.m2, V.m3, V.m4]) +
+            estante('Vídeos musicales nuevos', [V.e2, V.m1, V.m3]) },
+
+  { pie:'<b>Tendencias</b> — lo más visto, con chips para cambiar de categoría.',
+    t:'Tendencias', activo:2, recargar:true,
+    cuerpo: chips(['Todo','Música','Videojuegos','Noticias','Deportes'], 0) +
+            filaGrande(V.t1) + filaGrande(V.t2) },
+
+  { pie:'<b>Buscar</b> — campo de búsqueda y sugerencias en chips, con la tarjeta grande.',
+    t:'Buscar', activo:3, recargar:false,
+    cuerpo: '<div class="buscar">Buscar en YouTube</div>' +
+            chips(['música','noticias','deportes','comedia','documentales'], 0) +
+            filaGrande(V.t3) + filaGrande(V.t4) },
+
+  { pie:'<b>Ajustes</b> — sigue igual: modo directo o relay, sesión, cookies pegadas a mano y diagnóstico.',
+    t:'Ajustes', activo:4, recargar:false,
+    cuerpo: '<div class="cabecera">Conexión</div>' +
+            '<div class="ajuste"><div>Modo<div class="sub">Directo (HTTPS a YouTube)</div></div><div>›</div></div>' +
+            '<div class="ajuste"><div>Dirección del relay<div class="sub">No configurada</div></div><div>›</div></div>' +
+            '<div class="cabecera">Cuenta</div>' +
+            '<div class="ajuste rojo"><div>Iniciar sesión en YouTube<div class="sub">Sin sesión</div></div><div>›</div></div>' +
+            '<div class="ajuste rojo"><div>Pegar cookies<div class="sub">Alternativa al formulario</div></div><div>›</div></div>' +
+            '<div class="cabecera">Diagnóstico</div>' +
+            '<div class="ajuste rojo"><div>Probar conexión</div><div>›</div></div>' }
+];
+
+var tira = document.getElementById('tira');
+pantallas.forEach(function (p) {
+  var b = document.createElement('div'); b.className = 'bloque';
+  b.appendChild(telefono(p.t, p.cuerpo, p.activo, p.recargar));
+  var pie = document.createElement('div'); pie.className = 'pie'; pie.innerHTML = p.pie;
+  b.appendChild(pie); tira.appendChild(b);
+});
+</script>
+</body>
+</html>

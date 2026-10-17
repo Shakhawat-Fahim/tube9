@@ -52,6 +52,10 @@ filtro, tipografía del sistema y **todos los iconos dibujados por código**
 (vectoriales, sin ficheros de imagen). Cero degradados, cero desenfoques y cero
 animaciones caras: todo eso funciona mal en un A5.
 
+Para ver cómo queda **sin instalar nada**, abre `docs/vista-previa.html` en el
+navegador del ordenador: es una maqueta a escala real (320 × 568 puntos) con los
+mismos colores, tamaños, márgenes e iconos que lleva la app.
+
 **Lo que YouTube no da sin cuenta.** La portada personalizada de YouTube
 (`FEwhat_to_watch`) y el listado de tendencias (`FEtrending`) contestan vacío o
 `400` a quien no tiene sesión. Como no se puede fingir lo que no hay:
@@ -454,6 +458,8 @@ escríbelo también en Ajustes.
 ├── certificados/
 │   └── CertificadosModernos.mobileconfig   Perfil listo para las raíces nuevas
 ├── relay/relay.py                    Relay opcional (Python 3, sin dependencias)
+├── docs/
+│   └── vista-previa.html             Maqueta de las pantallas (abrir en el navegador)
 └── tools/
     ├── generar_recursos.py           Genera iconos y arranques (PNG a mano)
     ├── generar_certificados.py       Genera el perfil .mobileconfig
