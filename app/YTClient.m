@@ -11,6 +11,11 @@ static NSString * const kBaseYTMusic = @"https://music.youtube.com/youtubei/v1";
 NSString *const YTOrdenPorPopularidad = @"CAMSAhAB";     // ordenar por mas vistos
 NSString *const YTOrdenRecientes      = @"EgIQAQ%3D%3D"; // ordenar por mas nuevos
 
+// Filtros del buscador. Son los mismos "params" que usa la web de YouTube; sin
+// ellos YouTube no devuelve ni canales ni listas entre los resultados.
+static NSString * const kFiltroCanales = @"EgIQAg%3D%3D";   // solo canales
+static NSString * const kFiltroListas  = @"EgIQAw%3D%3D";   // solo listas
+
 // Claves de NSUserDefaults
 static NSString * const kDefModo      = @"tube9_modo";
 static NSString * const kDefRelay     = @"tube9_relay";
@@ -123,6 +128,17 @@ static NSDictionary *YTClienteMusica(void) {
     return cliente;
 }
 
+// Cliente para moverse por los canales. Tiene que ser uno que conteste a
+// "browse": el de Android (el de arriba) y el de iPhone devuelven HTTP 400 en
+// las paginas de canal (probado uno por uno), y el de las gafas VR las
+// contesta con la maqueta movil de siempre: cabecera con avatar y portada, y
+// las pestanas (Inicio / Videos / Listas / Informacion) con sus "params".
+// Sus enlaces de video tambien necesitan JavaScript, pero aqui solo se navega:
+// al reproducir se resuelve siempre con el cliente ANDROID.
+static NSDictionary *YTClienteMovil(void) {
+    return YTClientes()[1];   // ANDROID_VR
+}
+
 static NSCache *sCacheMiniaturas = nil;
 
 // Declarada al final del fichero; hace falta el prototipo aqui.
@@ -131,6 +147,20 @@ void YTRecogerRenderers(id nodo, NSString *sufijo, NSMutableArray *salida);
 // Lo mismo para los carruseles de YouTube Music. "tituloRespaldo" se usa para
 // agrupar las canciones que vienen sin estante con nombre.
 NSArray *YTCarruselesMusicales(NSDictionary *json, NSString *tituloRespaldo);
+
+// Ayudas de canales (definidas al final, con el resto de parsers).
+static NSDictionary *YTDatosDeCanal(NSDictionary *json, NSString *canalId);
+static NSArray *YTEstantesDeVideos(NSDictionary *sectionList);
+static NSDictionary *YTListaDesdeRenderer(NSDictionary *renderer);
+static NSArray *YTVideosDesdeRenderers(id raiz, NSArray *sufijos);
+static NSArray *YTListasDesdeRenderers(id raiz);
+static NSDictionary *YTCanalDesdeRenderer(NSDictionary *renderer);
+static BOOL YTTituloContiene(NSString *texto, NSArray *agujas);
+static NSString *YTCadenaOTexto(id valor);
+static NSString *YTMejorMiniaturaDeNodo(id nodo);
+static NSString *YTPortadaDeNodo(id nodo);
+static NSString *YTTextoDeNodo(id nodo);
+static id YTEncontrarPorClave(id nodo, NSString *claveBuscada);
 
 // ---------------------------------------------------------------------------
 //  NSURLSession entrega los resultados en una cola de fondo, y la interfaz de
@@ -165,6 +195,13 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
                   cliente:(NSDictionary *)cliente
                    cuerpo:(NSDictionary *)cuerpo
                completion:(void (^)(NSDictionary *json, NSError *error))completion;
+- (void)buscarRenderers:(NSString *)consulta
+                 params:(NSString *)params
+                cliente:(NSDictionary *)cliente
+             completion:(void (^)(NSDictionary *json, NSError *error))completion;
+- (void)pestanaDeCanal:(NSString *)canalId
+                params:(NSString *)params
+            completion:(void (^)(NSDictionary *json, NSError *error))completion;
 - (NSString *)describir:(NSArray *)videos error:(NSError *)error desde:(NSDate *)inicio;
 - (void)probarBytesDe:(NSString *)enlace completion:(void (^)(NSString *resultado))completion;
 - (void)pedirMusica:(NSString *)ruta
@@ -433,6 +470,215 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
     }];
 }
 
+#pragma mark - Canales y listas
+
+- (void)canalConId:(NSString *)canalId completion:(YTBloqueInfo)completion {
+    if (canalId.length == 0) {
+        completion(nil, [NSError errorWithDomain:@"tube9" code:4
+            userInfo:@{NSLocalizedDescriptionKey : @"Canal no valido"}]);
+        return;
+    }
+    if ([[YTClient modo] isEqualToString:@"relay"]) {
+        completion(nil, [NSError errorWithDomain:@"tube9" code:3
+            userInfo:@{NSLocalizedDescriptionKey :
+                @"Los canales necesitan el modo directo (sin relay)."}]);
+        return;
+    }
+
+    NSDictionary *cliente = YTClienteMovil();
+    [self asegurarVisitante:^{
+        NSDictionary *cuerpo = @{
+            @"browseId" : canalId,
+            @"context" : @{ @"client" : [self contextoParaCliente:cliente incluirVisitante:YES] }
+        };
+        [self enviarAlInnerTube:@"browse" cliente:cliente cuerpo:cuerpo
+            completion:^(NSDictionary *json, NSError *error) {
+            if (error) { completion(nil, error); return; }
+            completion(YTDatosDeCanal(json, canalId), nil);
+        }];
+    }];
+}
+
+// Pide una pestana concreta de un canal. El "params" lo mando YouTube con la
+// propia pagina del canal, asi que aqui solo se devuelve.
+- (void)pestanaDeCanal:(NSString *)canalId
+                params:(NSString *)params
+            completion:(void (^)(NSDictionary *json, NSError *error))completion {
+    NSDictionary *cliente = YTClienteMovil();
+    [self asegurarVisitante:^{
+        NSMutableDictionary *cuerpo = [NSMutableDictionary dictionary];
+        cuerpo[@"browseId"] = canalId;
+        if (params.length) cuerpo[@"params"] = params;
+        cuerpo[@"context"] = @{ @"client" : [self contextoParaCliente:cliente incluirVisitante:YES] };
+        [self enviarAlInnerTube:@"browse" cliente:cliente cuerpo:cuerpo completion:completion];
+    }];
+}
+
+// Las pestanas de lista traen los datos dentro de un "itemSectionRenderer"; las
+// de canal, dentro de "sectionListRenderer". Se busca el primero que haya.
+static id YTRaizDeContenido(NSDictionary *json) {
+    NSDictionary *seccion = YTEncontrarPorClave(json, @"itemSectionRenderer");
+    if ([seccion isKindOfClass:[NSDictionary class]] && seccion[@"contents"]) {
+        return seccion[@"contents"];
+    }
+    return json;
+}
+
+- (void)videosDeCanal:(NSString *)canalId
+               params:(NSString *)params
+           completion:(YTBloqueLista)completion {
+    [self pestanaDeCanal:canalId params:params
+        completion:^(NSDictionary *json, NSError *error) {
+        if (error) { completion(nil, error); return; }
+        completion(YTVideosDesdeRenderers(YTRaizDeContenido(json),
+                                          @[ @"VideoRenderer", @"ContextRenderer" ]), nil);
+    }];
+}
+
+- (void)listasDeCanal:(NSString *)canalId
+               params:(NSString *)params
+           completion:(void (^)(NSArray *listas, NSError *error))completion {
+    [self pestanaDeCanal:canalId params:params
+        completion:^(NSDictionary *json, NSError *error) {
+        if (error) { completion(nil, error); return; }
+        completion(YTListasDesdeRenderers(YTRaizDeContenido(json)), nil);
+    }];
+}
+
+- (void)informacionDeCanal:(NSString *)canalId
+                    params:(NSString *)params
+                completion:(YTBloqueInfo)completion {
+    [self pestanaDeCanal:canalId params:params
+        completion:^(NSDictionary *json, NSError *error) {
+        if (error) { completion(nil, error); return; }
+
+        // La maqueta movil mete todo en "channelAboutMetadataRenderer"; otras
+        // versiones usan un "aboutChannelViewModel". Se acepta cualquiera.
+        id about = YTEncontrarPorClave(json, @"channelAboutMetadataRenderer");
+        id otro = YTEncontrarPorClave(json, @"aboutChannelViewModel");
+        if ([otro isKindOfClass:[NSDictionary class]]) about = otro;
+        NSMutableDictionary *info = [NSMutableDictionary dictionary];
+        if ([about isKindOfClass:[NSDictionary class]]) {
+            info[@"descripcion"] = YTCadenaOTexto(about[@"description"]) ?: @"";
+            info[@"suscriptores"] = YTCadenaOTexto(about[@"subscriberCountText"]) ?: @"";
+            info[@"visitas"] = YTCadenaOTexto(about[@"viewCountText"]) ?: @"";
+            info[@"videos"] = YTCadenaOTexto(about[@"videoCountText"]) ?: @"";
+            info[@"pais"] = YTCadenaOTexto(about[@"country"]) ?: YTCadenaOTexto(about[@"countryCode"]) ?: @"";
+            info[@"alta"] = YTCadenaOTexto(about[@"joinedDateText"]) ?: @"";
+        }
+        completion(info, nil);
+    }];
+}
+
+- (void)videosDeLista:(NSString *)listaId
+           completion:(void (^)(NSDictionary *lista, NSArray *videos,
+                                NSError *error))completion {
+    if (listaId.length == 0) {
+        completion(nil, @[], [NSError errorWithDomain:@"tube9" code:4
+            userInfo:@{NSLocalizedDescriptionKey : @"Lista no valida"}]);
+        return;
+    }
+    if ([[YTClient modo] isEqualToString:@"relay"]) {
+        completion(nil, nil, [NSError errorWithDomain:@"tube9" code:3
+            userInfo:@{NSLocalizedDescriptionKey :
+                @"Las listas necesitan el modo directo (sin relay)."}]);
+        return;
+    }
+
+    // La pagina de una lista se pide por su identificador con "VL" delante.
+    NSString *browseId = [listaId hasPrefix:@"VL"] ? listaId
+                                                   : [@"VL" stringByAppendingString:listaId];
+    NSDictionary *cliente = YTClienteMovil();
+    [self asegurarVisitante:^{
+        NSDictionary *cuerpo = @{
+            @"browseId" : browseId,
+            @"context" : @{ @"client" : [self contextoParaCliente:cliente incluirVisitante:YES] }
+        };
+        [self enviarAlInnerTube:@"browse" cliente:cliente cuerpo:cuerpo
+            completion:^(NSDictionary *json, NSError *error) {
+            if (error) { completion(nil, nil, error); return; }
+
+            NSMutableDictionary *ficha = [NSMutableDictionary dictionary];
+            id cab = YTEncontrarPorClave(json, @"playlistHeaderRenderer");
+            if ([cab isKindOfClass:[NSDictionary class]]) {
+                // Los textos de esta ficha vienen de las dos maneras segun el
+                // cliente (cadena suelta o {"runs": [...]}), asi que se leen con
+                // YTCadenaOTexto, que acepta ambas.
+                ficha[@"titulo"] = YTCadenaOTexto(cab[@"title"]) ?: @"";
+                ficha[@"dueno"] = YTCadenaOTexto(cab[@"ownerText"]) ?: @"";
+                ficha[@"cuantos"] = YTCadenaOTexto(cab[@"numVideosText"]) ?: @"";
+                ficha[@"descripcion"] = YTCadenaOTexto(cab[@"descriptionText"]) ?: @"";
+                NSDictionary *due = YTEncontrarPorClave(cab[@"ownerText"], @"browseEndpoint");
+                if ([due isKindOfClass:[NSDictionary class]]) {
+                    ficha[@"canalId"] = due[@"browseId"] ?: @"";
+                }
+            }
+            NSArray *videos = YTVideosDesdeRenderers(json, @[ @"playlistVideoRenderer" ]);
+            completion(ficha, videos, nil);
+        }];
+    }];
+}
+
+- (void)buscarCanales:(NSString *)consulta
+           completion:(void (^)(NSArray *canales, NSError *error))completion {
+    [self buscarRenderers:consulta
+                   params:kFiltroCanales
+                  cliente:YTClienteMovil()
+               completion:^(NSDictionary *json, NSError *error) {
+        if (error) { completion(nil, error); return; }
+        NSMutableArray *renderers = [NSMutableArray array];
+        YTRecogerRenderers(YTRaizDeContenido(json), @"ChannelRenderer", renderers);
+        NSMutableArray *canales = [NSMutableArray array];
+        NSMutableSet *vistos = [NSMutableSet set];
+        for (NSDictionary *r in renderers) {
+            NSDictionary *c = YTCanalDesdeRenderer(r);
+            if (!c || [vistos containsObject:c[@"id"]]) continue;
+            [vistos addObject:c[@"id"]];
+            [canales addObject:c];
+        }
+        completion(canales, nil);
+    }];
+}
+
+- (void)buscarListas:(NSString *)consulta
+          completion:(void (^)(NSArray *listas, NSError *error))completion {
+    [self buscarRenderers:consulta
+                   params:kFiltroListas
+                  cliente:YTClientePrincipal()
+               completion:^(NSDictionary *json, NSError *error) {
+        if (error) { completion(nil, error); return; }
+        completion(YTListasDesdeRenderers(YTRaizDeContenido(json)), nil);
+    }];
+}
+
+// Busqueda comun: sirve para los filtros (canales, listas) cambiando el cliente
+// y el "params".
+- (void)buscarRenderers:(NSString *)consulta
+                 params:(NSString *)params
+                cliente:(NSDictionary *)cliente
+             completion:(void (^)(NSDictionary *json, NSError *error))completion {
+    NSString *limpia = [consulta stringByTrimmingCharactersInSet:
+                        [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    if (limpia.length == 0) {
+        completion(nil, [NSError errorWithDomain:@"tube9" code:4
+            userInfo:@{NSLocalizedDescriptionKey : @"Escribe algo que buscar"}]);
+        return;
+    }
+    if ([[YTClient modo] isEqualToString:@"relay"]) {
+        completion(nil, [NSError errorWithDomain:@"tube9" code:3
+            userInfo:@{NSLocalizedDescriptionKey :
+                @"Este filtro necesita el modo directo (sin relay)."}]);
+        return;
+    }
+    [self asegurarVisitante:^{
+        NSMutableDictionary *cuerpo = [NSMutableDictionary dictionary];
+        cuerpo[@"query"] = limpia;
+        if (params.length) cuerpo[@"params"] = params;
+        cuerpo[@"context"] = @{ @"client" : [self contextoParaCliente:cliente incluirVisitante:YES] };
+        [self enviarAlInnerTube:@"search" cliente:cliente cuerpo:cuerpo completion:completion];
+    }];
+}
+
 #pragma mark - Pantalla de musica (YouTube Music)
 
 - (void)carruselesDeMusica:(NSString *)browseId
@@ -532,7 +778,13 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
             }
             completion(@{ @"url" : enlace,
                           @"titulo" : json[@"titulo"] ?: @"",
-                          @"autor" : json[@"autor"] ?: @"" }, nil);
+                          @"autor" : json[@"autor"] ?: @"",
+                          @"canalId" : @"",
+                          @"visitas" : @"",
+                          @"duracion" : @"",
+                          @"descripcion" : @"",
+                          @"itag" : @0,
+                          @"bytes" : @0 }, nil);
         }];
         return;
     }
@@ -644,9 +896,20 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
                 return;
             }
             NSDictionary *detalles = json[@"videoDetails"];
+            NSString *descripcion = detalles[@"shortDescription"];
+            if (![descripcion isKindOfClass:[NSString class]]) descripcion = @"";
+            // El "visitante" (viewCount) viene como numero; se guarda tal cual
+            // y se formatea en la pantalla, que es la que sabe de idiomas.
+            id visitas = detalles[@"viewCount"];
+            if (![visitas isKindOfClass:[NSNumber class]]
+                && ![visitas isKindOfClass:[NSString class]]) visitas = @"";
             completion(@{ @"url" : enlace,
                           @"titulo" : detalles[@"title"] ?: @"",
                           @"autor" : detalles[@"author"] ?: @"",
+                          @"canalId" : detalles[@"channelId"] ?: @"",
+                          @"visitas" : visitas,
+                          @"duracion" : detalles[@"lengthSeconds"] ?: @"",
+                          @"descripcion" : descripcion,
                           @"itag" : elegido[@"itag"] ?: @0,
                           // Cuanto pesa el video segun YouTube: la descarga lo
                           // usa para darse cuenta de que algo se ha quedado corto.
@@ -1471,4 +1734,294 @@ NSArray *YTCarruselesMusicales(NSDictionary *json, NSString *tituloRespaldo) {
                             @"videos" : restantes }];
     }
     return filas;
+}
+
+// ---------------------------------------------------------------------------
+//  Parsers de canales y listas de reproduccion.
+//
+//  La maqueta que devuelve el cliente de las gafas VR (el unico que contesta a
+//  las peticiones de canal) es la movil de siempre:
+//
+//    header.c4TabbedHeaderRenderer   nombre, avatar, portada, suscriptores
+//    contents.singleColumnBrowseResultsRenderer.tabs[]
+//                                    Inicio / Videos / Listas / Informacion,
+//                                    cada una con sus "params"
+//    ...sectionListRenderer.contents[].shelfRenderer
+//                                    los estantes del Inicio
+//
+//  En los resultados de busqueda los videos son "compactVideoRenderer" y en
+//  los estantes "videoWithContextRenderer".
+// ---------------------------------------------------------------------------
+
+// La miniatura mas grande que traiga el nodo ({"thumbnails":[{url,width,...}]})
+static NSString *YTMejorMiniaturaDeNodo(id nodo) {
+    if (![nodo isKindOfClass:[NSDictionary class]]) return nil;
+    id lista = ((NSDictionary *)nodo)[@"thumbnails"];
+    if (![lista isKindOfClass:[NSArray class]] || [(NSArray *)lista count] == 0) return nil;
+    id ultima = [(NSArray *)lista lastObject];
+    if (![ultima isKindOfClass:[NSDictionary class]]) return nil;
+    id url = ((NSDictionary *)ultima)[@"url"];
+    return [url isKindOfClass:[NSString class]] ? url : nil;
+}
+
+// Para la portada del canal se busca la miniatura de ~1060 px de ancho: la de
+// 2560 ocupa mas de 4 MB una vez descomprimida y en un telefono de 32 bits se
+// nota (la de 1060 se queda en unos 700 KB y en el movil se ve igual de bien).
+static NSString *YTPortadaDeNodo(id nodo) {
+    if (![nodo isKindOfClass:[NSDictionary class]]) return nil;
+    NSArray *lista = ((NSDictionary *)nodo)[@"thumbnails"];
+    if (![lista isKindOfClass:[NSArray class]] || lista.count == 0) return nil;
+
+    NSString *mejor = nil;
+    CGFloat mejorDiferencia = CGFLOAT_MAX;
+    for (id candidata in lista) {
+        if (![candidata isKindOfClass:[NSDictionary class]]) continue;
+        NSString *url = ((NSDictionary *)candidata)[@"url"];
+        if (![url isKindOfClass:[NSString class]] || url.length == 0) continue;
+        CGFloat ancho = [((NSDictionary *)candidata)[@"width"] doubleValue];
+        CGFloat diferencia = fabs(ancho - 1060.0);
+        if (!mejor || diferencia < mejorDiferencia) {
+            mejor = url;
+            mejorDiferencia = diferencia;
+        }
+    }
+    return mejor;
+}
+
+// Un texto puede venir ya como cadena ("Alemania") o como {"runs":[...]}.
+static NSString *YTCadenaOTexto(id valor) {
+    if ([valor isKindOfClass:[NSString class]]) return valor;
+    return YTTextoDeNodo(valor);
+}
+
+// Compara titulos sin acentos ni mayusculas ("Vídeos" == "videos").
+static BOOL YTTituloContiene(NSString *texto, NSArray *agujas) {
+    if (![texto isKindOfClass:[NSString class]] || texto.length == 0) return NO;
+    for (NSString *aguja in agujas) {
+        NSRange donde = [texto rangeOfString:aguja
+                                     options:(NSCaseInsensitiveSearch |
+                                              NSDiacriticInsensitiveSearch)];
+        if (donde.location != NSNotFound) return YES;
+    }
+    return NO;
+}
+
+// Recoge videos de un JSON (probando varios sufijos de renderer) y quita los
+// repetidos: en el Inicio de un canal el mismo video sale en varios estantes.
+static NSArray *YTVideosDesdeRenderers(id raiz, NSArray *sufijos) {
+    NSMutableArray *renderers = [NSMutableArray array];
+    for (NSString *sufijo in sufijos) {
+        YTRecogerRenderers(raiz, sufijo, renderers);
+    }
+    NSMutableArray *videos = [NSMutableArray array];
+    NSMutableSet *vistos = [NSMutableSet set];
+    for (id r in renderers) {
+        if (![r isKindOfClass:[NSDictionary class]]) continue;
+        YTVideo *video = [YTVideo desdeRenderer:r];
+        if (!video) continue;
+        if ([vistos containsObject:video.identificador]) continue;
+        [vistos addObject:video.identificador];
+        [videos addObject:video];
+    }
+    return videos;
+}
+
+// Un renderer de lista de reproduccion (compactPlaylistRenderer,
+// gridPlaylistRenderer, playlistRenderer...) -> diccionario sencillo.
+static NSDictionary *YTListaDesdeRenderer(NSDictionary *r) {
+    if (![r isKindOfClass:[NSDictionary class]]) return nil;
+    id ident = r[@"playlistId"];
+    if (![ident isKindOfClass:[NSString class]] || [ident length] == 0) return nil;
+
+    NSMutableDictionary *lista = [NSMutableDictionary dictionary];
+    lista[@"id"] = ident;
+    lista[@"titulo"] = YTCadenaOTexto(r[@"title"]) ?: @"(lista sin titulo)";
+    NSString *cuantos = YTCadenaOTexto(r[@"videoCountText"])
+                        ?: YTCadenaOTexto(r[@"videoCountShortText"]);
+    lista[@"videos"] = cuantos ?: @"";
+    lista[@"canal"] = YTCadenaOTexto(r[@"shortBylineText"])
+                      ?: YTCadenaOTexto(r[@"longBylineText"]) ?: @"";
+    NSString *mini = YTMejorMiniaturaDeNodo(r[@"thumbnail"]);
+    if (mini) lista[@"urlMiniatura"] = mini;
+
+    // El canal de la lista, para poder entrar en el desde ella.
+    NSDictionary *be = YTEncontrarPorClave(r[@"shortBylineText"], @"browseEndpoint");
+    if (![be isKindOfClass:[NSDictionary class]]) {
+        be = YTEncontrarPorClave(r[@"longBylineText"], @"browseEndpoint");
+    }
+    if ([be isKindOfClass:[NSDictionary class]] && be[@"browseId"]) {
+        lista[@"canalId"] = be[@"browseId"];
+    }
+    return lista;
+}
+
+static NSArray *YTListasDesdeRenderers(id raiz) {
+    NSMutableArray *renderers = [NSMutableArray array];
+    YTRecogerRenderers(raiz, @"PlaylistRenderer", renderers);
+    NSMutableArray *listas = [NSMutableArray array];
+    NSMutableSet *vistos = [NSMutableSet set];
+    for (id r in renderers) {
+        if (![r isKindOfClass:[NSDictionary class]]) continue;
+        NSDictionary *lista = YTListaDesdeRenderer(r);
+        if (!lista) continue;
+        if ([vistos containsObject:lista[@"id"]]) continue;
+        [vistos addObject:lista[@"id"]];
+        [listas addObject:lista];
+    }
+    return listas;
+}
+
+// Un canal de los resultados de busqueda. En el cliente de las gafas VR los
+// textos vienen cambiados de sitio ("subscriberCountText" trae el manejador y
+// "videoCountText" los suscriptores), asi que en vez de fiarse del nombre del
+// campo se mira lo que dice cada texto.
+static NSDictionary *YTCanalDesdeRenderer(NSDictionary *r) {
+    if (![r isKindOfClass:[NSDictionary class]]) return nil;
+    id ident = r[@"channelId"];
+    if (![ident isKindOfClass:[NSString class]] || [ident length] == 0) return nil;
+
+    NSString *subs = @"", *videos = @"", *manejador = @"";
+    NSArray *textos = @[ YTCadenaOTexto(r[@"subscriberCountText"]) ?: @"",
+                         YTCadenaOTexto(r[@"videoCountText"]) ?: @"" ];
+    for (NSString *texto in textos) {
+        if (texto.length == 0) continue;
+        if ([texto hasPrefix:@"@"]) { manejador = texto; continue; }
+        if ([texto rangeOfString:@"suscriptor" options:NSCaseInsensitiveSearch].location
+            != NSNotFound) { subs = texto; continue; }
+        if ([texto rangeOfString:@"video" options:NSCaseInsensitiveSearch].location
+            != NSNotFound) { videos = texto; continue; }
+        if (subs.length == 0) subs = texto;
+        else if (videos.length == 0) videos = texto;
+    }
+
+    NSMutableDictionary *canal = [NSMutableDictionary dictionary];
+    canal[@"id"] = ident;
+    canal[@"titulo"] = YTCadenaOTexto(r[@"title"]) ?: @"(canal sin nombre)";
+    canal[@"suscritos"] = subs;
+    canal[@"videos"] = videos;
+    canal[@"manejador"] = manejador;
+    canal[@"descripcion"] = YTCadenaOTexto(r[@"descriptionSnippet"]) ?: @"";
+    NSString *mini = YTMejorMiniaturaDeNodo(r[@"thumbnail"]);
+    if (mini) canal[@"urlMiniatura"] = mini;
+    return canal;
+}
+
+// Los estantes del "Inicio" de un canal: cada uno con su titulo y sus videos.
+static NSArray *YTEstantesDeVideos(NSDictionary *sectionList) {
+    NSMutableArray *salida = [NSMutableArray array];
+    if (![sectionList isKindOfClass:[NSDictionary class]]) return salida;
+    NSArray *secciones = sectionList[@"contents"];
+    if (![secciones isKindOfClass:[NSArray class]]) return salida;
+
+    for (id seccion in secciones) {
+        NSDictionary *estante = YTDiccionarioEn(seccion, @"shelfRenderer");
+        if (!estante) continue;
+        NSString *titulo = YTCadenaOTexto(estante[@"title"]);
+        NSArray *videos = YTVideosDesdeRenderers(estante[@"content"],
+                                                 @[ @"ContextRenderer", @"VideoRenderer" ]);
+        if (videos.count == 0) continue;
+        [salida addObject:@{ @"titulo" : titulo ?: @"", @"videos" : videos }];
+    }
+    return salida;
+}
+
+// La ficha de un canal: cabecera, pestanas (con sus "params") y lo que traiga
+// el Inicio.
+static NSDictionary *YTDatosDeCanal(NSDictionary *json, NSString *canalId) {
+    NSMutableDictionary *canal = [NSMutableDictionary dictionary];
+    canal[@"id"] = canalId;
+    canal[@"titulo"] = @"";
+    canal[@"suscritos"] = @"";
+    canal[@"videos"] = @"";
+    canal[@"manejador"] = @"";
+    canal[@"urlAvatar"] = @"";
+    canal[@"urlPortada"] = @"";
+    canal[@"descripcion"] = @"";
+
+    // --- Cabecera ---------------------------------------------------------
+    // Ojo: en esta maqueta "title" es una cadena suelta ("Kurzgesagt – In a
+    // Nutshell"), mientras que los demas textos son {"runs": [...]}. Por eso se
+    // usa YTCadenaOTexto, que acepta las dos formas.
+    NSDictionary *cab = YTEncontrarPorClave(json, @"c4TabbedHeaderRenderer");
+    if (![cab isKindOfClass:[NSDictionary class]]) {
+        cab = YTEncontrarPorClave(json, @"pageHeaderRenderer");
+    }
+    if ([cab isKindOfClass:[NSDictionary class]]) {
+        canal[@"titulo"] = YTCadenaOTexto(cab[@"title"])
+                           ?: YTCadenaOTexto(cab[@"pageTitle"]) ?: @"";
+        canal[@"suscritos"] = YTTextoDeNodo(cab[@"subscriberCountText"]) ?: @"";
+        canal[@"videos"] = YTTextoDeNodo(cab[@"videosCountText"]) ?: @"";
+        canal[@"manejador"] = YTTextoDeNodo(cab[@"channelHandleText"]) ?: @"";
+        NSString *avatar = YTMejorMiniaturaDeNodo(cab[@"avatar"]);
+        if (avatar.length) canal[@"urlAvatar"] = avatar;
+        NSString *portada = YTPortadaDeNodo(cab[@"banner"]);
+        if (portada.length) canal[@"urlPortada"] = portada;
+    }
+
+    // --- Pestanas y estantes del Inicio -----------------------------------
+    NSDictionary *browse = YTEncontrarPorClave(json, @"singleColumnBrowseResultsRenderer");
+    NSArray *tabs = nil;
+    if ([browse isKindOfClass:[NSDictionary class]]) tabs = browse[@"tabs"];
+    if (![tabs isKindOfClass:[NSArray class]]) {
+        id posible = YTEncontrarPorClave(json, @"tabs");
+        if ([posible isKindOfClass:[NSArray class]]) tabs = posible;
+    }
+
+    NSMutableArray *pestanas = [NSMutableArray array];
+    NSDictionary *contenido = nil;
+    NSDictionary *primero = nil;
+    for (id t in tabs) {
+        NSDictionary *tab = YTDiccionarioEn(t, @"tabRenderer");
+        if (!tab) continue;
+        // Aqui el titulo SI es una cadena ("Inicio", "Vídeos", "Listas"...).
+        NSString *titulo = YTCadenaOTexto(tab[@"title"]);
+        NSDictionary *be = YTEncontrarPorClave(tab[@"endpoint"], @"browseEndpoint");
+        NSString *params = [be isKindOfClass:[NSDictionary class]] ? be[@"params"] : nil;
+        if (![params isKindOfClass:[NSString class]]) params = @"";
+
+        [pestanas addObject:@{ @"titulo" : titulo ?: @"", @"params" : params }];
+
+        if (params.length) {
+            if (!canal[@"paramsVideos"] && YTTituloContiene(titulo, @[ @"video" ])) {
+                canal[@"paramsVideos"] = params;
+            } else if (!canal[@"paramsListas"] &&
+                       YTTituloContiene(titulo, @[ @"list", @"playlist" ])) {
+                canal[@"paramsListas"] = params;
+            } else if (!canal[@"paramsInfo"] &&
+                       YTTituloContiene(titulo, @[ @"about", @"inform", @"acerca" ])) {
+                canal[@"paramsInfo"] = params;
+            }
+        }
+        if (!primero && tab[@"content"]) primero = tab[@"content"];
+        if ([tab[@"selected"] boolValue] && tab[@"content"]) contenido = tab[@"content"];
+    }
+
+    // Red de seguridad: si YouTube cambiara los titulos y no se reconociera
+    // ninguno, se tira del orden de siempre (Inicio, Videos, Listas, ...).
+    if (!canal[@"paramsVideos"] && !canal[@"paramsListas"] && !canal[@"paramsInfo"]
+        && pestanas.count >= 3) {
+        canal[@"paramsVideos"] = pestanas[1][@"params"];
+        canal[@"paramsListas"] = pestanas[2][@"params"];
+        if (pestanas.count >= 4) canal[@"paramsInfo"] = pestanas[3][@"params"];
+    }
+
+    canal[@"pestanas"] = pestanas;
+    if (!contenido) contenido = primero;
+
+    NSDictionary *seccionLista = YTDiccionarioEn(contenido, @"sectionListRenderer");
+    if (!seccionLista) seccionLista = YTEncontrarPorClave(json, @"sectionListRenderer");
+    canal[@"estantes"] = YTEstantesDeVideos(seccionLista);
+    canal[@"listasDestacadas"] = YTListasDesdeRenderers(seccionLista);
+
+    NSMutableArray *todos = [NSMutableArray array];
+    NSMutableSet *vistos = [NSMutableSet set];
+    for (NSDictionary *estante in canal[@"estantes"]) {
+        for (YTVideo *v in estante[@"videos"]) {
+            if ([vistos containsObject:v.identificador]) continue;
+            [vistos addObject:v.identificador];
+            [todos addObject:v];
+        }
+    }
+    canal[@"videosDestacados"] = todos;
+    return canal;
 }

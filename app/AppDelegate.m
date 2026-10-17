@@ -19,7 +19,9 @@
 
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     self.window.rootViewController = [self montarPestanas];
-    self.window.tintColor = [YTTheme textoPrimario];
+    // El "tint" del sistema (alertas, botones de barra...) va con el acento, que
+    // es lo que hace que el tema se note tambien fuera de las pantallas propias.
+    self.window.tintColor = [YTTheme acento];
     [self.window makeKeyAndVisible];
 
     // Cuando cambia el tema, se vuelven a montar las pestanas enteras. Es mas
@@ -139,7 +141,7 @@
     UITabBarController *nuevas = [self montarPestanas];
     nuevas.selectedIndex = (cual >= 0 && cual < (NSInteger)nuevas.viewControllers.count) ? cual : 0;
     self.window.rootViewController = nuevas;
-    self.window.tintColor = [YTTheme textoPrimario];
+    self.window.tintColor = [YTTheme acento];
     [self.window makeKeyAndVisible];
 }
 

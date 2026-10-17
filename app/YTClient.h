@@ -38,9 +38,52 @@ extern NSString *const YTOrdenRecientes;        // subidos hace poco
 - (void)carruselesDeMusicaBuscando:(NSString *)consulta
                         completion:(void (^)(NSArray *carruseles, NSError *error))completion;
 
-// Devuelve un diccionario con: url, titulo, autor, cliente.
+// Devuelve un diccionario con: url, titulo, autor, canalId, visitas, duracion,
+// descripcion, itag, bytes, cliente.
 // Prueba varios clientes de YouTube en orden hasta que uno responda.
 - (void)resolverVideo:(NSString *)videoId completion:(YTBloqueInfo)completion;
+
+#pragma mark Canales y listas de reproduccion
+
+// Ficha de un canal. Devuelve un diccionario con:
+//   id, titulo, manejador ("@kurzgesagt"), suscritos, videos,
+//   urlAvatar, urlPortada,
+//   videosDestacados (NSArray<YTVideo*>) y listasDestacadas (NSArray de listas),
+//   y los "params" de sus pestanas: paramsVideos, paramsListas, paramsInfo.
+// Los "params" los manda YouTube en la propia pagina del canal y se devuelven
+// tal cual: son cadenas en base64 que no hay que entender ni fabricar.
+- (void)canalConId:(NSString *)canalId completion:(YTBloqueInfo)completion;
+
+// Pestana "Videos" de un canal: sus videos recientes (unos 30).
+- (void)videosDeCanal:(NSString *)canalId
+               params:(NSString *)params
+           completion:(YTBloqueLista)completion;
+
+// Pestana "Listas" de un canal. Cada lista es un diccionario con:
+//   id, titulo, videos ("28 videos"), canal, urlMiniatura
+- (void)listasDeCanal:(NSString *)canalId
+               params:(NSString *)params
+           completion:(void (^)(NSArray *listas, NSError *error))completion;
+
+// Pestana "Informacion" de un canal: descripcion larga, visitas de por vida,
+// pais, fecha de alta y enlaces.
+- (void)informacionDeCanal:(NSString *)canalId
+                    params:(NSString *)params
+                completion:(YTBloqueInfo)completion;
+
+// Contenido de una lista de reproduccion. Devuelve la ficha de la lista
+// (titulo, dueno, cuantos, descripcion) y el arreglo de videos.
+- (void)videosDeLista:(NSString *)listaId
+           completion:(void (^)(NSDictionary *lista, NSArray *videos,
+                                NSError *error))completion;
+
+// Los filtros del buscador de YouTube: por canales y por listas.
+// Los canales vienen como diccionarios con:
+//   id, titulo, suscritos, videos, manejador, descripcion, urlMiniatura
+- (void)buscarCanales:(NSString *)consulta
+           completion:(void (^)(NSArray *canales, NSError *error))completion;
+- (void)buscarListas:(NSString *)consulta
+          completion:(void (^)(NSArray *listas, NSError *error))completion;
 
 // Videos parecidos a uno dado. YouTube tiene un endpoint propio para esto
 // ("next"), pero su respuesta pesa unos 7 MB (demasiado para un telefono de

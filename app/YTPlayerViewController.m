@@ -3,13 +3,20 @@
 // Ademas de reproducir (que es lo dificil: ver YTClient), esta pantalla hace
 // lo que se espera de un reproductor de YouTube:
 //   - reanuda donde lo dejaste, y lo recuerda para el estante "Continuar viendo";
-//   - dos toques en el video: 10 s atras (izquierda) o 10 s adelante (derecha);
-//   - arrastrar el dedo arriba/abajo por el video cambia el volumen;
-//   - velocidad (0,5x a 2x) y reproduccion en bucle;
-//   - descarga el video a la carpeta que hayas elegido;
-//   - comparte el enlace;
+//   - los mandos propios encima del video (reproducir, 10 s, velocidad, bucle,
+//     descarga, compartir y pantalla completa), que se esconden solos;
+//   - un toque enseña u oculta los mandos; dos toques, 10 s atras o adelante;
+//   - arrastrar el dedo arriba/abajo cambia el volumen, y a lo ancho se busca
+//     dentro del video;
+//   - pantalla completa (con el telefono girado se ve mucho mas grande);
+//   - la informacion que da la aplicacion oficial: canal, visitas, duracion y
+//     la descripcion, con un boton para entrar en el canal;
 //   - manda el titulo y los mandos a la pantalla de bloqueo;
 //   - debajo, una lista de videos parecidos.
+//
+// NOTA: se usa AVPlayer + AVPlayerLayer en vez de AVPlayerViewController porque
+// el reproductor de Apple es una caja cerrada: no se puede ni cambiar el color
+// de los botones ni poner los iconos del tema, y con el tema claro desentonaba.
 #import "YTPlayerViewController.h"
 #import "YTTheme.h"
 #import "YTClient.h"
@@ -17,14 +24,54 @@
 #import "YTDescargas.h"
 #import "YTDescargasViewController.h"
 #import "YTVideoCell.h"
+#import "YTControlesReproductor.h"
+#import "YTChannelViewController.h"
 #import <AVFoundation/AVFoundation.h>
-#import <AVKit/AVKit.h>
 #import <MediaPlayer/MediaPlayer.h>
+#import <QuartzCore/QuartzCore.h>
 
 static const float kVelocidades[] = { 0.5f, 1.0f, 1.25f, 1.5f, 2.0f };
 static const NSUInteger kNumeroDeVelocidades = 5;
 
-@interface YTPlayerViewController () <UITableViewDataSource, UITableViewDelegate>
+// ---------------------------------------------------------------------------
+//  La capa del video: un UIView cuya "layer" es la de AVFoundation. Es la forma
+//  documentada de poner el video donde tu quieras (y poder taparlo con botones
+//  propios).
+// ---------------------------------------------------------------------------
+@interface YTVistaDeVideo : UIView
+@property (nonatomic, strong) AVPlayer *jugador;
+@end
+
+@implementation YTVistaDeVideo
+
++ (Class)layerClass { return [AVPlayerLayer class]; }
+
+- (AVPlayerLayer *)capaVideo { return (AVPlayerLayer *)self.layer; }
+
+- (void)setJugador:(AVPlayer *)jugador {
+    [self capaVideo].player = jugador;
+    [self capaVideo].videoGravity = AVLayerVideoGravityResizeAspect;
+}
+
+- (AVPlayer *)jugador { return [self capaVideo].player; }
+
+@end
+
+// 3725 -> "1:02:05"; 65 -> "1:05"
+static NSString *YTTextoDeTiempo(double segundos) {
+    if (isnan(segundos) || segundos < 0.0) return @"0:00";
+    long total = (long)segundos;
+    long horas = total / 3600;
+    long minutos = (total % 3600) / 60;
+    long segs = total % 60;
+    if (horas > 0) {
+        return [NSString stringWithFormat:@"%ld:%02ld:%02ld", horas, minutos, segs];
+    }
+    return [NSString stringWithFormat:@"%ld:%02ld", minutos, segs];
+}
+
+@interface YTPlayerViewController () <UITableViewDataSource, UITableViewDelegate,
+                                      YTControlesDelegado>
 @end
 
 @implementation YTPlayerViewController {
@@ -32,27 +79,28 @@ static const NSUInteger kNumeroDeVelocidades = 5;
     NSString *_rutaLocal;
 
     UITableView *_tabla;
-    UIView *_cabecera;          // cabecera de la tabla: reproductor + datos + botones
-    UIView *_caja;              // recuadro negro 16:9 donde vive el reproductor
-    AVPlayerViewController *_reproductor;
+    UIView *_cabecera;              // cabecera de la tabla: reproductor + datos + botones
+    UIView *_caja;                  // recuadro negro 16:9 donde vive el reproductor
+    YTVistaDeVideo *_vistaVideo;    // el video (AVPlayerLayer)
+    UIView *_capaGestos;            // toques y arrastres sobre el video
+    YTControlesReproductor *_controles;
+    AVPlayer *_jugador;
     UIActivityIndicatorView *_girador;
+
     UILabel *_titulo;
-    UILabel *_autor;
-    UILabel *_estado;
-    UILabel *_aviso;            // cartelito flotante ("+10 s", "Volumen 60 %")
+    UILabel *_autor;                // "Canal  ·  1.234.567 visitas  ·  12:34"
+    UILabel *_descripcion;          // lo que cuenta el autor del video
+    UIButton *_botonMas;            // "Ver mas" / "Ver menos"
+    UIButton *_botonCanal;          // entra en la ficha del canal
+    UILabel *_estado;               // linea tecnica (cliente, 360p...)
+    UILabel *_aviso;                // cartelito flotante ("+10 s", "Volumen 60 %")
     UIButton *_reintentar;
-    UIScrollView *_acciones;
-    UIButton *_botonAtras;
-    UIButton *_botonAdelante;
-    UIButton *_botonVelocidad;
-    UIButton *_botonBucle;
-    UIButton *_botonDescargar;
-    UIButton *_botonCompartir;
 
     AVPlayerItem *_elemento;
     BOOL _observando;
-    NSTimer *_vigilante;        // evita quedarse en "Cargando..." para siempre
-    NSTimer *_latido;           // va apuntando por donde va el video
+    NSTimer *_vigilante;            // evita quedarse en "Cargando..." para siempre
+    NSTimer *_latido;               // va apuntando por donde va el video
+    id _reloj;                      // observador periodico del tiempo del video
     NSDate *_inicioCarga;
     NSString *_hostVideo;
     NSString *_clienteVideo;
@@ -63,6 +111,12 @@ static const NSUInteger kNumeroDeVelocidades = 5;
     BOOL _reanudado;
     float _volumenInicial;
     NSInteger _porcentajeDescarga;
+
+    BOOL _pantallaCompleta;
+    double _totalVideo;
+    double _segundosPreview;
+    BOOL _ejeDecidido;
+    BOOL _arrastreHorizontal;
 
     NSArray *_relacionados;
     BOOL _pidiendoRelacionados;
@@ -113,6 +167,11 @@ static const NSUInteger kNumeroDeVelocidades = 5;
     [self construirCabecera];
     _tabla.tableHeaderView = _cabecera;
 
+    // El reproductor de verdad. La capa ya existe desde el primer momento, asi
+    // que el video aparece en cuanto llega, sin montar nada a ultima hora.
+    _jugador = [[AVPlayer alloc] init];
+    _vistaVideo.jugador = _jugador;
+
     // Con el interruptor de silencio activado tambien suena, y sigue sonando
     // con la pantalla apagada (es lo que hace util la pantalla de bloqueo).
     [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayback error:nil];
@@ -137,12 +196,35 @@ static const NSUInteger kNumeroDeVelocidades = 5;
     _caja.clipsToBounds = YES;
     [_cabecera addSubview:_caja];
 
-    _reproductor = [[AVPlayerViewController alloc] init];
-    _reproductor.showsPlaybackControls = YES;
-    _reproductor.videoGravity = AVLayerVideoGravityResizeAspect;
-    [self addChildViewController:_reproductor];
-    [_caja addSubview:_reproductor.view];
-    [_reproductor didMoveToParentViewController:self];
+    _vistaVideo = [[YTVistaDeVideo alloc] init];
+    _vistaVideo.backgroundColor = [UIColor blackColor];
+    [_caja addSubview:_vistaVideo];
+
+    // Los gestos van en una capa transparente: asi los arrastres no chocan con
+    // los botones de los mandos, que estan por encima.
+    _capaGestos = [[UIView alloc] init];
+    _capaGestos.backgroundColor = [UIColor clearColor];
+    [_caja addSubview:_capaGestos];
+
+    UITapGestureRecognizer *unToque =
+        [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tocarUnaVez:)];
+    [_capaGestos addGestureRecognizer:unToque];
+
+    UITapGestureRecognizer *dobleToque =
+        [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tocarDosVeces:)];
+    dobleToque.numberOfTapsRequired = 2;
+    [unToque requireGestureRecognizerToFail:dobleToque];   // primero, el doble toque
+    [_capaGestos addGestureRecognizer:dobleToque];
+
+    UIPanGestureRecognizer *arrastre =
+        [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(arrastrar:)];
+    [_capaGestos addGestureRecognizer:arrastre];
+
+    _controles = [[YTControlesReproductor alloc] init];
+    _controles.delegado = self;
+    _controles.bucle = NO;
+    _controles.velocidad = _velocidad;
+    [_caja addSubview:_controles];
 
     _girador = [[UIActivityIndicatorView alloc]
         initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhiteLarge];
@@ -159,29 +241,7 @@ static const NSUInteger kNumeroDeVelocidades = 5;
     _aviso.hidden = YES;
     [_caja addSubview:_aviso];
 
-    // Gestos clasicos del reproductor de YouTube.
-    UITapGestureRecognizer *dobleToque =
-        [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tocarDosVeces:)];
-    dobleToque.numberOfTapsRequired = 2;
-    [_caja addGestureRecognizer:dobleToque];
-
-    UIPanGestureRecognizer *arrastre =
-        [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(arrastrarVolumen:)];
-    [_caja addGestureRecognizer:arrastre];
-
-    _acciones = [[UIScrollView alloc] init];
-    _acciones.showsHorizontalScrollIndicator = NO;
-    _acciones.alwaysBounceHorizontal = YES;
-    [_cabecera addSubview:_acciones];
-
-    _botonAtras     = [self anadirBoton:@"-10 s"        accion:@selector(saltarAtras)];
-    _botonAdelante  = [self anadirBoton:@"+10 s"        accion:@selector(saltarAdelante)];
-    _botonVelocidad = [self anadirBoton:@"Velocidad 1x" accion:@selector(cambiarVelocidad)];
-    _botonBucle     = [self anadirBoton:@"Bucle: no"    accion:@selector(alternarBucle)];
-    _botonDescargar = [self anadirBoton:@"Descargar"    accion:@selector(descargar)];
-    _botonCompartir = [self anadirBoton:@"Compartir"    accion:@selector(compartir)];
-    if (_rutaLocal.length) _botonDescargar.hidden = YES;
-
+    // --- Informacion del video (como en la aplicacion oficial) -------------
     _titulo = [[UILabel alloc] init];
     _titulo.numberOfLines = 2;
     _titulo.font = [UIFont systemFontOfSize:16.0 weight:UIFontWeightSemibold];
@@ -194,6 +254,33 @@ static const NSUInteger kNumeroDeVelocidades = 5;
     _autor.textColor = [YTTheme textoSecundario];
     _autor.text = _video.canal;
     [_cabecera addSubview:_autor];
+
+    _botonCanal = [UIButton buttonWithType:UIButtonTypeSystem];
+    [_botonCanal setTitle:@"Ver canal" forState:UIControlStateNormal];
+    [_botonCanal setImage:[YTTheme icono:@"canal" lado:16.0] forState:UIControlStateNormal];
+    _botonCanal.titleLabel.font = [UIFont systemFontOfSize:13.0 weight:UIFontWeightSemibold];
+    [_botonCanal addTarget:self action:@selector(abrirCanal)
+         forControlEvents:UIControlEventTouchUpInside];
+    [YTTheme aplicarEstiloChip:_botonCanal seleccionado:NO];
+    _botonCanal.hidden = (_video.canalId.length == 0);
+    [_cabecera addSubview:_botonCanal];
+
+    _descripcion = [[UILabel alloc] init];
+    _descripcion.numberOfLines = 3;
+    _descripcion.font = [UIFont systemFontOfSize:13.0];
+    _descripcion.textColor = [YTTheme textoSecundario];
+    _descripcion.hidden = YES;
+    [_cabecera addSubview:_descripcion];
+
+    _botonMas = [UIButton buttonWithType:UIButtonTypeSystem];
+    [_botonMas setTitle:@"Ver mas" forState:UIControlStateNormal];
+    [_botonMas setTitleColor:[YTTheme acento] forState:UIControlStateNormal];
+    _botonMas.titleLabel.font = [UIFont systemFontOfSize:13.0 weight:UIFontWeightSemibold];
+    _botonMas.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
+    [_botonMas addTarget:self action:@selector(alternarDescripcion)
+        forControlEvents:UIControlEventTouchUpInside];
+    _botonMas.hidden = YES;
+    [_cabecera addSubview:_botonMas];
 
     _estado = [[UILabel alloc] init];
     _estado.numberOfLines = 0;
@@ -212,31 +299,37 @@ static const NSUInteger kNumeroDeVelocidades = 5;
     [_cabecera addSubview:_reintentar];
 }
 
-- (UIButton *)anadirBoton:(NSString *)titulo accion:(SEL)accion {
-    UIButton *boton = [UIButton buttonWithType:UIButtonTypeSystem];
-    [boton setTitle:titulo forState:UIControlStateNormal];
-    boton.titleLabel.font = [UIFont systemFontOfSize:13.0 weight:UIFontWeightSemibold];
-    [YTTheme aplicarEstiloChip:boton seleccionado:NO];
-    [boton addTarget:self action:accion forControlEvents:UIControlEventTouchUpInside];
-    [_acciones addSubview:boton];
-    return boton;
-}
-
 - (void)viewWillAppear:(BOOL)animado {
     [super viewWillAppear:animado];
     [UIApplication sharedApplication].idleTimerDisabled = YES;   // que no se apague viendo un video
+    [self reiniciarTemporizadorDeControles];
 }
 
 - (void)viewWillDisappear:(BOOL)animado {
     [super viewWillDisappear:animado];
     [self guardarProgreso];
-    [_reproductor.player pause];
+    [_jugador pause];
     [UIApplication sharedApplication].idleTimerDisabled = NO;
+
+    // Si se sale estando en pantalla completa, la barra tiene que volver.
+    if (_pantallaCompleta) {
+        _pantallaCompleta = NO;
+        [self.navigationController setNavigationBarHidden:NO animated:NO];
+        [[UIApplication sharedApplication] setStatusBarHidden:NO
+                                               withAnimation:UIStatusBarAnimationNone];
+    }
+    [NSObject cancelPreviousPerformRequestsWithTarget:self
+                                             selector:@selector(esconderControles)
+                                               object:nil];
 }
 
 - (void)dealloc {
     [_vigilante invalidate];
     [_latido invalidate];
+    if (_reloj && _jugador) {
+        [_jugador removeTimeObserver:_reloj];
+        _reloj = nil;
+    }
     if (_observando && _elemento) {
         [_elemento removeObserver:self forKeyPath:@"status"];
     }
@@ -259,21 +352,48 @@ static const NSUInteger kNumeroDeVelocidades = 5;
     [super viewDidLayoutSubviews];
 
     CGFloat ancho = CGRectGetWidth(self.view.bounds);
-    _caja.frame = CGRectMake(0, 0, ancho, floor(ancho * 9.0 / 16.0));
-    _reproductor.view.frame = _caja.bounds;
-    _girador.center = CGPointMake(CGRectGetMidX(_caja.bounds), CGRectGetMidY(_caja.bounds));
 
-    CGFloat y = CGRectGetMaxY(_caja.frame) + 12.0;
-    _acciones.frame = CGRectMake(0, y, ancho, 36.0);
-    [self colocarBotones];
-    y = CGRectGetMaxY(_acciones.frame) + 14.0;
+    if (_pantallaCompleta) {
+        _caja.frame = self.view.bounds;
+    } else {
+        _caja.frame = CGRectMake(0, 0, ancho, floor(ancho * 9.0 / 16.0));
+    }
+    _vistaVideo.frame = _caja.bounds;
+    _capaGestos.frame = _caja.bounds;
+    _controles.frame = _caja.bounds;
+    _girador.center = CGPointMake(CGRectGetMidX(_caja.bounds), CGRectGetMidY(_caja.bounds));
 
     CGFloat margen = 14.0;
     CGFloat util = ancho - margen * 2.0;
+    CGFloat y = CGRectGetMaxY(_caja.frame) + 12.0;
+
+    if (_pantallaCompleta) {
+        // En pantalla completa la tabla queda tapada: no hay que colocar nada.
+        [_controles setNeedsLayout];
+        [self colocarAviso];
+        return;
+    }
+
     _titulo.frame = CGRectMake(margen, y, util, 44.0);
     y = CGRectGetMaxY(_titulo.frame) + 2.0;
     _autor.frame = CGRectMake(margen, y, util, 18.0);
     y = CGRectGetMaxY(_autor.frame) + 10.0;
+
+    if (!_botonCanal.hidden) {
+        CGFloat anchoBoton = MIN(util, 122.0);
+        _botonCanal.frame = CGRectMake(margen, y, anchoBoton, 30.0);
+        y = CGRectGetMaxY(_botonCanal.frame) + 12.0;
+    }
+
+    if (!_descripcion.hidden) {
+        CGSize tamano = [_descripcion sizeThatFits:CGSizeMake(util, 500.0)];
+        _descripcion.frame = CGRectMake(margen, y, util, MAX(20.0, tamano.height));
+        y = CGRectGetMaxY(_descripcion.frame) + 4.0;
+    }
+    if (!_botonMas.hidden) {
+        _botonMas.frame = CGRectMake(margen, y, util, 24.0);
+        y = CGRectGetMaxY(_botonMas.frame) + 8.0;
+    }
 
     CGSize tamanoEstado = [_estado sizeThatFits:CGSizeMake(util, 500.0)];
     _estado.frame = CGRectMake(margen, y, util, MAX(18.0, tamanoEstado.height));
@@ -289,20 +409,8 @@ static const NSUInteger kNumeroDeVelocidades = 5;
         _cabecera.frame = CGRectMake(0, 0, ancho, alto);
         _tabla.tableHeaderView = _cabecera;   // hay que reasignar para que recalcule
     }
+    [_controles setNeedsLayout];
     [self colocarAviso];
-}
-
-- (void)colocarBotones {
-    CGFloat x = 14.0;
-    for (UIView *vista in _acciones.subviews) {
-        if (![vista isKindOfClass:[UIButton class]] || vista.hidden) continue;
-        UIButton *boton = (UIButton *)vista;
-        CGSize tamano = [boton sizeThatFits:CGSizeMake(320.0, 30.0)];
-        CGFloat ancho = MAX(64.0, tamano.width + 24.0);
-        boton.frame = CGRectMake(x, 3.0, ancho, 30.0);
-        x += ancho + 8.0;
-    }
-    _acciones.contentSize = CGSizeMake(x, 36.0);
 }
 
 - (void)colocarAviso {
@@ -311,7 +419,7 @@ static const NSUInteger kNumeroDeVelocidades = 5;
     CGFloat ancho = MIN(tamano.width + 24.0, CGRectGetWidth(_caja.bounds) - 32.0);
     CGFloat alto = tamano.height + 12.0;
     _aviso.frame = CGRectMake(floor((CGRectGetWidth(_caja.bounds) - ancho) / 2.0),
-                              floor(CGRectGetHeight(_caja.bounds) - alto - 16.0),
+                              floor(CGRectGetHeight(_caja.bounds) * 0.62),
                               ancho, alto);
 }
 
@@ -338,6 +446,135 @@ static const NSUInteger kNumeroDeVelocidades = 5;
     }];
 }
 
+#pragma mark - Los mandos: enseñar, esconder y obedecer
+
+- (void)reiniciarTemporizadorDeControles {
+    [NSObject cancelPreviousPerformRequestsWithTarget:self
+                                             selector:@selector(esconderControles)
+                                               object:nil];
+    [_controles mostrar:YES animado:YES];
+    // Con el video parado los mandos se quedan: no hay nada que tapar.
+    if (_listo && _jugador.rate > 0.01f) {
+        [self performSelector:@selector(esconderControles) withObject:nil afterDelay:3.5];
+    }
+}
+
+- (void)esconderControles {
+    if (!_listo || _jugador.rate < 0.01f) return;
+    [_controles mostrar:NO animado:YES];
+}
+
+- (void)tocarUnaVez:(UITapGestureRecognizer *)gesto {
+    if (gesto.state != UIGestureRecognizerStateEnded) return;
+    if (_controles.alpha > 0.5) {
+        [NSObject cancelPreviousPerformRequestsWithTarget:self
+                                                 selector:@selector(esconderControles)
+                                                   object:nil];
+        [_controles mostrar:NO animado:YES];
+    } else {
+        [self reiniciarTemporizadorDeControles];
+    }
+}
+
+- (void)refrescarControles {
+    if (!_elemento) return;
+    double total = CMTimeGetSeconds(_elemento.duration);
+    if (!isnan(total) && total > 0.0) _totalVideo = total;
+    double actual = CMTimeGetSeconds(_jugador.currentTime);
+    [_controles actualizarConActual:actual
+                              total:_totalVideo
+                     reproduciendo:(_jugador.rate > 0.01f)];
+}
+
+- (void)crearRelojDeLosMandos {
+    if (_reloj || !_jugador) return;
+    __weak YTPlayerViewController *deb = self;
+    _reloj = [_jugador addPeriodicTimeObserverForInterval:CMTimeMakeWithSeconds(0.5, 600)
+                                                    queue:dispatch_get_main_queue()
+                                               usingBlock:^(CMTime tiempo) {
+        [deb refrescarControles];
+    }];
+}
+
+#pragma mark - YTControlesDelegado
+
+- (void)controlesAlternarReproduccion {
+    if (_jugador.rate > 0.01f) {
+        [_jugador pause];
+        [self guardarProgreso];
+        [self reiniciarTemporizadorDeControles];   // parado, los mandos se quedan
+    } else {
+        [_jugador play];
+        if (_velocidad != 1.0f) _jugador.rate = _velocidad;
+        [self reiniciarTemporizadorDeControles];
+    }
+    [self refrescarControles];
+    [self actualizarInfoBloqueo];
+}
+
+- (void)controlesSaltarSegundos:(double)segundos {
+    [self saltar:segundos];
+    [self reiniciarTemporizadorDeControles];
+}
+
+- (void)controlesBuscarA:(double)segundos {
+    [self irA:segundos];
+    [self reiniciarTemporizadorDeControles];
+}
+
+- (void)controlesTocarVelocidad {
+    [self cambiarVelocidad];
+    [self reiniciarTemporizadorDeControles];
+}
+
+- (void)controlesTocarBucle {
+    [self alternarBucle];
+    [self reiniciarTemporizadorDeControles];
+}
+
+- (void)controlesTocarDescargar {
+    [self descargar];
+    [self reiniciarTemporizadorDeControles];
+}
+
+- (void)controlesTocarCompartir {
+    [self compartir];
+}
+
+- (void)controlesTocarPantallaCompleta {
+    [self alternarPantallaCompleta];
+}
+
+#pragma mark - Pantalla completa
+
+- (void)alternarPantallaCompleta {
+    _pantallaCompleta = !_pantallaCompleta;
+
+    if (_pantallaCompleta) {
+        // El video se saca de la tabla y se pone a pantalla completa encima.
+        [_caja removeFromSuperview];
+        _caja.frame = self.view.bounds;
+        [self.view addSubview:_caja];
+        [self.navigationController setNavigationBarHidden:YES animated:YES];
+        [[UIApplication sharedApplication] setStatusBarHidden:YES
+                                               withAnimation:UIStatusBarAnimationFade];
+    } else {
+        [_caja removeFromSuperview];
+        [_cabecera addSubview:_caja];
+        [_cabecera sendSubviewToBack:_caja];
+        [self.navigationController setNavigationBarHidden:NO animated:YES];
+        [[UIApplication sharedApplication] setStatusBarHidden:NO
+                                               withAnimation:UIStatusBarAnimationFade];
+        _tabla.tableHeaderView = _cabecera;
+    }
+
+    _controles.pantallaCompleta = _pantallaCompleta;
+    [self.view setNeedsLayout];
+    [self reiniciarTemporizadorDeControles];
+    [self mostrarAviso:(_pantallaCompleta ? @"Gira el telefono para verlo mas grande"
+                                          : @"Pantalla normal")];
+}
+
 #pragma mark - Resolucion y reproduccion
 
 - (void)resolver {
@@ -359,18 +596,73 @@ static const NSUInteger kNumeroDeVelocidades = 5;
             [yo mostrarError:[YTClient explicarError:error]];
             return;
         }
-        NSString *enlace = info[@"url"];
         if ([(NSString *)info[@"titulo"] length]) {
             yo->_titulo.text = info[@"titulo"];
             yo->_video.titulo = info[@"titulo"];
         }
         if ([(NSString *)info[@"autor"] length]) {
-            yo->_autor.text = info[@"autor"];
             yo->_video.canal = info[@"autor"];
         }
+        if ([(NSString *)info[@"canalId"] length]) {
+            yo->_video.canalId = info[@"canalId"];
+        }
         if ([(NSString *)info[@"cliente"] length]) yo->_clienteVideo = info[@"cliente"];
-        [yo reproducir:enlace];
+        [yo mostrarDatosDelVideo:info];
+        [yo reproducir:info[@"url"]];
     }];
+}
+
+// La informacion que enseña la aplicacion oficial: canal, visitas, duracion y
+// descripcion del video.
+- (void)mostrarDatosDelVideo:(NSDictionary *)info {
+    NSMutableArray *partes = [NSMutableArray array];
+    if (_video.canal.length) [partes addObject:_video.canal];
+
+    id visitas = info[@"visitas"];
+    // En modo directo YouTube manda un numero; por el relay, una cadena. Se
+    // atienden las dos.
+    if ([visitas isKindOfClass:[NSNumber class]] || [visitas isKindOfClass:[NSString class]]) {
+        long long numero = [visitas longLongValue];
+        if (numero > 0) {
+            NSNumberFormatter *formato = [[NSNumberFormatter alloc] init];
+            formato.numberStyle = NSNumberFormatterDecimalStyle;
+            formato.locale = [NSLocale localeWithLocaleIdentifier:@"es_ES"];
+            NSString *texto = [formato stringFromNumber:@(numero)];
+            [partes addObject:[NSString stringWithFormat:@"%@ visitas", texto]];
+        }
+    }
+    id duracion = info[@"duracion"];
+    if ([duracion isKindOfClass:[NSNumber class]] || [duracion isKindOfClass:[NSString class]]) {
+        double segundos = [duracion doubleValue];
+        if (segundos > 0.5) [partes addObject:YTTextoDeTiempo(segundos)];
+    }
+    _autor.text = [partes componentsJoinedByString:@"  ·  "];
+
+    _botonCanal.hidden = (_video.canalId.length == 0);
+
+    NSString *descripcion = info[@"descripcion"];
+    if ([descripcion isKindOfClass:[NSString class]] && descripcion.length > 0) {
+        _descripcion.text = descripcion;
+        _descripcion.hidden = NO;
+        // Con la descripcion corta no hace falta el boton de "ver mas".
+        _botonMas.hidden = (descripcion.length < 140);
+    }
+    [self ajustarCabecera];
+}
+
+- (void)alternarDescripcion {
+    BOOL entera = (_descripcion.numberOfLines != 0);
+    _descripcion.numberOfLines = entera ? 0 : 3;
+    [_botonMas setTitle:(entera ? @"Ver menos" : @"Ver mas") forState:UIControlStateNormal];
+    [self ajustarCabecera];
+}
+
+- (void)abrirCanal {
+    if (_video.canalId.length == 0) return;
+    YTChannelViewController *canal = [[YTChannelViewController alloc]
+        initWithCanalId:_video.canalId titulo:_video.canal];
+    canal.hidesBottomBarWhenPushed = YES;
+    [self.navigationController pushViewController:canal animated:YES];
 }
 
 - (void)reproducir:(NSString *)enlace {
@@ -397,6 +689,7 @@ static const NSUInteger kNumeroDeVelocidades = 5;
 
     _listo = NO;
     _hostVideo = url.host ?: @"fichero del dispositivo";
+    _totalVideo = 0.0;
     _elemento = [AVPlayerItem playerItemWithURL:url];
     // Para que a 1,5x no suene acelerado como una ardilla.
     _elemento.audioTimePitchAlgorithm = AVAudioTimePitchAlgorithmSpectral;
@@ -407,11 +700,12 @@ static const NSUInteger kNumeroDeVelocidades = 5;
                                                  name:AVPlayerItemDidPlayToEndTimeNotification
                                                object:_elemento];
 
-    if (!_reproductor.player) _reproductor.player = [[AVPlayer alloc] init];
-    [_reproductor.player replaceCurrentItemWithPlayerItem:_elemento];
-    [_reproductor.player play];
+    [_jugador replaceCurrentItemWithPlayerItem:_elemento];
+    [_jugador play];
     [_girador startAnimating];
     _estado.text = @"Cargando...";
+    [self crearRelojDeLosMandos];
+    [self refrescarControles];
     [self ajustarCabecera];
     [self actualizarInfoBloqueo];
 
@@ -481,9 +775,10 @@ static const NSUInteger kNumeroDeVelocidades = 5;
     [_girador stopAnimating];
     _listo = YES;
 
-    if (_velocidad != 1.0f) _reproductor.player.rate = _velocidad;
-
     double total = CMTimeGetSeconds(_elemento.duration);
+    if (!isnan(total) && total > 0.0) _totalVideo = total;
+    if (_velocidad != 1.0f) _jugador.rate = _velocidad;
+
     NSString *extra = _clienteVideo.length
         ? [NSString stringWithFormat:@"\n\nResuelto con el cliente %@.", _clienteVideo]
         : @"";
@@ -492,10 +787,13 @@ static const NSUInteger kNumeroDeVelocidades = 5;
     } else {
         _estado.text = [NSString stringWithFormat:
             @"MP4 360p (los iPhone de 32 bits no decodifican VP9 ni AV1, por eso no "
-             "hay 720p).%@\n\nDos toques en el video: 10 s atras o adelante. "
-             "Arrastra arriba/abajo para el volumen.", extra];
+             "hay 720p).%@\n\nUn toque enseña los mandos; dos toques, 10 s atras o "
+             "adelante. Arrastra arriba/abajo para el volumen, y a lo ancho para "
+             "moverse por el video.", extra];
     }
     [self ajustarCabecera];
+    [self refrescarControles];
+    [self reiniciarTemporizadorDeControles];
     [self actualizarInfoBloqueo];
     [self cargarCaratulaBloqueo];
     [self pedirRelacionados];
@@ -507,14 +805,14 @@ static const NSUInteger kNumeroDeVelocidades = 5;
         (total <= 0.0 || guardado < total - 10.0)) {
         _reanudado = YES;
         __weak YTPlayerViewController *deb = self;
-        [_reproductor.player seekToTime:CMTimeMakeWithSeconds(guardado, 600.0)
-                        toleranceBefore:kCMTimeZero
-                           toleranceAfter:kCMTimeZero
-                        completionHandler:^(BOOL terminado) {
+        [_jugador seekToTime:CMTimeMakeWithSeconds(guardado, 600.0)
+             toleranceBefore:kCMTimeZero
+                toleranceAfter:kCMTimeZero
+             completionHandler:^(BOOL terminado) {
             YTPlayerViewController *yo = deb;
             if (!yo) return;
-            [yo->_reproductor.player play];
-            if (yo->_velocidad != 1.0f) yo->_reproductor.player.rate = yo->_velocidad;
+            [yo->_jugador play];
+            if (yo->_velocidad != 1.0f) yo->_jugador.rate = yo->_velocidad;
             [yo mostrarAviso:[NSString stringWithFormat:@"Sigo donde lo dejaste (%d:%02d)",
                               (int)(guardado / 60.0), (int)guardado % 60]];
         }];
@@ -534,9 +832,9 @@ static const NSUInteger kNumeroDeVelocidades = 5;
 - (void)guardarProgreso {
     if (_rutaLocal.length || _video.identificador.length == 0) return;
     if (!_listo || !_elemento) return;
-    if (_reproductor.player.rate < 0.01f) return;   // en pausa no se toca el apunte
+    if (_jugador.rate < 0.01f) return;   // en pausa no se toca el apunte
 
-    double actual = CMTimeGetSeconds(_reproductor.player.currentTime);
+    double actual = CMTimeGetSeconds(_jugador.currentTime);
     double total = CMTimeGetSeconds(_elemento.duration);
     if (isnan(actual) || actual <= 0.0) return;
     if (isnan(total)) total = 0.0;
@@ -546,63 +844,99 @@ static const NSUInteger kNumeroDeVelocidades = 5;
 
 - (void)terminoElVideo:(NSNotification *)nota {
     if (_bucle) {
-        [_reproductor.player seekToTime:kCMTimeZero];
-        [_reproductor.player play];
-        if (_velocidad != 1.0f) _reproductor.player.rate = _velocidad;
+        [_jugador seekToTime:kCMTimeZero];
+        [_jugador play];
+        if (_velocidad != 1.0f) _jugador.rate = _velocidad;
+        [self reiniciarTemporizadorDeControles];
         return;
     }
     if (_video.identificador.length) [YTProgreso olvidar:_video.identificador];
     _estado.text = @"El video ha terminado.";
     [self ajustarCabecera];
+    [self refrescarControles];
+    [self reiniciarTemporizadorDeControles];
     [self actualizarInfoBloqueo];
     [self mostrarAviso:@"Fin del video"];
 }
 
-#pragma mark - Gestos y controles
+#pragma mark - Gestos
 
 - (void)tocarDosVeces:(UITapGestureRecognizer *)gesto {
     if (gesto.state != UIGestureRecognizerStateEnded) return;
     CGPoint punto = [gesto locationInView:_caja];
     if (punto.x < CGRectGetMidX(_caja.bounds)) [self saltarAtras];
     else [self saltarAdelante];
+    [self reiniciarTemporizadorDeControles];
 }
 
-- (void)arrastrarVolumen:(UIPanGestureRecognizer *)gesto {
-    if (!_reproductor.player) return;
+// Un mismo arrastre sirve para dos cosas: arriba/abajo, el volumen; a lo ancho,
+// moverse por el video. El eje se decide con el primer movimiento.
+- (void)arrastrar:(UIPanGestureRecognizer *)gesto {
+    if (!_jugador) return;
+    CGPoint traslacion = [gesto translationInView:_caja];
+
     if (gesto.state == UIGestureRecognizerStateBegan) {
-        _volumenInicial = _reproductor.player.volume;
+        _volumenInicial = _jugador.volume;
+        _segundosPreview = CMTimeGetSeconds(_jugador.currentTime);
+        if (isnan(_segundosPreview)) _segundosPreview = 0.0;
+        _ejeDecidido = NO;
+        _arrastreHorizontal = NO;
         return;
     }
-    if (gesto.state != UIGestureRecognizerStateChanged &&
-        gesto.state != UIGestureRecognizerStateEnded) return;
 
-    CGPoint traslacion = [gesto translationInView:_caja];
-    float volumen = _volumenInicial - (float)(traslacion.y / 220.0);
-    if (volumen < 0.0f) volumen = 0.0f;
-    if (volumen > 1.0f) volumen = 1.0f;
-    _reproductor.player.volume = volumen;
-    [self mostrarAviso:[NSString stringWithFormat:@"Volumen %d %%",
-                        (int)roundf(volumen * 100.0f)]];
+    if (gesto.state == UIGestureRecognizerStateChanged) {
+        if (!_ejeDecidido) {
+            if (fabs(traslacion.x) < 6.0 && fabs(traslacion.y) < 6.0) return;
+            _ejeDecidido = YES;
+            _arrastreHorizontal = (fabs(traslacion.x) > fabs(traslacion.y));
+        }
+        if (_arrastreHorizontal) {
+            double destino = _segundosPreview + traslacion.x / 4.0;
+            if (destino < 0.0) destino = 0.0;
+            if (_totalVideo > 1.0 && destino > _totalVideo - 1.0) destino = _totalVideo - 1.0;
+            [self mostrarAviso:[NSString stringWithFormat:@"%@  /  %@",
+                                YTTextoDeTiempo(destino), YTTextoDeTiempo(_totalVideo)]];
+        } else {
+            float volumen = _volumenInicial - (float)(traslacion.y / 220.0);
+            if (volumen < 0.0f) volumen = 0.0f;
+            if (volumen > 1.0f) volumen = 1.0f;
+            _jugador.volume = volumen;
+            [self mostrarAviso:[NSString stringWithFormat:@"Volumen %d %%",
+                                (int)roundf(volumen * 100.0f)]];
+        }
+        return;
+    }
+
+    if (gesto.state == UIGestureRecognizerStateEnded && _arrastreHorizontal) {
+        [self irA:_segundosPreview + traslacion.x / 4.0];
+    }
 }
 
 - (void)saltarAtras { [self saltar:-10.0]; }
 - (void)saltarAdelante { [self saltar:10.0]; }
 
 - (void)saltar:(double)segundos {
-    if (!_elemento || !_reproductor.player) return;
-    double actual = CMTimeGetSeconds(_reproductor.player.currentTime);
-    double total = CMTimeGetSeconds(_elemento.duration);
-    double destino = actual + segundos;
-    if (isnan(destino)) destino = 0.0;
-    if (destino < 0.0) destino = 0.0;
-    if (!isnan(total) && total > 1.0 && destino > total - 1.0) destino = total - 1.0;
+    if (!_elemento || !_jugador) return;
+    double actual = CMTimeGetSeconds(_jugador.currentTime);
+    [self irA:actual + segundos];
+    [self mostrarAviso:(segundos < 0.0 ? @"-10 s" : @"+10 s")];
+}
+
+- (void)irA:(double)segundos {
+    if (!_elemento || !_jugador) return;
+    double total = _totalVideo > 0.0 ? _totalVideo : CMTimeGetSeconds(_elemento.duration);
+    if (isnan(segundos)) segundos = 0.0;
+    if (segundos < 0.0) segundos = 0.0;
+    if (!isnan(total) && total > 1.0 && segundos > total - 1.0) segundos = total - 1.0;
 
     // El bloque de final no puede ser nil: AVFoundation lo exige.
-    [_reproductor.player seekToTime:CMTimeMakeWithSeconds(destino, 600.0)
-                    toleranceBefore:kCMTimeZero
-                       toleranceAfter:kCMTimeZero
-                    completionHandler:^(BOOL terminado) { }];
-    [self mostrarAviso:(segundos < 0.0 ? @"-10 s" : @"+10 s")];
+    [_jugador seekToTime:CMTimeMakeWithSeconds(segundos, 600.0)
+         toleranceBefore:kCMTimeZero
+            toleranceAfter:kCMTimeZero
+         completionHandler:^(BOOL terminado) { }];
+    [_controles actualizarConActual:segundos
+                              total:(isnan(total) ? 0.0 : total)
+                     reproduciendo:(_jugador.rate > 0.01f)];
     [self actualizarInfoBloqueo];
 }
 
@@ -615,23 +949,16 @@ static const NSUInteger kNumeroDeVelocidades = 5;
         }
     }
     _velocidad = kVelocidades[siguiente];
-    if (_reproductor.player && _reproductor.player.rate > 0.01f) {
-        _reproductor.player.rate = _velocidad;
+    if (_jugador && _jugador.rate > 0.01f) {
+        _jugador.rate = _velocidad;
     }
-    [_botonVelocidad setTitle:[NSString stringWithFormat:@"Velocidad %gx", _velocidad]
-                     forState:UIControlStateNormal];
-    [self colocarBotones];
-    [self ajustarCabecera];
+    _controles.velocidad = _velocidad;
     [self mostrarAviso:[NSString stringWithFormat:@"Velocidad %gx", _velocidad]];
 }
 
 - (void)alternarBucle {
     _bucle = !_bucle;
-    [_botonBucle setTitle:(_bucle ? @"Bucle: si" : @"Bucle: no")
-                 forState:UIControlStateNormal];
-    [YTTheme aplicarEstiloChip:_botonBucle seleccionado:_bucle];
-    [self colocarBotones];
-    [self ajustarCabecera];
+    _controles.bucle = _bucle;
     [self mostrarAviso:(_bucle ? @"Se repetira el video" : @"Ya no se repite")];
 }
 
@@ -643,8 +970,8 @@ static const NSUInteger kNumeroDeVelocidades = 5;
     UIActivityViewController *hoja = [[UIActivityViewController alloc]
         initWithActivityItems:@[ enlace ] applicationActivities:nil];
     if (hoja.popoverPresentationController) {
-        hoja.popoverPresentationController.sourceView = _botonCompartir;
-        hoja.popoverPresentationController.sourceRect = _botonCompartir.bounds;
+        hoja.popoverPresentationController.sourceView = _caja;
+        hoja.popoverPresentationController.sourceRect = _caja.bounds;
     }
     [self presentViewController:hoja animated:YES completion:nil];
 }
@@ -662,40 +989,39 @@ static const NSUInteger kNumeroDeVelocidades = 5;
 
     if ([gestor estaDescargando:_video.identificador]) {
         [gestor cancelarVideo:_video.identificador];
-        [_botonDescargar setTitle:@"Descargar" forState:UIControlStateNormal];
-        [self colocarBotones];
-        [self ajustarCabecera];
+        _controles.descargando = NO;
         [self mostrarAviso:@"Descarga cancelada"];
         return;
     }
 
-    [_botonDescargar setTitle:@"Preparando..." forState:UIControlStateNormal];
-    [self colocarBotones];
-    [self ajustarCabecera];
+    _controles.descargando = YES;
     _porcentajeDescarga = -1;
+    _estado.text = @"Descargando el video...";
+    [self ajustarCabecera];
 
     __weak YTPlayerViewController *deb = self;
     [gestor descargarVideo:_video
         progreso:^(double fraccion) {
             YTPlayerViewController *yo = deb;
             if (!yo) return;
-            // Solo se repinta cuando cambia el numero entero: si no, la fila de
-            // botones se recolocaria cientos de veces por minuto.
+            // Solo se repinta cuando cambia el numero entero: si no, la pantalla
+            // se repintaria cientos de veces por minuto.
             NSInteger porcentaje = fraccion > 0.0 ? (NSInteger)round(fraccion * 100.0) : -1;
             if (porcentaje == yo->_porcentajeDescarga) return;
             yo->_porcentajeDescarga = porcentaje;
-            NSString *texto = porcentaje >= 0
-                ? [NSString stringWithFormat:@"%ld %%  (toca para cancelar)", (long)porcentaje]
+            [yo->_controles actualizarPorcentajeDescarga:fraccion];
+            yo->_estado.text = porcentaje >= 0
+                ? [NSString stringWithFormat:@"Descargando... %ld %%  (toca el icono "
+                                            @"otra vez para cancelar)", (long)porcentaje]
                 : @"Descargando...";
-            [yo->_botonDescargar setTitle:texto forState:UIControlStateNormal];
-            [yo colocarBotones];
             [yo ajustarCabecera];
         }
         completion:^(BOOL ok, NSString *mensaje, NSString *ruta) {
             YTPlayerViewController *yo = deb;
             if (!yo) return;
-            [yo->_botonDescargar setTitle:@"Descargar" forState:UIControlStateNormal];
-            [yo colocarBotones];
+            yo->_controles.descargando = NO;
+            yo->_estado.text = (ok ? @"Descargado. Lo tienes en Descargas."
+                                   : @"No se pudo descargar.");
             [yo ajustarCabecera];
 
             UIAlertController *alerta = [UIAlertController
@@ -729,30 +1055,33 @@ static const NSUInteger kNumeroDeVelocidades = 5;
     _mandoPlay = [centro.playCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *e) {
         YTPlayerViewController *yo = deb;
         if (!yo) return MPRemoteCommandHandlerStatusCommandFailed;
-        [yo->_reproductor.player play];
-        if (yo->_velocidad != 1.0f) yo->_reproductor.player.rate = yo->_velocidad;
+        [yo->_jugador play];
+        if (yo->_velocidad != 1.0f) yo->_jugador.rate = yo->_velocidad;
         [yo actualizarInfoBloqueo];
+        [yo refrescarControles];
         return MPRemoteCommandHandlerStatusSuccess;
     }];
     _mandoPause = [centro.pauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *e) {
         YTPlayerViewController *yo = deb;
         if (!yo) return MPRemoteCommandHandlerStatusCommandFailed;
-        [yo->_reproductor.player pause];
+        [yo->_jugador pause];
         [yo guardarProgreso];
         [yo actualizarInfoBloqueo];
+        [yo refrescarControles];
         return MPRemoteCommandHandlerStatusSuccess;
     }];
     _mandoAlternar = [centro.togglePlayPauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *e) {
         YTPlayerViewController *yo = deb;
         if (!yo) return MPRemoteCommandHandlerStatusCommandFailed;
-        if (yo->_reproductor.player.rate > 0.01f) {
-            [yo->_reproductor.player pause];
+        if (yo->_jugador.rate > 0.01f) {
+            [yo->_jugador pause];
             [yo guardarProgreso];
         } else {
-            [yo->_reproductor.player play];
-            if (yo->_velocidad != 1.0f) yo->_reproductor.player.rate = yo->_velocidad;
+            [yo->_jugador play];
+            if (yo->_velocidad != 1.0f) yo->_jugador.rate = yo->_velocidad;
         }
         [yo actualizarInfoBloqueo];
+        [yo refrescarControles];
         return MPRemoteCommandHandlerStatusSuccess;
     }];
     _mandoAdelante = [centro.skipForwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *e) {
@@ -770,14 +1099,14 @@ static const NSUInteger kNumeroDeVelocidades = 5;
 - (void)actualizarInfoBloqueo {
     if (!_elemento) return;
     double total = CMTimeGetSeconds(_elemento.duration);
-    double actual = CMTimeGetSeconds(_reproductor.player.currentTime);
+    double actual = CMTimeGetSeconds(_jugador.currentTime);
 
     NSMutableDictionary *info = [NSMutableDictionary dictionary];
     info[MPMediaItemPropertyTitle] = _titulo.text.length ? _titulo.text : @"Tube9";
     if (_autor.text.length) info[MPMediaItemPropertyArtist] = _autor.text;
     if (total > 0.0 && !isnan(total)) info[MPMediaItemPropertyPlaybackDuration] = @(total);
     if (actual > 0.0 && !isnan(actual)) info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = @(actual);
-    info[MPNowPlayingInfoPropertyPlaybackRate] = @(_reproductor.player.rate);
+    info[MPNowPlayingInfoPropertyPlaybackRate] = @(_jugador.rate);
     [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = info;
 }
 
@@ -867,6 +1196,15 @@ static const NSUInteger kNumeroDeVelocidades = 5;
         celda = [[YTVideoCell alloc] initWithStyle:UITableViewCellStyleDefault
                                    reuseIdentifier:identificador];
     }
+    __weak YTPlayerViewController *deb = self;
+    celda.alTocarCanal = ^(YTVideo *video) {
+        YTPlayerViewController *yo = deb;
+        if (!yo || video.canalId.length == 0) return;
+        YTChannelViewController *canal = [[YTChannelViewController alloc]
+            initWithCanalId:video.canalId titulo:video.canal];
+        canal.hidesBottomBarWhenPushed = YES;
+        [yo.navigationController pushViewController:canal animated:YES];
+    };
     [celda configurarCon:_relacionados[indice.row]];
     return celda;
 }
@@ -891,6 +1229,7 @@ static const NSUInteger kNumeroDeVelocidades = 5;
     [_girador stopAnimating];
     _estado.text = texto;
     _reintentar.hidden = NO;
+    [_controles mostrar:YES animado:NO];
     [self ajustarCabecera];
 }
 

@@ -18,6 +18,22 @@ static NSString *YTTexto(NSDictionary *nodo) {
     return nil;
 }
 
+// El identificador del canal (UC...) viaja dentro del "endpoint" del nombre del
+// canal: longBylineText / shortBylineText / ownerText -> runs[0] -> navigation
+// -> browseEndpoint -> browseId.
+static NSString *YTIdDeCanal(NSDictionary *nodo) {
+    if (![nodo isKindOfClass:[NSDictionary class]]) return nil;
+    NSArray *runs = nodo[@"runs"];
+    if (![runs isKindOfClass:[NSArray class]]) return nil;
+    for (NSDictionary *r in runs) {
+        NSDictionary *nav = r[@"navigationEndpoint"];
+        NSDictionary *be = [nav isKindOfClass:[NSDictionary class]] ? nav[@"browseEndpoint"] : nil;
+        NSString *bid = [be isKindOfClass:[NSDictionary class]] ? be[@"browseId"] : nil;
+        if ([bid isKindOfClass:[NSString class]] && bid.length) return bid;
+    }
+    return nil;
+}
+
 @implementation YTVideo
 
 + (instancetype)desdeRelay:(NSDictionary *)d {
@@ -42,8 +58,13 @@ static NSString *YTTexto(NSDictionary *nodo) {
 
     YTVideo *v = [[YTVideo alloc] init];
     v.identificador = vid;
-    v.titulo    = YTTexto(r[@"title"]) ?: @"(sin titulo)";
-    v.canal     = YTTexto(r[@"shortBylineText"]) ?: YTTexto(r[@"longBylineText"]);
+    // videoRenderer y compactVideoRenderer usan "title"; los estantes de un
+    // canal (videoWithContextRenderer) usan "headline".
+    v.titulo    = YTTexto(r[@"title"]) ?: YTTexto(r[@"headline"]) ?: @"(sin titulo)";
+    v.canal     = YTTexto(r[@"shortBylineText"]) ?: YTTexto(r[@"longBylineText"])
+                  ?: YTTexto(r[@"ownerText"]);
+    v.canalId   = YTIdDeCanal(r[@"longBylineText"]) ?: YTIdDeCanal(r[@"shortBylineText"])
+                  ?: YTIdDeCanal(r[@"ownerText"]);
     v.duracion  = YTTexto(r[@"lengthText"]);
     v.vistas    = YTTexto(r[@"shortViewCountText"]) ?: YTTexto(r[@"viewCountText"]);
     v.publicado = YTTexto(r[@"publishedTimeText"]);

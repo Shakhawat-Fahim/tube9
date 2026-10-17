@@ -12,7 +12,9 @@ static const CGFloat YTMargen = 12.0;
     UIView *_vistaDuracion;
     UILabel *_etiquetaDuracion;
     UILabel *_titulo;
-    UILabel *_subtitulo;
+    // La linea de debajo del titulo ("canal · visitas · fecha") es un boton:
+    // al tocarla se entra en el canal, como en la aplicacion oficial.
+    UIButton *_botonCanal;
     NSString *_urlPendiente;
 }
 
@@ -56,11 +58,15 @@ static const CGFloat YTMargen = 12.0;
         _titulo.textColor = [YTTheme textoPrimario];
         [self.contentView addSubview:_titulo];
 
-        _subtitulo = [[UILabel alloc] init];
-        _subtitulo.numberOfLines = 1;
-        _subtitulo.font = [YTTheme fuenteCuerpo];
-        _subtitulo.textColor = [YTTheme textoSecundario];
-        [self.contentView addSubview:_subtitulo];
+        _botonCanal = [UIButton buttonWithType:UIButtonTypeCustom];
+        _botonCanal.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
+        _botonCanal.contentEdgeInsets = UIEdgeInsetsMake(2.0, 0.0, 2.0, 0.0);
+        _botonCanal.titleLabel.font = [YTTheme fuenteCuerpo];
+        [_botonCanal setTitleColor:[YTTheme textoSecundario] forState:UIControlStateNormal];
+        [_botonCanal setTitleColor:[YTTheme acento] forState:UIControlStateHighlighted];
+        [_botonCanal addTarget:self action:@selector(tocarCanal)
+              forControlEvents:UIControlEventTouchUpInside];
+        [self.contentView addSubview:_botonCanal];
     }
     return self;
 }
@@ -68,7 +74,8 @@ static const CGFloat YTMargen = 12.0;
 - (void)configurarCon:(YTVideo *)video {
     _video = video;
     _titulo.text = video.titulo;
-    _subtitulo.text = [video descripcion];
+    [_botonCanal setTitle:[video descripcion] forState:UIControlStateNormal];
+    _botonCanal.enabled = (video.canalId.length > 0);
     _etiquetaDuracion.text = video.duracion;
     _urlPendiente = video.urlMiniatura;
     _imagen.image = nil;
@@ -106,7 +113,13 @@ static const CGFloat YTMargen = 12.0;
 
     CGFloat y = CGRectGetMaxY(_imagen.frame) + 9.0;
     _titulo.frame = CGRectMake(YTMargen, y, anchoImagen, 40.0);
-    _subtitulo.frame = CGRectMake(YTMargen, y + 42.0, anchoImagen, 16.0);
+    _botonCanal.frame = CGRectMake(YTMargen, y + 42.0, anchoImagen, 20.0);
+}
+
+// El nombre del canal funciona como boton: avisa a la pantalla para que abra
+// la ficha del canal.
+- (void)tocarCanal {
+    if (self.alTocarCanal && _video) self.alTocarCanal(_video);
 }
 
 - (void)setHighlighted:(BOOL)resaltado animated:(BOOL)animado {
@@ -122,7 +135,7 @@ static const CGFloat YTMargen = 12.0;
     _imagen.image = nil;
     _imagen.alpha = 1.0;
     _titulo.text = nil;
-    _subtitulo.text = nil;
+    [_botonCanal setTitle:nil forState:UIControlStateNormal];
     _etiquetaDuracion.text = nil;
 }
 

@@ -32,14 +32,21 @@ Tube9_FILES = \
 	YTTendenciasViewController.m \
 	YTSearchViewController.m \
 	YTVideoCell.m \
+	YTCanalCell.m \
+	YTListaCell.m \
 	YTPlayerViewController.m \
+	YTControlesReproductor.m \
+	YTChannelViewController.m \
+	YTListaViewController.m \
 	YTDescargasViewController.m \
 	YTCarpetaViewController.m \
 	YTTemaViewController.m \
 	YTSettingsViewController.m \
 	YTLoginViewController.m
 
-Tube9_FRAMEWORKS = UIKit Foundation CoreGraphics AVFoundation AVKit MediaPlayer
+# QuartzCore hace falta de verdad: los mandos del reproductor usan
+# CAGradientLayer (el sombreado que deja leer los iconos) y CATransaction.
+Tube9_FRAMEWORKS = UIKit Foundation CoreGraphics QuartzCore AVFoundation MediaPlayer
 Tube9_CFLAGS = -fobjc-arc -Wno-deprecated-declarations -Wno-unused-parameter
 Tube9_RESOURCE_DIRS = Resources
 

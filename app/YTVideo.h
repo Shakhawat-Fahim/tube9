@@ -6,6 +6,7 @@
 @property (nonatomic, copy) NSString *identificador;   // videoId
 @property (nonatomic, copy) NSString *titulo;
 @property (nonatomic, copy) NSString *canal;
+@property (nonatomic, copy) NSString *canalId;         // UC... para "Ver canal"
 @property (nonatomic, copy) NSString *duracion;
 @property (nonatomic, copy) NSString *vistas;
 @property (nonatomic, copy) NSString *publicado;

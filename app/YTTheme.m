@@ -338,6 +338,185 @@ static UIColor *YTAcentoAjustado(NSUInteger hex, BOOL claro) {
         CGContextClosePath(ctx);
         CGContextFillPath(ctx);
         CGContextSetBlendMode(ctx, kCGBlendModeNormal);
+
+    } else if ([forma isEqualToString:@"pausa"]) {
+        // Dos barras, como el boton de pausa de cualquier reproductor.
+        CGFloat arriba = 0.24 * L, abajo = 0.76 * L, grueso = 0.13 * L;
+        CGContextFillRect(ctx, CGRectMake(0.30 * L, arriba, grueso, abajo - arriba));
+        CGContextFillRect(ctx, CGRectMake(0.57 * L, arriba, grueso, abajo - arriba));
+
+    } else if ([forma isEqualToString:@"atras10"] || [forma isEqualToString:@"adelante10"]) {
+        // Flecha circular con un "10" dentro: los tipicos 10 segundos.
+        BOOL atras = [forma isEqualToString:@"atras10"];
+        CGFloat cx = 0.5 * L, cy = 0.52 * L, radio = 0.29 * L;
+        CGFloat a0 = -1.25, a1 = 1.95;   // deja el hueco arriba, para la punta
+        CGContextSetLineWidth(ctx, trazo);
+
+        CGContextSaveGState(ctx);
+        if (atras) {   // la misma flecha, del reves
+            CGContextTranslateCTM(ctx, L, 0.0);
+            CGContextScaleCTM(ctx, -1.0, 1.0);
+        }
+        CGContextAddArc(ctx, cx, cy, radio, a0, a1, 0);
+        CGContextStrokePath(ctx);
+
+        // Punta de flecha en el extremo inicial del arco.
+        CGFloat px = cx + radio * cosf(a0), py = cy + radio * sinf(a0);
+        CGFloat dx = -sinf(a0), dy = cosf(a0);
+        CGFloat p = 0.085 * L;
+        CGContextMoveToPoint(ctx, px + dx * p, py + dy * p);
+        CGContextAddLineToPoint(ctx, px - dy * p, py + dx * p);
+        CGContextAddLineToPoint(ctx, px + dy * p, py - dx * p);
+        CGContextClosePath(ctx);
+        CGContextFillPath(ctx);
+        CGContextRestoreGState(ctx);
+
+        // El "10", fuera del volteo para que no salga del reves.
+        NSDictionary *estilo = @{
+            NSFontAttributeName : [UIFont systemFontOfSize:0.36 * L weight:UIFontWeightBold],
+            NSForegroundColorAttributeName : [UIColor whiteColor]
+        };
+        CGSize midiendo = [@"10" sizeWithAttributes:estilo];
+        [@"10" drawAtPoint:CGPointMake(cx - midiendo.width / 2.0,
+                                       cy - midiendo.height / 2.0)
+            withAttributes:estilo];
+
+    } else if ([forma isEqualToString:@"descargar"]) {
+        // Flecha hacia abajo y bandeja que la recoge.
+        CGContextSetLineWidth(ctx, trazo);
+        CGContextMoveToPoint(ctx, 0.5 * L, 0.16 * L);
+        CGContextAddLineToPoint(ctx, 0.5 * L, 0.54 * L);
+        CGContextStrokePath(ctx);
+        CGContextMoveToPoint(ctx, 0.33 * L, 0.38 * L);
+        CGContextAddLineToPoint(ctx, 0.5 * L, 0.56 * L);
+        CGContextAddLineToPoint(ctx, 0.67 * L, 0.38 * L);
+        CGContextStrokePath(ctx);
+        CGContextMoveToPoint(ctx, 0.22 * L, 0.62 * L);
+        CGContextAddLineToPoint(ctx, 0.22 * L, 0.82 * L);
+        CGContextAddLineToPoint(ctx, 0.78 * L, 0.82 * L);
+        CGContextAddLineToPoint(ctx, 0.78 * L, 0.62 * L);
+        CGContextStrokePath(ctx);
+
+    } else if ([forma isEqualToString:@"compartir"]) {
+        // La caja con la flecha saliendo por arriba, como en iOS.
+        CGContextSetLineWidth(ctx, trazo);
+        CGContextMoveToPoint(ctx, 0.5 * L, 0.60 * L);
+        CGContextAddLineToPoint(ctx, 0.5 * L, 0.18 * L);
+        CGContextStrokePath(ctx);
+        CGContextMoveToPoint(ctx, 0.35 * L, 0.33 * L);
+        CGContextAddLineToPoint(ctx, 0.5 * L, 0.18 * L);
+        CGContextAddLineToPoint(ctx, 0.65 * L, 0.33 * L);
+        CGContextStrokePath(ctx);
+        CGContextMoveToPoint(ctx, 0.26 * L, 0.46 * L);
+        CGContextAddLineToPoint(ctx, 0.26 * L, 0.84 * L);
+        CGContextAddLineToPoint(ctx, 0.74 * L, 0.84 * L);
+        CGContextAddLineToPoint(ctx, 0.74 * L, 0.46 * L);
+        CGContextStrokePath(ctx);
+
+    } else if ([forma isEqualToString:@"bucle"]) {
+        // Dos flechas dandose la vuelta: repetir.
+        CGContextSetLineWidth(ctx, trazo);
+        CGContextMoveToPoint(ctx, 0.24 * L, 0.34 * L);
+        CGContextAddLineToPoint(ctx, 0.70 * L, 0.34 * L);
+        CGContextStrokePath(ctx);
+        CGContextMoveToPoint(ctx, 0.58 * L, 0.23 * L);
+        CGContextAddLineToPoint(ctx, 0.74 * L, 0.34 * L);
+        CGContextAddLineToPoint(ctx, 0.58 * L, 0.45 * L);
+        CGContextStrokePath(ctx);
+        CGContextMoveToPoint(ctx, 0.76 * L, 0.66 * L);
+        CGContextAddLineToPoint(ctx, 0.30 * L, 0.66 * L);
+        CGContextStrokePath(ctx);
+        CGContextMoveToPoint(ctx, 0.42 * L, 0.55 * L);
+        CGContextAddLineToPoint(ctx, 0.26 * L, 0.66 * L);
+        CGContextAddLineToPoint(ctx, 0.42 * L, 0.77 * L);
+        CGContextStrokePath(ctx);
+
+    } else if ([forma isEqualToString:@"velocidad"]) {
+        // Un velocimetro: media vuelta y aguja.
+        CGContextSetLineWidth(ctx, trazo);
+        CGFloat cx = 0.5 * L, cy = 0.62 * L, radio = 0.32 * L;
+        CGContextAddArc(ctx, cx, cy, radio, M_PI, 2.0 * M_PI, 0);
+        CGContextStrokePath(ctx);
+        CGContextMoveToPoint(ctx, cx, cy);
+        CGContextAddLineToPoint(ctx, cx + 0.19 * L, cy - 0.23 * L);
+        CGContextStrokePath(ctx);
+        CGContextFillEllipseInRect(ctx, CGRectMake(cx - 0.06 * L, cy - 0.06 * L,
+                                                   0.12 * L, 0.12 * L));
+
+    } else if ([forma isEqualToString:@"pantalla"]) {
+        // Cuatro esquinas mirando hacia fuera: agrandar.
+        CGContextSetLineWidth(ctx, trazo);
+        CGContextMoveToPoint(ctx, 0.16 * L, 0.34 * L);
+        CGContextAddLineToPoint(ctx, 0.16 * L, 0.16 * L);
+        CGContextAddLineToPoint(ctx, 0.34 * L, 0.16 * L);
+        CGContextStrokePath(ctx);
+        CGContextMoveToPoint(ctx, 0.66 * L, 0.16 * L);
+        CGContextAddLineToPoint(ctx, 0.84 * L, 0.16 * L);
+        CGContextAddLineToPoint(ctx, 0.84 * L, 0.34 * L);
+        CGContextStrokePath(ctx);
+        CGContextMoveToPoint(ctx, 0.84 * L, 0.66 * L);
+        CGContextAddLineToPoint(ctx, 0.84 * L, 0.84 * L);
+        CGContextAddLineToPoint(ctx, 0.66 * L, 0.84 * L);
+        CGContextStrokePath(ctx);
+        CGContextMoveToPoint(ctx, 0.34 * L, 0.84 * L);
+        CGContextAddLineToPoint(ctx, 0.16 * L, 0.84 * L);
+        CGContextAddLineToPoint(ctx, 0.16 * L, 0.66 * L);
+        CGContextStrokePath(ctx);
+
+    } else if ([forma isEqualToString:@"encoger"]) {
+        // Lo mismo, pero mirando hacia dentro: volver al tamano normal.
+        CGContextSetLineWidth(ctx, trazo);
+        CGFloat esquinas[4][2] = { { 0.16, 0.16 }, { 0.84, 0.16 }, { 0.84, 0.84 }, { 0.16, 0.84 } };
+        for (int i = 0; i < 4; i++) {
+            CGFloat ex = esquinas[i][0] * L, ey = esquinas[i][1] * L;
+            CGFloat ix = 0.5 * L + (ex - 0.5 * L) * 0.55;
+            CGFloat iy = 0.5 * L + (ey - 0.5 * L) * 0.55;
+            CGContextMoveToPoint(ctx, ex, ey);
+            CGContextAddLineToPoint(ctx, ix, iy);
+            CGContextStrokePath(ctx);
+            // Punta hacia el centro.
+            CGFloat dx = ix - ex, dy = iy - ey;
+            CGFloat largo = sqrtf(dx * dx + dy * dy);
+            if (largo < 1.0) continue;
+            dx /= largo; dy /= largo;
+            CGFloat p = 0.10 * L;
+            CGContextMoveToPoint(ctx, ix, iy);
+            CGContextAddLineToPoint(ctx, ix - dx * p - dy * p, iy - dy * p + dx * p);
+            CGContextAddLineToPoint(ctx, ix - dx * p + dy * p, iy - dy * p - dx * p);
+            CGContextClosePath(ctx);
+            CGContextFillPath(ctx);
+        }
+
+    } else if ([forma isEqualToString:@"canal"]) {
+        // Una persona: cabeza y hombros.
+        CGContextSetLineWidth(ctx, trazo);
+        CGContextStrokeEllipseInRect(ctx, CGRectMake(0.34 * L, 0.14 * L, 0.32 * L, 0.32 * L));
+        CGContextAddArc(ctx, 0.5 * L, 0.88 * L, 0.30 * L, M_PI, 2.0 * M_PI, 0);
+        CGContextStrokePath(ctx);
+
+    } else if ([forma isEqualToString:@"lista"]) {
+        // Tres rayas y una flecha de reproducir: una lista de reproduccion.
+        CGContextSetLineWidth(ctx, trazo);
+        for (int i = 0; i < 3; i++) {
+            CGFloat y = (0.26 + 0.22 * i) * L;
+            CGContextMoveToPoint(ctx, 0.14 * L, y);
+            CGContextAddLineToPoint(ctx, 0.58 * L, y);
+            CGContextStrokePath(ctx);
+        }
+        CGContextMoveToPoint(ctx, 0.72 * L, 0.62 * L);
+        CGContextAddLineToPoint(ctx, 0.72 * L, 0.84 * L);
+        CGContextAddLineToPoint(ctx, 0.90 * L, 0.73 * L);
+        CGContextClosePath(ctx);
+        CGContextFillPath(ctx);
+
+    } else if ([forma isEqualToString:@"cerrar"]) {
+        CGContextSetLineWidth(ctx, trazo);
+        CGContextMoveToPoint(ctx, 0.26 * L, 0.26 * L);
+        CGContextAddLineToPoint(ctx, 0.74 * L, 0.74 * L);
+        CGContextStrokePath(ctx);
+        CGContextMoveToPoint(ctx, 0.74 * L, 0.26 * L);
+        CGContextAddLineToPoint(ctx, 0.26 * L, 0.74 * L);
+        CGContextStrokePath(ctx);
     }
 
     UIImage *img = UIGraphicsGetImageFromCurrentImageContext();
@@ -391,36 +570,24 @@ static UIColor *YTAcentoAjustado(NSUInteger hex, BOOL claro) {
     [UIView appearance].tintColor = [self acento];
 }
 
-// Pinta un icono de un color. En iOS 9 no existe "imageWithTintColor:", asi que
-// se hace a mano: se dibuja el icono con el color y se recorta con su propia
-// silueta (SourceIn).
-static UIImage *YTTenirImagen(UIImage *imagen, UIColor *color) {
-    if (!imagen) return nil;
-    CGRect marco = CGRectMake(0, 0, imagen.size.width, imagen.size.height);
-    UIGraphicsBeginImageContextWithOptions(imagen.size, NO, imagen.scale);
-    [color set];
-    [imagen drawInRect:marco blendMode:kCGBlendModeSourceIn alpha:1.0];
-    UIImage *salida = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-    return [salida imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
-}
-
 + (void)aplicarEstiloTabBar:(UITabBar *)tabBar {
     tabBar.barTintColor = [self superficie];
-    tabBar.tintColor = [self acento];                    // pestana elegida
+    tabBar.tintColor = [self acento];   // pestana elegida
     tabBar.translucent = NO;
     tabBar.backgroundColor = [self superficie];
 
-    // En iOS 9 no existe "unselectedItemTintColor", asi que los iconos se
-    // pintan a mano: el elegido con el acento y el resto en gris. Ojo: los
-    // items se crean con selectedImage a nil, y entonces la elegida es la
-    // misma imagen.
+    // Los iconos de TYTheme se dibujan en modo "plantilla", asi que la propia
+    // barra los pinta: el elegido con el acento y el resto en gris. Al
+    // principio se tintaban a mano y quedaban invisibles (se usaba SourceIn
+    // sobre un lienzo vacio, que no deja nada); asi, ademas, es lo nativo.
     for (UITabBarItem *item in tabBar.items) {
-        UIImage *normal = item.image;
-        UIImage *elegida = item.selectedImage ? item.selectedImage : item.image;
-        if (!normal) continue;
-        item.image = YTTenirImagen(normal, [self textoSecundario]);
-        item.selectedImage = YTTenirImagen(elegida, [self acento]);
+        if (item.image) {
+            item.image = [item.image imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+        }
+        if (item.selectedImage) {
+            item.selectedImage = [item.selectedImage
+                imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+        }
     }
 }
 
