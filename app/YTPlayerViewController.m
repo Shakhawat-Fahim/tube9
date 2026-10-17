@@ -208,14 +208,15 @@
             [self->_vigilante invalidate];
             self->_vigilante = nil;
             [self->_girador stopAnimating];
+            NSString *extra = @"";
+            if (self->_clienteVideo.length) {
+                extra = [NSString stringWithFormat:@"\n\nResuelto con el cliente %@.",
+                                                   self->_clienteVideo];
+            }
             self->_estado.text = [NSString stringWithFormat:
                 @"Reproduciendo en la mejor calidad disponible (MP4 360p).\n\n"
                  "Los dispositivos de 32 bits no pueden decodificar VP9 ni AV1, "
-                 "por eso no hay 720p.%@",
-                (self->_clienteVideo.length
-                    ? [NSString stringWithFormat:@"\n\nResuelto con el cliente %@.",
-                                                self->_clienteVideo]
-                    : @"")];
+                 "por eso no hay 720p.%@", extra];
         } else if (estado == AVPlayerItemStatusFailed) {
             [self->_vigilante invalidate];
             self->_vigilante = nil;

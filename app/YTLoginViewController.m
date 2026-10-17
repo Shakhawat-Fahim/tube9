@@ -116,12 +116,21 @@
     NSString *texto = [navegador stringByEvaluatingJavaScriptFromString:
         @"(function(){return (document.body && document.body.innerText) "
          "? document.body.innerText : '';})()"];
-    BOOL bloqueado = ([texto rangeOfString:@"no es seguro"
-                                   options:NSCaseInsensitiveSearch].location != NSNotFound) ||
-                     ([texto rangeOfString:@"not be secure"
-                                   options:NSCaseInsensitiveSearch].location != NSNotFound) ||
-                     ([texto rangeOfString:@"navegador no es seguro"
-                                   options:NSCaseInsensitiveSearch].location != NSNotFound);
+    // Ojo: si 'texto' fuese nil, rangeOfString sobre nil devuelve una posicion
+    // indefinida. Se comprueba que haya texto antes de buscarlo.
+    BOOL bloqueado = NO;
+    if (texto.length) {
+        // Google lo dice de varias maneras: "este navegador no es seguro",
+        // "es posible que no sea seguro", "may not be secure".
+        NSArray *avisos = @[ @"no es seguro", @"no sea seguro", @"not be secure" ];
+        for (NSString *aviso in avisos) {
+            if ([texto rangeOfString:aviso
+                             options:NSCaseInsensitiveSearch].location != NSNotFound) {
+                bloqueado = YES;
+                break;
+            }
+        }
+    }
     if (bloqueado) {
         _aviso.textColor = [YTTheme acento];
         _aviso.text = @"Google no acepta este navegador. Pulsa Cancelar y usa "

@@ -264,6 +264,56 @@ Por eso también el reproductor ya no se queda mudo: mientras carga muestra los
 segundos que lleva y el servidor implicado, y a los 30 segundos explica qué ha
 pasado en vez de dejar un «Cargando…» infinito.
 
+### El «inicia sesión para confirmar que no eres un robot»
+
+YouTube no da los vídeos a cualquiera: si la petición no se parece a la de un
+navegador o de una app de verdad, contesta `LOGIN_REQUIRED` («Inicia sesión para
+confirmar que no eres un bot»). Es su control antibot, y aquí se ataca con las
+mismas tres armas que usan los proyectos libres de referencia.
+
+**Qué hacen los demás** (consultado en el código fuente, no de memoria):
+
+| Proyecto | Qué hace |
+|---|---|
+| **NewPipe** (`YoutubeParsingHelper.java`) | Manda en cada petición las cabeceras `X-YouTube-Client-Name`, `X-YouTube-Client-Version`, `Origin` y `Referer`; pide un **`visitorData`** a `/youtubei/v1/visitor_id` y lo mete dentro de `context.client`; y elige entre varios clientes (ANDROID, IOS, WEB…). **No** implementa *po tokens*. |
+| **yt-dlp** (`extractor/youtube/_base.py`) | Igual que NewPipe, y además manda el `visitorData` como cabecera `X-Goog-Visitor-Id`. Su tabla de clientes marca `REQUIRE_JS_PLAYER = False` en **ANDROID_VR, IOS y ANDROID**: sólo esos entregan la dirección del MP4 sin obligar a descifrar la firma `nsig` (WEB, MWEB y TVHTML5 no). |
+
+**Qué hace Tube9 con eso:**
+
+1. **Pide un `visitorData`** una vez (`/youtubei/v1/visitor_id`), lo guarda entre
+   arranques y lo manda en el contexto y en `X-Goog-Visitor-Id`.
+2. **Manda las cabeceras de cliente** (`X-YouTube-Client-Name/Version`, `Origin`,
+   `Referer`) en todas las peticiones.
+3. **Rota entre cuatro clientes** al pedir el vídeo: `ANDROID_VR`, `IOS`,
+   `ANDROID` y `TVHTML5_SIMPLY`. Como cada uno tiene su propio umbral antibot, el
+   que rechaza a uno suele dar el vídeo a otro. El informe de diagnóstico dice
+   **con qué cliente** se consiguió.
+
+**Lo que no se puede hacer sin un servidor** (*po tokens*): desde 2024 YouTube
+pidió a los clientes web un *token* extra (`poToken`) que sólo se puede fabricar
+ejecutando el JavaScript de BotGuard de Google — con Node.js o con el motor de
+un navegador. **iOS 9 no puede ejecutar ese JavaScript** (y el dispositivo no
+corre Node), así que la única vía real es **iniciar sesión**: con la sesión
+iniciada, YouTube ya no hace esas preguntas. Por eso el arreglo importante es
+que **la pantalla de inicio de sesión sea legible**.
+
+### Iniciar sesión
+
+**Ajustes → Iniciar sesion en YouTube** abre un navegador integrado (`UIWebView`)
+que comparte las *cookies* con las peticiones de la app: al terminar, la
+búsqueda y los vídeos van autenticados y el control antibot desaparece.
+
+Esa pantalla es **clara a propósito**, aunque el resto de la app sea oscura: la
+página de Google no admite que le impongamos colores, y si su hoja de estilos no
+llega a cargar (pasa cuando la conexión recorta `accounts.google.com`), el
+navegador dibuja texto negro por defecto. Sobre el fondo oscuro de la app eso era
+«todo negro con letras negras». Ahora el lienzo se pinta de blanco, así que se lee
+cargue o no cargue el CSS.
+
+Si Google insiste en que «el navegador no es seguro», usa **Ajustes → Pegar
+cookies**: se copian las cookies de un navegador donde sí hayas entrado a
+YouTube y la app las usa tal cual.
+
 ---
 
 ## Modo relay (opcional)
