@@ -71,6 +71,21 @@ jobs:
           fi
           ls -d "$THEOS/sdks/"*.sdk
 
+      # En el SDK 9.3, libSystem.B.tbd re-exporta /usr/lib/system/liblaunch.dylib
+      # pero ese .tbd nunca se genero (incidencia theos/sdks#10). Sin el, el
+      # enlazador falla con "ld: file not found: /usr/lib/system/liblaunch.dylib".
+      # El SDK 10.3 si lo incluye y los simbolos son los mismos, asi que lo copiamos.
+      - name: Parchear liblaunch.tbd que falta en el SDK 9.3
+        run: |
+          set -euo pipefail
+          DESTINO="$THEOS/sdks/iPhoneOS9.3.sdk/usr/lib/system/liblaunch.tbd"
+          if [ ! -f "$DESTINO" ]; then
+            curl -fsSL --retry 3 -o "$DESTINO" \
+              "https://raw.githubusercontent.com/theos/sdks/master/iPhoneOS10.3.sdk/usr/lib/system/liblaunch.tbd"
+          fi
+          echo "--- liblaunch.tbd (parche) ---"
+          head -n 6 "$DESTINO"
+
       - name: Generar iconos e imagenes de arranque
         run: |
           set -euo pipefail
