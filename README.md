@@ -14,6 +14,21 @@ El resultado es un `.ipa` que se descarga y se instala en el dispositivo.
 > [Condiciones de Servicio de YouTube](https://www.youtube.com/t/terms).
 > Es un proyecto educativo y de uso personal.
 
+> **Novedades de la última entrega.** Se arreglaron las tres cosas que fallaban y
+> se amplió el reproductor:
+>
+> * **Miniaturas.** Se veían unas sí y otras no porque YouTube devuelve **9 de
+>   cada 20 en formato WebP** y iOS 9 no sabe decodificarlo. Ahora se piden en
+>   JPEG y, si una falla, se prueban otros tamaños del mismo vídeo.
+> * **Música.** Decía «no hay nada que mostrar». El contenido de un estante es
+>   una **lista** y se estaba leyendo como si fuera un objeto, así que no se veía
+>   ni una canción. Ya salen ~130 canciones repartidas en siete estantes.
+> * **Descargas nuevas**, con elección de carpeta (incluidas rutas de jailbreak y
+>   comprobación real de permisos).
+> * **Reproductor**: continuar donde lo dejaste, ±10 s con dos toques, volumen
+>   arrastrando el dedo, velocidad, bucle, descargar, compartir, pantalla de
+>   bloqueo y «Parecidos».
+
 ---
 
 ## Índice
@@ -35,12 +50,31 @@ El resultado es un `.ipa` que se descarga y se instala en el dispositivo.
 
 | Pantalla | Qué ofrece |
 |---|---|
-| **Inicio** | Portada con **estantes deslizables**: Tendencias de hoy, Música, Noticias, Deportes, Comedia y Para aprender. |
-| **Música** | La portada real de **YouTube Music**: Selecciones rápidas, Vídeos musicales nuevos y Novedades. |
+| **Inicio** | Portada con **estantes deslizables**: **Continuar viendo** (lo que dejaste a medias), Tendencias de hoy, Música, Noticias, Deportes, Comedia y Para aprender. |
+| **Música** | **YouTube Music de verdad**: Selecciones rápidas, Vídeos musicales nuevos, Novedades y estantes de Reggaetón, Baladas, Rock y Pop en español. |
 | **Tendencias** | Lo más visto, con **chips** para cambiar de categoría (música, videojuegos, noticias, deportes, cine…). |
 | **Buscar** | Campo de búsqueda, sugerencias en chips y lista de resultados con miniatura, título, canal, duración, visitas y fecha. |
-| **Reproductor** | Reproduce el vídeo a pantalla completa con los controles nativos, con audio aunque el interruptor de silencio esté activado. |
-| **Ajustes** | Modo directo/relay, dirección del relay, inicio de sesión en YouTube, diagnóstico de conexión y guía de certificados. |
+| **Reproductor** | A pantalla completa, con **lo que se espera de un reproductor de YouTube**: reanuda donde lo dejaste, ±10 s con dos toques, volumen arrastrando el dedo, velocidad 0,5×–2×, bucle, descargar, compartir, mandos en la pantalla de bloqueo y una lista de **Parecidos** debajo. |
+| **Descargas** | Guarda el vídeo en MP4 360p en **la carpeta que elijas** (también fuera de la app: `/var/mobile/Documents`, `/var/mobile/Media`…). Luego se reproduce en la app o se abre con otra. |
+| **Ajustes** | Modo directo/relay, dirección del relay, inicio de sesión en YouTube, **descargas y carpeta**, borrar «Continuar viendo», diagnóstico de conexión y guía de certificados. |
+
+### El reproductor, en detalle
+
+| Gesto o botón | Qué hace |
+|---|---|
+| Dos toques en la mitad izquierda | Retrocede 10 segundos |
+| Dos toques en la mitad derecha | Avanza 10 segundos |
+| Arrastrar el dedo arriba/abajo sobre el vídeo | Volumen (con el porcentaje en pantalla) |
+| **−10 s** / **+10 s** | Lo mismo que los dos toques, para quien prefiera botones |
+| **Velocidad** | 0,5× → 1× → 1,25× → 1,5× → 2× (el audio no suena acelerado) |
+| **Bucle** | Repite el vídeo sin parar |
+| **Descargar** | Baja el MP4 a la carpeta elegida; vuelve a tocarlo para cancelar |
+| **Compartir** | Manda el enlace con cualquier app instalada |
+
+Además: no se apaga la pantalla mientras se reproduce, el vídeo **sigue sonando
+con la pantalla apagada** y en la pantalla de bloqueo aparecen el título, la
+miniatura y los botones de ±10 s. Se puede **girar el móvil**: el reproductor
+aprovecha todo el ancho.
 
 Calidad de vídeo: **MP4/H.264 a 360p (itag 18, con audio incluido)**.
 Es la máxima calidad reproducible en estos dispositivos: los chips de 32 bits
@@ -65,7 +99,13 @@ mismos colores, tamaños, márgenes e iconos que lleva la app.
 * **Tendencias** pide la búsqueda **ordenada por número de visitas**, que es el
   equivalente medible de «lo más visto».
 * **Música** sí es auténtico: son las pantallas de `music.youtube.com`
-  (`FEmusic_home`, `FEmusic_explore`, `FEmusic_new_releases`).
+  (`FEmusic_home`, `FEmusic_explore`, `FEmusic_new_releases`) más búsquedas en su
+  catálogo. `FEmusic_charts` **no se usa a propósito**: sus listas son de
+  artistas y sus filas llevan a un canal, no a un vídeo (comprobado).
+* Los **Parecidos** que salen bajo el reproductor son una búsqueda por el título
+  del vídeo. YouTube tiene un listado oficial de relacionados (el endpoint
+  `next`), pero su respuesta pesa **unos 7 MB por vídeo** (medido): es demasiado
+  para la memoria de un iPhone de 32 bits, así que no se usa.
 
 ---
 
@@ -266,6 +306,32 @@ Alternativa: **Ajustes → Pegar cookies manualmente**, donde puedes pegar la
 cabecera `Cookie` de `youtube.com` copiada desde un navegador de tu PC
 (`SID=…; HSID=…; …`).
 
+### Descargas y carpeta de destino
+
+**Ajustes → Descargas** (también hay un botón **Descargar** bajo el
+reproductor). Los vídeos se guardan como **MP4 360p** con el título en el nombre
+del fichero.
+
+La carpeta se elige con un explorador propio. **En un iPhone con jailbreak la app
+puede escribir fuera de su propia carpeta**, así que ahí están las direcciones
+habituales con un acceso directo:
+
+| Ruta | Cuándo tiene permiso |
+|---|---|
+| `Documentos de la app` | Siempre (es la que se usa por defecto). |
+| `/var/mobile/Documents` | Casi siempre, con jailbreak. |
+| `/var/mobile/Media` y `/var/mobile/Media/Downloads` | Habitual con jailbreak. |
+| `/var/mobile` o `/` | Sólo si el jailbreak deja escribir ahí. |
+
+En vez de dejar que la descarga falle más tarde y sin explicación, **cada carpeta
+se prueba de verdad** (se escribe un fichero diminuto y se borra) y se marca con
+un **visto** o con «sin permiso de escritura». Si la carpeta elegida deja de
+valer, la app lo dice y usa la suya.
+
+En la lista de descargas, cada vídeo se puede **reproducir en la app**, **abrir
+con otra aplicación** (por ejemplo un reproductor que lo tenga todo) o **borrar**
+(también deslizando). La descarga continúa mientras la app está abierta.
+
 ### Diagnóstico
 
 **Ajustes → Probar conexión** recorre los tres pasos de los que depende la
@@ -430,6 +496,10 @@ escríbelo también en Ajustes.
 | La app se ve con barras negras arriba y abajo | Faltan imágenes de arranque; se generan con `tools/generar_recursos.py` (el CI ya lo hace). |
 | El modo relay da «No se puede conectar» | PC apagado, IP distinta, o el firewall de Windows bloquea Python. |
 | La búsqueda no devuelve nada | Prueba **Ajustes → Probar conexion** para ver el error real. |
+| Alguna miniatura se queda en gris | Ya no debería pasar (se piden en JPEG). Ese vídeo quizá no tenga miniatura: la app prueba `sddefault`, `hqdefault` y `mqdefault` antes de rendirse. |
+| **Música** dice «no hay nada que mostrar» | Pulsa **recargar** (arriba a la derecha). Si sigue, YouTube Music ha cambiado el formato: la pestaña pasa sola a búsquedas de música como plan B. |
+| «No se puede escribir en *carpeta*» al descargar | Esa carpeta no da permiso. En **Ajustes → Descargas → Carpeta** las que valen llevan un **visto**. |
+| La descarga se corta al bloquear el móvil | Las descargas siguen **mientras la app está abierta**; deja la app en primer plano hasta que termine. |
 
 ---
 
@@ -445,14 +515,18 @@ escríbelo también en Ajustes.
 │   ├── AppDelegate.{h,m}             Monta la interfaz (sin storyboards)
 │   ├── YTTheme.{h,m}                 Paleta, estilos planos e iconos vectoriales
 │   ├── YTVideo.{h,m}                 Modelo de un resultado
-│   ├── YTClient.{h,m}                InnerTube + relay + cookies + caché
+│   ├── YTClient.{h,m}                InnerTube + relay + cookies + miniaturas
+│   ├── YTProgreso.{h,m}              Por dónde ibas (estante «Continuar viendo»)
+│   ├── YTDescargas.{h,m}             Descargas MP4, carpeta e historial
 │   ├── YTFeedViewController.{h,m}    Estantes deslizables (Inicio y Música)
 │   ├── YTCarruselCell.{h,m}          Fila de estante + tarjeta pequeña
 │   ├── YTTendenciasViewController.{h,m}  Lo más visto, con chips
 │   ├── YTSearchViewController.{h,m}  Búsqueda y lista
 │   ├── YTVideoCell.{h,m}             Tarjeta de resultado
-│   ├── YTPlayerViewController.{h,m}  Reproductor AVPlayer
-│   ├── YTSettingsViewController.{h,m} Ajustes y diagnóstico
+│   ├── YTPlayerViewController.{h,m}  Reproductor (gestos, velocidad, bloqueo)
+│   ├── YTDescargasViewController.{h,m}  Lista de descargas
+│   ├── YTCarpetaViewController.{h,m} Explorador para elegir la carpeta
+│   ├── YTSettingsViewController.{h,m} Ajustes, descargas y diagnóstico
 │   ├── YTLoginViewController.{h,m}   Inicio de sesión (UIWebView)
 │   └── Resources/                    Info.plist, iconos, imágenes de arranque
 ├── certificados/

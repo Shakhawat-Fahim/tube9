@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<title>Tube9 — vista previa de las pantallas nuevas</title>
+<title>Tube9 — vista previa de las pantallas</title>
 <style>
   :root {
     --fondo:#0F0F0F; --sup:#181818; --sup-alta:#272727; --borde:#303030;
@@ -42,6 +42,8 @@
   /* --- chips --- */
   .chips { display:flex; gap:8px; padding:8px 12px; overflow:hidden; height:46px;
            box-sizing:border-box; align-items:center; }
+  /* En el reproductor los botones son muchos: en vez de recortarlos, se envuelven. */
+  .chips.muchos { flex-wrap:wrap; height:auto; row-gap:8px; overflow:visible; }
   .chip { font-size:13px; font-weight:500; padding:6px 14px; border-radius:15px;
           background:var(--sup-alta); border:1px solid var(--borde); white-space:nowrap; }
   .chip.on { background:var(--acento); border-color:var(--acento); color:#fff; }
@@ -80,16 +82,39 @@
               letter-spacing:.4px; }
   .buscar { display:flex; align-items:center; gap:8px; margin:6px 12px; background:var(--sup-alta);
             border-radius:10px; padding:7px 10px; color:var(--txt2); font-size:14px; }
+
+  /* --- reproductor --- */
+  .nav .atras { position:absolute; left:12px; top:0; height:44px; display:flex; align-items:center;
+                color:var(--acento); font-size:15px; }
+  .caja { position:relative; background:#000; height:180px; display:flex; align-items:center;
+          justify-content:center; }
+  .caja .play { width:52px; height:52px; border-radius:50%; background:rgba(0,0,0,.55);
+                display:flex; align-items:center; justify-content:center; }
+  .caja .play i { display:block; width:0; height:0; border-left:17px solid #fff;
+                  border-top:10px solid transparent; border-bottom:10px solid transparent; margin-left:4px; }
+  .info { padding:12px 14px 0; }
+  .info .t { font-size:16px; font-weight:600; line-height:1.3; }
+  .info .a { font-size:13px; color:var(--txt2); margin-top:4px; }
+  .info .e { font-size:12.5px; color:var(--txt2); margin-top:10px; line-height:1.45; }
+  .parecidos { color:var(--txt2); font-size:12px; padding:16px 14px 2px; text-transform:uppercase;
+               letter-spacing:.4px; }
+  .progreso { position:absolute; left:0; bottom:0; height:3px; background:var(--acento); }
+  .descarga { display:flex; align-items:center; justify-content:space-between;
+              padding:12px 14px; border-bottom:1px solid var(--borde); font-size:14px; }
+  .descarga .izq { padding-right:10px; }
+  .descarga .sub { color:var(--txt2); font-size:11.5px; margin-top:3px; }
+  .pista { color:var(--txt2); font-size:11.5px; padding:10px 14px; line-height:1.45; }
 </style>
 </head>
 <body>
-<h1>Tube9 — así se ven las pantallas nuevas</h1>
+<h1>Tube9 — así se ven las pantallas</h1>
 <p class="nota">
   Dibujo hecho a escala real (320 × 568 puntos, el tamaño de un iPhone 5; en un
   iPhone 4S se ve igual pero con 88 puntos menos de alto). Los colores, los
   tamaños de letra, los márgenes, las tarjetas y los iconos son <b>los mismos</b>
   que lleva la app: es una maqueta del código, no un diseño aparte.
-  Las miniaturas son reales (las sirve YouTube).
+  Las miniaturas son reales (las sirve YouTube) y los textos de los vídeos son de
+  ejemplo.
 </p>
 
 <div class="tira" id="tira"></div>
@@ -160,6 +185,15 @@ function tarjeta(v) {
          '<div class="t">' + v.t + '</div>' +
          '<div class="s">' + v.s + '</div></div>';
 }
+// Como una tarjeta normal, pero con la barrita roja de "por aquí vas".
+function tarjetaConProgreso(v, fraccion) {
+  return '<div class="tarjeta"><div class="marco" style="width:200px;height:112px">' +
+         '<img src="https://i.ytimg.com/vi/' + v.id + '/mqdefault.jpg" alt="">' +
+         (v.dur ? '<div class="duracion">' + v.dur + '</div>' : '') +
+         '<div class="progreso" style="width:' + fraccion + '%"></div>' +
+         '</div><div class="t">' + v.t + '</div>' +
+         '<div class="s">' + v.s + '</div></div>';
+}
 function filaGrande(v) {
   return '<div class="fila">' + miniatura(v.id, v.dur, 296, 167) +
          '<div class="t">' + v.t + '</div>' +
@@ -174,7 +208,7 @@ function chips(lista, activo) {
     return '<div class="chip' + (i === activo ? ' on' : '') + '">' + t + '</div>';
   }).join('') + '</div>';
 }
-function telefono(titulo, cuerpo, activo, conRecargar) {
+function telefono(titulo, cuerpo, activo, conRecargar, sinTabs, atras) {
   var t = document.createElement('div'); t.className = 'telefono';
   var tabs = ['inicio','musica','tendencias','buscar','ajustes'].map(function (f, i) {
     var nombre = ['Inicio','Música','Tendencias','Buscar','Ajustes'][i];
@@ -186,13 +220,16 @@ function telefono(titulo, cuerpo, activo, conRecargar) {
   });
   t.innerHTML =
     '<div class="estado"><span>9:41</span><span>100%</span></div>' +
-    '<div class="nav"><span class="titulo">' + titulo + '</span>' +
+    '<div class="nav">' + (atras ? '<span class="atras">‹ ' + atras + '</span>' : '') +
+    '<span class="titulo">' + titulo + '</span>' +
     (conRecargar ? '<span class="accion"></span>' : '') + '</div>' +
     '<div class="cuerpo">' + cuerpo + '</div>';
   if (conRecargar) t.querySelector('.accion').appendChild(icono('recargar', 20));
-  var barra = document.createElement('div'); barra.className = 'tabs';
-  tabs.forEach(function (x) { barra.appendChild(x); });
-  t.appendChild(barra);
+  if (!sinTabs) {
+    var barra = document.createElement('div'); barra.className = 'tabs';
+    tabs.forEach(function (x) { barra.appendChild(x); });
+    t.appendChild(barra);
+  }
   return t;
 }
 
@@ -208,18 +245,27 @@ var V = {
   m3: { id:'ZgTVJlDtBEU', dur:'2:57',  t:'Lunariae — I carry the wind', s:'Indie' },
   m4: { id:'i34pFNr42mc', dur:'3:31',  t:'Temas relajantes para estudiar', s:'Focus' },
   e1: { id:'EZrT6rhniLg', dur:'1:24:10', t:'Película completa en español', s:'Cine clásico' },
-  e2: { id:'RAxqUFIDlYw', dur:'9:33',  t:'Vídeos musicales nuevos de la semana', s:'YouTube Music' }
+  e2: { id:'RAxqUFIDlYw', dur:'9:33',  t:'Vídeos musicales nuevos de la semana', s:'YouTube Music' },
+  b1: { id:'ZgTVJlDtBEU', dur:'4:05',  t:'Balada para el recuerdo', s:'Grandes voces' },
+  p1: { id:'i34pFNr42mc', dur:'3:20',  t:'Pop en español del verano', s:'Éxitos' }
 };
 
 var pantallas = [
-  { pie:'<b>Inicio</b> — estantes que se deslizan de lado. Cada uno es una búsqueda ordenada por visitas o por fecha; aparecen de uno en uno.',
+  { pie:'<b>Inicio</b> — estantes que se deslizan de lado. El primero es local (<b>Continuar viendo</b>, con la barrita de por dónde ibas); los demás son búsquedas ordenadas por visitas o por fecha y aparecen de uno en uno.',
     t:'Inicio', activo:0, recargar:true,
-    cuerpo: estante('Tendencias de hoy', [V.t1, V.t2, V.t3]) + estante('Música', [V.m1, V.m2, V.m3]) },
+    cuerpo: '<div class="estante"><h2>Continuar viendo</h2><div class="carril">' +
+              tarjetaConProgreso({id:V.t3.id, dur:V.t3.dur, t:V.t3.t, s:'Viajes con Juan  ·  vas por 6:40'}, 37) +
+              tarjetaConProgreso({id:V.t4.id, dur:V.t4.dur, t:V.t4.t, s:'Cocina fácil  ·  vas por 2:05'}, 27) +
+            '</div></div>' +
+            estante('Tendencias de hoy', [V.t1, V.t2, V.t3]) +
+            estante('Música', [V.m1, V.m2, V.m3]) },
 
-  { pie:'<b>Música</b> — las pantallas reales de YouTube Music. Los títulos de cada estante los pone YouTube.',
+  { pie:'<b>Música</b> — las pantallas reales de YouTube Music más búsquedas en su catálogo. Los títulos de cada estante los pone YouTube.',
     t:'Música', activo:1, recargar:true,
     cuerpo: estante('Selecciones rápidas', [V.m1, V.m2, V.m3, V.m4]) +
-            estante('Vídeos musicales nuevos', [V.e2, V.m1, V.m3]) },
+            estante('Vídeos musicales nuevos', [V.e2, V.m1, V.m3]) +
+            estante('Reggaetón', [V.m2, V.p1, V.m1]) +
+            estante('Baladas', [V.b1, V.m4, V.p1]) },
 
   { pie:'<b>Tendencias</b> — lo más visto, con chips para cambiar de categoría.',
     t:'Tendencias', activo:2, recargar:true,
@@ -232,7 +278,7 @@ var pantallas = [
             chips(['música','noticias','deportes','comedia','documentales'], 0) +
             filaGrande(V.t3) + filaGrande(V.t4) },
 
-  { pie:'<b>Ajustes</b> — sigue igual: modo directo o relay, sesión, cookies pegadas a mano y diagnóstico.',
+  { pie:'<b>Ajustes</b> — modo directo o relay, sesión, y la sección nueva de <b>vídeos y descargas</b> con la carpeta elegida.',
     t:'Ajustes', activo:4, recargar:false,
     cuerpo: '<div class="cabecera">Conexión</div>' +
             '<div class="ajuste"><div>Modo<div class="sub">Directo (HTTPS a YouTube)</div></div><div>›</div></div>' +
@@ -240,14 +286,41 @@ var pantallas = [
             '<div class="cabecera">Cuenta</div>' +
             '<div class="ajuste rojo"><div>Iniciar sesión en YouTube<div class="sub">Sin sesión</div></div><div>›</div></div>' +
             '<div class="ajuste rojo"><div>Pegar cookies<div class="sub">Alternativa al formulario</div></div><div>›</div></div>' +
+            '<div class="cabecera">Vídeos y descargas</div>' +
+            '<div class="ajuste"><div>Descargas<div class="sub">3 vídeos</div></div><div>›</div></div>' +
+            '<div class="ajuste"><div>Carpeta de descargas<div class="sub">/var/mobile/Documents</div></div><div>›</div></div>' +
+            '<div class="ajuste rojo"><div>Borrar «Continuar viendo»<div class="sub">5 vídeos</div></div><div></div></div>' +
             '<div class="cabecera">Diagnóstico</div>' +
-            '<div class="ajuste rojo"><div>Probar conexión</div><div>›</div></div>' }
+            '<div class="ajuste rojo"><div>Probar conexión</div><div>›</div></div>' },
+
+  { pie:'<b>Reproductor</b> — dos toques en el vídeo para ±10 s, arrastrar el dedo para el volumen, velocidad, bucle, descarga, compartir y los mandos en la pantalla de bloqueo. Debajo, los parecidos.',
+    t:'Reproduciendo', activo:-1, recargar:false, sinTabs:true, atras:'Inicio',
+    cuerpo: '<div class="caja"><div class="play"><i></i></div></div>' +
+            '<div class="chips muchos"><span class="chip">−10 s</span><span class="chip">+10 s</span><span class="chip on">Velocidad 1x</span><span class="chip">Bucle: no</span><span class="chip">Descargar</span><span class="chip">Compartir</span></div>' +
+            '<div class="info">' +
+              '<div class="t">Ruta por la costa en 4K: 200 km sin prisa</div>' +
+              '<div class="a">Viajes con Juan</div>' +
+              '<div class="e">MP4 360p (los iPhone de 32 bits no decodifican VP9 ni AV1, por eso no hay 720p).<br><br>Resuelto con el cliente ANDROID. Sigues donde lo dejaste: 6:40.</div>' +
+            '</div>' +
+            '<div class="parecidos">Parecidos</div>' +
+            filaGrande(V.t3) + filaGrande(V.t4) },
+
+  { pie:'<b>Descargas</b> — los vídeos guardados y la carpeta de destino. Cada carpeta se prueba de verdad: un visto significa que la app puede escribir ahí.',
+    t:'Descargas', activo:-1, recargar:false, sinTabs:true, atras:'Ajustes',
+    cuerpo: '<div class="cabecera">Carpeta de descargas</div>' +
+            '<div class="descarga"><div class="izq">Carpeta<div class="sub">/var/mobile/Documents</div></div><div>›</div></div>' +
+            '<div class="descarga"><div class="izq">Espacio libre<div class="sub">3,4 GB</div></div></div>' +
+            '<div class="cabecera">Vídeos descargados</div>' +
+            '<div class="descarga"><div class="izq">Ruta por la costa en 4K: 200 km sin prisa<div class="sub">28,4 MB  ·  Ruta por la costa en 4K… [kE1-O0tU-UU].mp4</div></div><div>›</div></div>' +
+            '<div class="descarga"><div class="izq">Cómo se hace el pan de masa madre paso a paso<div class="sub">19,1 MB  ·  Cómo se hace el pan de masa madre… [PTS2gFbZYnw].mp4</div></div><div>›</div></div>' +
+            '<div class="descarga"><div class="izq">Perreo Salvaje (vídeo oficial)<div class="sub">12,7 MB  ·  Perreo Salvaje… [Mroued07Z2U].mp4</div></div><div>›</div></div>' +
+            '<div class="pista">Toca un vídeo para reproducirlo, abrirlo con otra app o borrarlo. También se puede deslizar para borrar.<br><br>La descarga sigue mientras la app esté abierta.</div>' }
 ];
 
 var tira = document.getElementById('tira');
 pantallas.forEach(function (p) {
   var b = document.createElement('div'); b.className = 'bloque';
-  b.appendChild(telefono(p.t, p.cuerpo, p.activo, p.recargar));
+  b.appendChild(telefono(p.t, p.cuerpo, p.activo, p.recargar, p.sinTabs, p.atras));
   var pie = document.createElement('div'); pie.className = 'pie'; pie.innerHTML = p.pie;
   b.appendChild(pie); tira.appendChild(b);
 });
