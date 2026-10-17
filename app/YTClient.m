@@ -26,20 +26,34 @@ static NSString * const kDefVisitante = @"tube9_visitante";
 //  2) El "po token" de descarga. YouTube exige a veces un token extra para
 //     servir los bytes de googlevideo, y ese token SOLO se puede fabricar
 //     ejecutando el JavaScript de BotGuard de Google (Node.js o un navegador
-//     completo). De los cuatro clientes de arriba, android, android_vr e ios
-//     lo tienen marcado como OBLIGATORIO, y **visionos no**. VisionOS es por
-//     tanto el unico cliente que hoy puede descargar video sin servidor.
+//     completo). De los cuatro clientes de arriba, la tabla marca android,
+//     android_vr e ios como obligatorio y visionos como no exigido; pero al
+//     medirlo de verdad (abajo) el que descarga siempre es android, y visionos
+//     no devuelve ni un formato. Las tablas orientan; la medicion manda.
 //
 //  Ademas, cada cliente tiene su propio umbral antibot: YouTube contesta
 //  "LOGIN_REQUIRED" ("Inicia sesion para confirmar que no eres un bot") de
 //  forma distinta segun quien pregunte. Por eso se prueban todos, en orden, y
 //  se comprueba que la URL se descargue de verdad antes de darsela al
 //  reproductor.
+//  Medido desde este mismo equipo (misma red que el dispositivo) con 12 videos:
+//  el cliente ANDROID descargo los 12; ANDROID_VR fallo con HTTP 403 en 3 de
+//  ellos (YouTube le exige po token en esos); y ni IOS ni VISIONOS devolvieron
+//  un solo formato utilizable. Por eso el orden es ANDROID primero.
 static NSArray *YTClientes(void) {
     static NSArray *lista = nil;
     static dispatch_once_t unaVez;
     dispatch_once(&unaVez, ^{
         lista = @[
+            // El que funciona hoy: resolvio y descargo los 12 de 12.
+            @{ @"nombre"  : @"ANDROID",
+               @"version" : @"21.26.364",
+               @"id"      : @3,
+               @"agente"  : @"com.google.android.youtube/21.26.364 (Linux; U; Android 11) gzip",
+               @"sdk"     : @30,
+               @"extra"   : @{ @"osName" : @"Android", @"osVersion" : @"11" },
+               @"nota"    : @"app de Android (12 de 12 descargas correctas)" },
+
             @{ @"nombre"  : @"ANDROID_VR",
                @"version" : @"1.65.10",
                @"id"      : @28,
@@ -48,21 +62,7 @@ static NSArray *YTClientes(void) {
                @"sdk"     : @32,
                @"extra"   : @{ @"deviceMake" : @"Oculus", @"deviceModel" : @"Quest 3",
                                @"osName" : @"Android", @"osVersion" : @"12L" },
-               @"nota"    : @"gafas VR (pide po token para descargar)" },
-
-            // Unico cliente sin po token: el que se usa cuando los demas
-            // devuelven una URL que YouTube luego rechaza.
-            @{ @"nombre"  : @"VISIONOS",
-               @"version" : @"1.02",
-               @"id"      : @101,
-               @"agente"  : @"Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) "
-                            @"AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 "
-                            @"Safari/605.1.15",
-               @"sdk"     : @0,
-               @"extra"   : @{ @"deviceMake" : @"Apple", @"deviceModel" : @"RealityDevice17,1",
-                               @"osName" : @"visionOS", @"osVersion" : @"26.5.23O471" },
-               @"nota"    : @"gafas Vision Pro (sin po token; no sirve para "
-                            @"contenido \"para ninos\")" },
+               @"nota"    : @"gafas VR (9 de 12: YouTube le pide po token en algunos)" },
 
             @{ @"nombre"  : @"IOS",
                @"version" : @"21.26.4",
@@ -72,15 +72,19 @@ static NSArray *YTClientes(void) {
                @"sdk"     : @0,
                @"extra"   : @{ @"deviceMake" : @"Apple", @"deviceModel" : @"iPhone16,2",
                                @"osName" : @"iPhone", @"osVersion" : @"18.3.2.22D82" },
-               @"nota"    : @"app de iPhone (pide po token para descargar)" },
+               @"nota"    : @"app de iPhone (no devolvio formatos en la prueba)" },
 
-            @{ @"nombre"  : @"ANDROID",
-               @"version" : @"21.26.364",
-               @"id"      : @3,
-               @"agente"  : @"com.google.android.youtube/21.26.364 (Linux; U; Android 11) gzip",
-               @"sdk"     : @30,
-               @"extra"   : @{ @"osName" : @"Android", @"osVersion" : @"11" },
-               @"nota"    : @"app de Android (pide po token para descargar)" }
+            @{ @"nombre"  : @"VISIONOS",
+               @"version" : @"1.02",
+               @"id"      : @101,
+               @"agente"  : @"Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) "
+                            @"AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 "
+                            @"Safari/605.1.15",
+               @"sdk"     : @0,
+               @"extra"   : @{ @"deviceMake" : @"Apple", @"deviceModel" : @"RealityDevice17,1",
+                               @"osName" : @"visionOS", @"osVersion" : @"26.5.23O471" },
+               @"nota"    : @"gafas Vision Pro (sin po token sobre el papel, pero no "
+                            @"devolvio formatos en la prueba)" }
         ];
     });
     return lista;

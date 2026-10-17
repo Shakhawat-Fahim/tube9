@@ -285,18 +285,23 @@ mismas tres armas que usan los proyectos libres de referencia.
 `REQUIRE_JS_PLAYER` vale **`True` por defecto**, y sólo cuatro clientes lo ponen
 en `False`:
 
-| Cliente | Reproductor JS | *Po token* para descargar | ¿Sirve en iOS 9? |
+| Cliente | Reproductor JS | *Po token* según yt-dlp | **Medido en 12 vídeos reales** |
 |---|---|---|---|
-| `ANDROID_VR` | no hace falta | **obligatorio** | sí, si no lo exige |
-| `IOS` | no hace falta | **obligatorio** | sí, si no lo exige |
-| `ANDROID` | no hace falta | **obligatorio** | sí, si no lo exige |
-| `VISIONOS` | no hace falta | no lo exige | **sí, siempre** |
-| `WEB`, `MWEB`, `TVHTML5`, `TVHTML5_SIMPLY`… | **sí hace falta** | — | **no** |
+| `ANDROID` | no hace falta | obligatorio | **descarga los 12** ← es el que se usa |
+| `ANDROID_VR` | no hace falta | obligatorio | 9 de 12 (`HTTP 403` en 3) |
+| `IOS` | no hace falta | obligatorio | no devuelve ni un formato |
+| `VISIONOS` | no hace falta | **no lo exige** | no devuelve ni un formato |
+| `WEB`, `MWEB`, `TVHTML5`, `TVHTML5_SIMPLY`… | **sí hace falta** | — | descartados de entrada |
 
-O sea: los clientes web y de televisión quedan descartados de entrada, porque
-exigen ejecutar el JavaScript del reproductor para descifrar la firma `nsig`, y
-en iOS 9 no hay motor de JavaScript para eso. Y de los cuatro que quedan, tres
-piden *po token* para servir los bytes del vídeo.
+O sea: los clientes web y de televisión quedan fuera porque exigen ejecutar el
+JavaScript del reproductor para descifrar la firma `nsig`, y en iOS 9 no hay
+motor de JavaScript para eso.
+
+Las dos últimas columnas enseñan algo importante: **la tabla de yt-dlp orienta,
+pero la medición manda**. Sobre el papel el cliente sin *po token* era `VISIONOS`
+y el que más problemas daba era `ANDROID`; en la práctica `ANDROID` descarga
+todo y `VISIONOS` no devuelve nada. Por eso la app mide —pide los dos primeros
+bytes de cada URL— en vez de fiarse del papel.
 
 **Qué hace Tube9 con eso:**
 
@@ -305,28 +310,31 @@ piden *po token* para servir los bytes del vídeo.
 2. **Manda las cabeceras de cliente** (`X-YouTube-Client-Name/Version`, `Origin`,
    `Referer`) y los datos de dispositivo (`deviceMake`, `deviceModel`, `osName`,
    `osVersion`) de cada cliente.
-3. **Rota entre los cuatro clientes útiles**: `ANDROID_VR`, `VISIONOS`, `IOS` y
-   `ANDROID`. Como cada uno tiene su propio umbral antibot, el que rechaza a uno
-   suele dar el vídeo a otro.
+3. **Rota entre los cuatro clientes útiles**, empezando por `ANDROID` (el que
+   descarga siempre) y siguiendo con `ANDROID_VR`, `IOS` y `VISIONOS`. Como cada
+   uno tiene su propio umbral antibot, el que rechaza a uno suele dar el vídeo a
+   otro.
 4. **Comprueba la descarga antes de reproducir**: pide los dos primeros bytes de
-   la URL. YouTube devuelve a veces una URL perfectamente válida que luego
-   contesta `403` (es el caso del maldito *po token*) — con esa comprobación, si
-   el cliente elegido no sirve, la app pasa sola al siguiente. El vídeo empieza
-   sólo cuando los bytes llegan de verdad. El informe de diagnóstico dice **con
-   qué cliente** se consiguió y **cómo fue la comprobación**.
+   la URL. Esto es lo que hace útil la rotación, porque YouTube devuelve a veces
+   una URL perfectamente válida que luego contesta `403` (es el caso del *po
+   token*). Si el cliente elegido no sirve, la app pasa sola al siguiente, y el
+   vídeo empieza **sólo cuando los bytes llegan de verdad**. El informe de
+   diagnóstico dice **con qué cliente** se consiguió y **cómo fue la
+   comprobación**.
 
-**Lo que no se puede hacer sin un servidor** (*po tokens*): YouTube exige a
-menudo un token extra (`poToken`) para servir los bytes, y ese token **sólo** se
-puede fabricar ejecutando el JavaScript de BotGuard de Google — con Node.js o
-con el motor de un navegador completo. **iOS 9 no puede ejecutar ese JavaScript**
-y el dispositivo no corre Node. Por eso `VISIONOS` (que no lo pide) es el cliente
-de rescate, y por eso la otra vía es **iniciar sesión**: con la sesión iniciada
-YouTube deja de hacer preguntas de robot. De ahí que sea tan importante que **la
-pantalla de inicio de sesión sea legible**.
+Este detalle —comprobar los bytes— es el que resolvía el problema de raíz: antes
+la app le entregaba al reproductor una URL que iba a dar `403`, y el reproductor
+se quedaba en «Cargando…» para siempre sin decir por qué.
 
-Si aun así algún vídeo se resiste, la solución definitiva es el **modo relay**
+**Los *po tokens* y el modo relay.** YouTube exige a menudo un token extra
+(`poToken`) para servir los bytes, y ese token **sólo** se puede fabricar
+ejecutando el JavaScript de BotGuard de Google — con Node.js o con el motor de un
+navegador completo. **iOS 9 no puede ejecutar ese JavaScript** y el dispositivo
+no corre Node, así que la app no puede generarlos por sí misma. Hoy `ANDROID`
+funciona sin ellos, y con la **sesión iniciada** YouTube además deja de hacer
+preguntas de robot. Si algún día dejara de bastar, la salida es el **modo relay**
 (abajo): el vídeo lo resuelve y lo descarga un servidor, donde sí se puede tener
-Node y por tanto *po tokens*.
+Node y, por tanto, *po tokens*.
 
 ### Iniciar sesión
 
