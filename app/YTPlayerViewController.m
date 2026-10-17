@@ -597,10 +597,11 @@ static const NSUInteger kNumeroDeVelocidades = 5;
     if (destino < 0.0) destino = 0.0;
     if (!isnan(total) && total > 1.0 && destino > total - 1.0) destino = total - 1.0;
 
+    // El bloque de final no puede ser nil: AVFoundation lo exige.
     [_reproductor.player seekToTime:CMTimeMakeWithSeconds(destino, 600.0)
                     toleranceBefore:kCMTimeZero
                        toleranceAfter:kCMTimeZero
-                    completionHandler:nil];
+                    completionHandler:^(BOOL terminado) { }];
     [self mostrarAviso:(segundos < 0.0 ? @"-10 s" : @"+10 s")];
     [self actualizarInfoBloqueo];
 }
