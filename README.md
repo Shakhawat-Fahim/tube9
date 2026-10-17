@@ -8,6 +8,13 @@ Todo el proceso (compilar, empaquetar el `.ipa`) ocurre en **GitHub Actions,
 gratis**, así que **no hace falta un Mac ni instalar un compilador en tu PC**.
 El resultado es un `.ipa` que se descarga y se instala en el dispositivo.
 
+> **Descargar el `.ipa`.** Está en
+> **[Releases](https://github.com/lofturb/tube9/releases)**: la **última
+> entrada** de la lista, con el fichero adjunto. No hace falta cuenta de GitHub
+> ni saber nada del proyecto. Para instalarlo, mira la
+> [Parte C](#parte-c--instalar-la-app); antes hay que hacer los pasos de la
+> [Parte B](#parte-b--preparar-el-dispositivo) (jailbreak y certificados).
+
 > **Nota legal.** Tube9 no es una app oficial de YouTube ni está afiliada a
 > Google. Accede al contenido a través de los mismos servicios web que usa la
 > propia web de YouTube, por lo que siguen aplicándose las
@@ -16,6 +23,25 @@ El resultado es un `.ipa` que se descarga y se instala en el dispositivo.
 
 > **Novedades de la última entrega.**
 >
+> * **Reproductor propio**, hecho a mano de arriba abajo (el de Apple es una caja
+>   cerrada: no se puede pintar con el tema). Botón grande de reproducir/pausa,
+>   ±10 s a los lados, barra de progreso, y una fila de **cinco iconos**:
+>   velocidad, bucle, descargar, compartir y pantalla completa. Debajo del vídeo
+>   sale **la información que enseña la aplicación oficial**: canal, visitas,
+>   duración y la descripción, con un botón **Ver canal**.
+> * **Canales.** Se entra desde cualquier vídeo (tocando el nombre del canal) o
+>   buscándolo: portada, avatar, nombre, suscriptores, *Suscribirse*, *Compartir*
+>   y tres pestañas —***Vídeos***, ***Listas*** e ***Información***— que se piden
+>   sólo al abrirlas.
+> * **Listas de reproducción.** Si el canal tiene listas, se ven en su pestaña y
+>   cada una se abre con su propia pantalla: cabecera con el número de vídeos y
+>   un botón **Reproducir todo**.
+> * **Buscador con filtros.** Tres pastillas —**Vídeos**, **Canales** y
+>   **Listas**— para elegir qué se busca, sin salir de la pantalla.
+> * **Iconos de la barra de pestañas arreglados.** Se llevaban pintando a mano
+>   sobre un lienzo vacío y salían **invisibles**. Ahora son plantillas y los
+>   colorea la propia barra: el de la pestaña elegida con el color del tema y el
+>   resto en gris.
 > * **Descargas arregladas.** Terminaban pesando «0 KB». La causa: antes de
 >   descargar, la app comprueba que el enlace sirve pidiendo **2 bytes**
 >   (`Range: bytes=0-1`); esa respuesta parcial de 2 bytes se quedaba en la
@@ -65,23 +91,39 @@ El resultado es un `.ipa` que se descarga y se instala en el dispositivo.
 | **Inicio** | Portada con **estantes deslizables**: **Continuar viendo** (lo que dejaste a medias), Tendencias de hoy, Música, Noticias, Deportes, Comedia y Para aprender. |
 | **Música** | **YouTube Music de verdad**: Selecciones rápidas, Vídeos musicales nuevos, Novedades y estantes de Reggaetón, Baladas, Rock y Pop en español. |
 | **Tendencias** | Lo más visto, con **chips** para cambiar de categoría (música, videojuegos, noticias, deportes, cine…). |
-| **Buscar** | Campo de búsqueda, sugerencias en chips y lista de resultados con miniatura, título, canal, duración, visitas y fecha. |
-| **Reproductor** | A pantalla completa, con **lo que se espera de un reproductor de YouTube**: reanuda donde lo dejaste, ±10 s con dos toques, volumen arrastrando el dedo, velocidad 0,5×–2×, bucle, descargar, compartir, mandos en la pantalla de bloqueo y una lista de **Parecidos** debajo. |
+| **Buscar** | Campo de búsqueda, sugerencias en chips y **tres filtros**: *Vídeos*, *Canales* y *Listas*. Los resultados llevan miniatura, título, canal, duración, visitas y fecha. |
+| **Canal** | Portada, avatar, nombre, suscriptores, *Suscribirse* y *Compartir*, y tres pestañas: *Vídeos*, *Listas* e *Información*. |
+| **Lista** | Cabecera con el autor, el número de vídeos y la descripción, botón *Reproducir todo* y la lista de vídeos. |
+| **Reproductor** | Con **mandos propios**: botón grande de reproducir, ±10 s, barra de progreso y cinco iconos (velocidad, bucle, descargar, compartir y pantalla completa). Debajo, la información del vídeo (canal, visitas, duración y descripción) y la lista de **Parecidos**. |
 | **Descargas** | Guarda el vídeo en MP4 360p en **la carpeta que elijas** (también fuera de la app: `/var/mobile/Documents`, `/var/mobile/Media`…). Luego se reproduce en la app o se abre con otra. |
 | **Ajustes** | Modo directo/relay, dirección del relay, inicio de sesión en YouTube, **tema y color**, **descargas y carpeta**, borrar «Continuar viendo», diagnóstico de conexión y guía de certificados. |
 
 ### El reproductor, en detalle
 
+Los mandos van **encima del vídeo** y se esconden solos a los 3,5 segundos si el
+vídeo está corriendo. Un toque los enseña o los esconde.
+
 | Gesto o botón | Qué hace |
 |---|---|
+| Un toque en el vídeo | Enseña u oculta los mandos |
 | Dos toques en la mitad izquierda | Retrocede 10 segundos |
 | Dos toques en la mitad derecha | Avanza 10 segundos |
-| Arrastrar el dedo arriba/abajo sobre el vídeo | Volumen (con el porcentaje en pantalla) |
-| **−10 s** / **+10 s** | Lo mismo que los dos toques, para quien prefiera botones |
-| **Velocidad** | 0,5× → 1× → 1,25× → 1,5× → 2× (el audio no suena acelerado) |
-| **Bucle** | Repite el vídeo sin parar |
-| **Descargar** | Baja el MP4 a la carpeta elegida; vuelve a tocarlo para cancelar |
+| Arrastrar el dedo a lo ancho | Se mueve por el vídeo (aparece el tiempo) |
+| Arrastrar el dedo arriba/abajo | Volumen (con el porcentaje en pantalla) |
+| Botón grande central | Reproducir / pausar |
+| **10** a los lados | Lo mismo que los dos toques, para quien prefiera botones |
+| **1×** (velocidad) | 0,5× → 1× → 1,25× → 1,5× → 2× (el audio no suena acelerado) |
+| **Bucle** | Repite el vídeo sin parar; se pone del color del tema cuando está activo |
+| **Descargar** | Baja el MP4 a la carpeta elegida, con el porcentaje encima del icono; vuelve a tocarlo para cancelar |
 | **Compartir** | Manda el enlace con cualquier app instalada |
+| **Pantalla completa** | El vídeo se sale de la lista y ocupa todo; otro toque lo devuelve |
+
+Debajo del vídeo está **la información del vídeo**, como en la aplicación
+oficial: el título, el canal (con botón **Ver canal**), **las visitas**, **la
+duración** y la **descripción**, con un botón *Ver más* si es larga. Es
+exactamente lo que devuelve YouTube en la respuesta del vídeo (`videoDetails`);
+los «me gusta» no se enseñan porque llegarían en una respuesta aparte que pesa
+casi **7 MB** y no cabe en la memoria de un aparato de 32 bits.
 
 Además: no se apaga la pantalla mientras se reproduce, el vídeo **sigue sonando
 con la pantalla apagada** y en la pantalla de bloqueo aparecen el título, la
@@ -92,15 +134,20 @@ Calidad de vídeo: **MP4/H.264 a 360p (itag 18, con audio incluido)**.
 Es la máxima calidad reproducible en estos dispositivos: los chips de 32 bits
 (A5/A6) **no pueden decodificar VP9 ni AV1** en hardware, así que no hay 720p.
 
-Diseño: tema oscuro con los colores de YouTube, **miniaturas 16:9 a todo el
+Diseño: **catorce combinaciones de tema** (dos fondos, oscuro y claro, por siete
+colores de botones: *Ajustes → Tema y color*), **miniaturas 16:9 a todo el
 ancho** con la duración encima, estantes que se deslizan de lado, chips de
 filtro, tipografía del sistema y **todos los iconos dibujados por código**
-(vectoriales, sin ficheros de imagen). Cero degradados, cero desenfoques y cero
-animaciones caras: todo eso funciona mal en un A5.
+(vectoriales, sin ficheros de imagen). Cero desenfoques y cero animaciones
+caras: todo eso funciona mal en un A5. El único degradado de la app es el
+sombreado que va debajo de los mandos del reproductor, para que los iconos se
+lean sobre cualquier imagen.
 
 Para ver cómo queda **sin instalar nada**, abre `docs/vista-previa.html` en el
 navegador del ordenador: es una maqueta a escala real (320 × 568 puntos) con los
-mismos colores, tamaños, márgenes e iconos que lleva la app.
+mismos colores, tamaños, márgenes e iconos que lleva la app. Incluye las
+**catorce combinaciones de tema**, el reproductor con sus mandos, la ficha de un
+canal, una lista de reproducción y el buscador con sus tres filtros.
 
 **Lo que YouTube no da sin cuenta.** La portada personalizada de YouTube
 (`FEwhat_to_watch`) y el listado de tendencias (`FEtrending`) contestan vacío o
@@ -118,6 +165,21 @@ mismos colores, tamaños, márgenes e iconos que lleva la app.
   del vídeo. YouTube tiene un listado oficial de relacionados (el endpoint
   `next`), pero su respuesta pesa **unos 7 MB por vídeo** (medido): es demasiado
   para la memoria de un iPhone de 32 bits, así que no se usa.
+* La **ficha de un canal** (portada, avatar, suscriptores y sus pestañas) se pide
+  al cliente **`ANDROID_VR`**, el de las gafas de realidad virtual: es el único
+  de los cuatro que devuelve esa pantalla sin obligar a ejecutar el JavaScript
+  del reproductor. Se pide **una sola vez**: los vídeos de la pestaña *Vídeos*
+  salen de los estantes que ya venían en esa misma respuesta.
+* Las **visitas, la duración y la descripción** del vídeo salen de la respuesta
+  del propio vídeo (`videoDetails`), tal cual. La **fecha exacta de publicación**
+  no se enseña porque los clientes de aplicación no la mandan (sólo «hace 3
+  años»), y los **«me gusta»** llegarían en la respuesta de los relacionados,
+  que es la que pesa 7 MB.
+* **Suscribirse** no se puede hacer «por dentro»: YouTube no lo sirve por
+  InnerTube si no es con la sesión de la aplicación oficial. El botón abre la
+  página del canal **en Safari con la confirmación ya puesta**
+  (`?sub_confirmation=1`): allí, con tu cuenta abierta, te suscribes en un toque.
+  Es la vía honesta y funciona de verdad.
 
 ---
 
@@ -133,17 +195,21 @@ mismos colores, tamaños, márgenes e iconos que lleva la app.
       (recomendado, HTTPS)   │   (HTTP plano)
                              ▼
               ┌──────────────────────────────┐        ┌────────────────────┐
-              │  youtubei/v1/{search,player} │        │  relay.py en tu PC │
-              │  cliente ANDROID             │  ◄──►  │  (o un servidor)   │
+              │  youtubei/v1/{search,player, │        │  relay.py en tu PC │
+              │   browse} cliente ANDROID    │  ◄──►  │  (o un servidor)   │
               └──────────────────────────────┘        └────────────────────┘
 ```
 
 * **InnerTube `ANDROID`.** De los clientes públicos que expone YouTube, es el
   único que hoy devuelve **URLs directas de MP4 muxado** sin obligar a descifrar
   la firma `nsig` (que es lo que hacen NewPipe con Rhino o `yt-dlp` con Node) y
-  que además descarga los bytes siempre (medido: 12 de 12 vídeos). También es el
-  que se usa para buscar y para la pantalla de **Música**, que va contra
-  `music.youtube.com` con el cliente `WEB_REMIX` **sólo para navegar**.
+  que además descarga los bytes siempre (medido: 12 de 12 vídeos). Es el que se
+  usa para buscar vídeos, para resolver el vídeo y para la pantalla de **Música**,
+  que va contra `music.youtube.com` con el cliente `WEB_REMIX` **sólo para
+  navegar**.
+* **InnerTube `ANDROID_VR`** se usa para lo que `ANDROID` no sirve: **la ficha de
+  un canal** (con sus pestañas) y la búsqueda de **canales**. Devuelve la maqueta
+  de móvil de siempre, así que se lee igual que el resto.
 * **`AVPlayer`** reproduce la URL directamente. Se comprobó que el servidor de
   vídeo responde `206 Partial Content` con `accept-ranges: bytes`, así que el
   *seeking* funciona sin descargar el archivo entero.
@@ -554,9 +620,14 @@ escríbelo también en Ajustes.
 │   ├── YTFeedViewController.{h,m}    Estantes deslizables (Inicio y Música)
 │   ├── YTCarruselCell.{h,m}          Fila de estante + tarjeta pequeña
 │   ├── YTTendenciasViewController.{h,m}  Lo más visto, con chips
-│   ├── YTSearchViewController.{h,m}  Búsqueda y lista
+│   ├── YTSearchViewController.{h,m}  Búsqueda y lista (con filtros)
 │   ├── YTVideoCell.{h,m}             Tarjeta de resultado
+│   ├── YTCanalCell.{h,m}             Fila de un canal (buscador)
+│   ├── YTListaCell.{h,m}             Fila de una lista de reproducción
+│   ├── YTChannelViewController.{h,m} Ficha de un canal (portada y pestañas)
+│   ├── YTListaViewController.{h,m}   Lista de reproducción
 │   ├── YTPlayerViewController.{h,m}  Reproductor (gestos, velocidad, bloqueo)
+│   ├── YTControlesReproductor.{h,m}  Mandos que van encima del vídeo
 │   ├── YTDescargasViewController.{h,m}  Lista de descargas
 │   ├── YTCarpetaViewController.{h,m} Explorador para elegir la carpeta
 │   ├── YTTemaViewController.{h,m}    Selector de tema (fondo y color)

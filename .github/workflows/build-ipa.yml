@@ -139,7 +139,12 @@ jobs:
         run: |
           set -euo pipefail
           ETIQUETA="build-$(date -u +%Y%m%d-%H%M%S)"
+          # Las notas van en un fichero del repositorio para que el Release se
+          # entienda sin abrir siquiera el README: que es, que trae esta
+          # version, como se instala y los avisos legales. --latest deja este
+          # Release como el mas visible de la pagina.
           gh release create "$ETIQUETA" ${APP_DIR}/packages/*.ipa \
-            --title "Tube9 $ETIQUETA" \
-            --notes "Compilacion automatica para iOS 9.3.5 (armv7). Descarga el .ipa adjunto e instalalo con AppSync/Cydia Impactor." \
+            --title "Tube9 para iOS 9.3.5 (32 bits) — $ETIQUETA" \
+            --notes-file .github/notas-release.md \
+            --latest \
             || echo "No se pudo crear el Release (el IPA sigue en Artefactos)"

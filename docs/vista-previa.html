@@ -42,8 +42,6 @@
   /* --- chips --- */
   .chips { display:flex; gap:8px; padding:8px 12px; overflow:hidden; height:46px;
            box-sizing:border-box; align-items:center; }
-  /* En el reproductor los botones son muchos: en vez de recortarlos, se envuelven. */
-  .chips.muchos { flex-wrap:wrap; height:auto; row-gap:8px; overflow:visible; }
   .chip { font-size:13px; font-weight:500; padding:6px 14px; border-radius:15px;
           background:var(--sup-alta); border:1px solid var(--borde); white-space:nowrap; }
   .chip.on { background:var(--acento); border-color:var(--acento); color:#fff; }
@@ -86,12 +84,6 @@
   /* --- reproductor --- */
   .nav .atras { position:absolute; left:12px; top:0; height:44px; display:flex; align-items:center;
                 color:var(--acento); font-size:15px; }
-  .caja { position:relative; background:#000; height:180px; display:flex; align-items:center;
-          justify-content:center; }
-  .caja .play { width:52px; height:52px; border-radius:50%; background:rgba(0,0,0,.55);
-                display:flex; align-items:center; justify-content:center; }
-  .caja .play i { display:block; width:0; height:0; border-left:17px solid #fff;
-                  border-top:10px solid transparent; border-bottom:10px solid transparent; margin-left:4px; }
   .info { padding:12px 14px 0; }
   .info .t { font-size:16px; font-weight:600; line-height:1.3; }
   .info .a { font-size:13px; color:var(--txt2); margin-top:4px; }
@@ -104,6 +96,73 @@
   .descarga .izq { padding-right:10px; }
   .descarga .sub { color:var(--txt2); font-size:11.5px; margin-top:3px; }
   .pista { color:var(--txt2); font-size:11.5px; padding:10px 14px; line-height:1.45; }
+
+  /* --- reproductor: los mandos van encima del video --- */
+  .video { position:relative; background:#000; height:180px; }
+  .video .velo { position:absolute; left:0; top:0; right:0; bottom:0;
+                 background:linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.05) 42%, rgba(0,0,0,.78)); }
+  .video .centro { position:absolute; left:50%; top:50%; margin:-28px 0 0 -28px;
+                   width:56px; height:56px; border-radius:50%; background:rgba(255,255,255,.18);
+                   display:flex; align-items:center; justify-content:center; }
+  .video .lado { position:absolute; top:50%; margin-top:-13px; color:#fff; }
+  .video .lado.izq { left:56px; } .video .lado.der { right:56px; }
+  .video .abajo { position:absolute; left:0; right:0; bottom:0; padding:0 12px 7px; }
+  .video .linea { display:flex; align-items:center; gap:8px; color:#fff; font-size:11px; }
+  .video .barra { flex:1; height:3px; border-radius:2px; background:rgba(255,255,255,.35);
+                  position:relative; }
+  .video .barra i { position:absolute; left:0; top:0; bottom:0; width:37%; border-radius:2px;
+                    background:var(--acento); }
+  .video .barra i::after { content:''; position:absolute; right:-4px; top:-3px; width:9px; height:9px;
+                           border-radius:50%; background:var(--acento); }
+  .video .iconos { display:flex; justify-content:space-between; padding:8px 22px 0; }
+  .video .iconos div { color:#fff; font-size:11.5px; font-weight:600; display:flex;
+                       align-items:center; gap:4px; }
+  .video .iconos .activo { color:var(--acento); }
+  .info .fila-datos { font-size:12.5px; color:var(--txt2); margin-top:5px; }
+  .info .ver { display:inline-flex; align-items:center; gap:5px; margin-top:9px;
+               font-size:12.5px; font-weight:600; color:var(--txt);
+               border:1px solid var(--borde); border-radius:14px; padding:5px 12px; }
+
+  /* --- ficha de canal --- */
+  .canal-portada { height:96px; background:linear-gradient(115deg,#26394d,#4d3a26 60%,#3c2f4d); }
+  .canal-fila { display:flex; padding:0 14px; margin-top:-32px; }
+  .canal-avatar { width:64px; height:64px; border-radius:50%; background:var(--sup-alta);
+                  border:3px solid var(--fondo); }
+  .canal-nombre { font-size:19px; font-weight:700; margin:8px 14px 0; }
+  .canal-datos { font-size:12.5px; color:var(--txt2); margin:3px 14px 0; }
+  .canal-botones { display:flex; gap:8px; margin:12px 14px 0; }
+  .canal-botones .b { height:34px; border-radius:17px; display:flex; align-items:center;
+                      justify-content:center; font-size:14px; font-weight:600; }
+  .canal-botones .b.sus { width:132px; background:var(--acento); color:#fff; }
+  .canal-botones .b.com { width:106px; border:1px solid var(--borde); color:var(--txt); }
+  .segmentos { display:flex; margin:12px 14px 10px; border:1px solid var(--borde);
+               border-radius:8px; overflow:hidden; }
+  .segmentos div { flex:1; text-align:center; font-size:13px; padding:7px 0; color:var(--txt); }
+  .segmentos div.on { background:var(--acento); color:#fff; }
+  .titulo-seccion { color:var(--txt2); font-size:13px; font-weight:600; padding:6px 14px 4px; }
+
+  /* --- lista de reproduccion --- */
+  .lista-cab { padding:14px 14px 4px; }
+  .lista-cab .t { font-size:17px; font-weight:700; line-height:1.3; }
+  .lista-cab .s { font-size:12.5px; color:var(--txt2); margin-top:5px; }
+  .lista-cab .e { font-size:12.5px; color:var(--txt2); margin-top:8px; line-height:1.45; }
+  .boton-rojo { display:inline-flex; align-items:center; gap:6px; margin-top:12px;
+                background:var(--acento); color:#fff; font-size:14px; font-weight:600;
+                border-radius:17px; padding:8px 16px; }
+
+  /* --- filas de canal y de lista (buscador) --- */
+  .fila-canal { display:flex; gap:12px; align-items:flex-start; padding:10px 14px; }
+  .fila-canal .av { width:56px; height:56px; border-radius:50%; background:var(--sup-alta);
+                    flex:0 0 56px; }
+  .fila-canal .t { font-size:15px; font-weight:600; }
+  .fila-canal .s { font-size:12.5px; color:var(--txt2); margin-top:2px; }
+  .fila-canal .e { font-size:12px; color:var(--txt2); margin-top:4px; line-height:1.4;
+                   height:32px; overflow:hidden; }
+  .fila-lista { display:flex; gap:12px; padding:9px 14px; }
+  .fila-lista .mini { width:112px; height:63px; border-radius:8px; background:var(--sup);
+                      flex:0 0 112px; position:relative; }
+  .fila-lista .t { font-size:14px; font-weight:600; line-height:1.3; }
+  .fila-lista .s { font-size:12px; color:var(--txt2); margin-top:4px; }
 
   /* --- los temas --- */
   h1.aparte { margin-top:40px; }
@@ -129,6 +188,13 @@
   que lleva la app: es una maqueta del código, no un diseño aparte.
   Las miniaturas son reales (las sirve YouTube) y los textos de los vídeos son de
   ejemplo.
+</p>
+<p class="nota">
+  Están todas las pantallas: Inicio, Música, Tendencias, las dos formas del
+  buscador (filtro <b>Vídeos</b> y filtro <b>Canales</b>), la <b>ficha de un
+  canal</b>, una <b>lista de reproducción</b>, el <b>reproductor</b> con sus
+  mandos encima del vídeo, las descargas y los ajustes. Los iconos se dibujan
+  aquí con las mismas formas que en <code>YTTheme.m</code>.
 </p>
 
 <div class="tira" id="tira"></div>
@@ -187,6 +253,76 @@ function dibujar(ctx, forma, L, trazo, color) {
     ctx.beginPath();
     ctx.moveTo(0.86*L, 0.05*L); ctx.lineTo(0.86*L, 0.32*L); ctx.lineTo(0.60*L, 0.32*L);
     ctx.closePath(); ctx.fill();
+  } else if (forma === 'pausa') {
+    ctx.fillRect(0.30*L, 0.24*L, 0.13*L, 0.52*L);
+    ctx.fillRect(0.57*L, 0.24*L, 0.13*L, 0.52*L);
+  } else if (forma === 'atras10' || forma === 'adelante10') {
+    var atras10 = forma === 'atras10';
+    var cx10 = 0.5*L, cy10 = 0.52*L, r10 = 0.29*L, a0 = -1.25, a1 = 1.95;
+    ctx.save();
+    if (atras10) { ctx.translate(L, 0); ctx.scale(-1, 1); }
+    ctx.beginPath(); ctx.arc(cx10, cy10, r10, a0, a1, false); ctx.stroke();
+    var px = cx10 + r10*Math.cos(a0), py = cy10 + r10*Math.sin(a0);
+    var dx = -Math.sin(a0), dy = Math.cos(a0), pp = 0.085*L;
+    ctx.beginPath();
+    ctx.moveTo(px + dx*pp, py + dy*pp);
+    ctx.lineTo(px - dy*pp, py + dx*pp);
+    ctx.lineTo(px + dy*pp, py - dx*pp);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+    ctx.font = 'bold ' + (0.36*L) + 'px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('10', cx10, cy10);
+    ctx.textAlign = 'start'; ctx.textBaseline = 'alphabetic';
+  } else if (forma === 'descargar') {
+    ctx.moveTo(0.5*L, 0.16*L); ctx.lineTo(0.5*L, 0.54*L); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0.33*L, 0.38*L); ctx.lineTo(0.5*L, 0.56*L); ctx.lineTo(0.67*L, 0.38*L); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0.22*L, 0.62*L); ctx.lineTo(0.22*L, 0.82*L);
+    ctx.lineTo(0.78*L, 0.82*L); ctx.lineTo(0.78*L, 0.62*L); ctx.stroke();
+  } else if (forma === 'compartir') {
+    ctx.moveTo(0.5*L, 0.60*L); ctx.lineTo(0.5*L, 0.18*L); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0.35*L, 0.33*L); ctx.lineTo(0.5*L, 0.18*L); ctx.lineTo(0.65*L, 0.33*L); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0.26*L, 0.46*L); ctx.lineTo(0.26*L, 0.84*L);
+    ctx.lineTo(0.74*L, 0.84*L); ctx.lineTo(0.74*L, 0.46*L); ctx.stroke();
+  } else if (forma === 'bucle') {
+    ctx.moveTo(0.24*L, 0.34*L); ctx.lineTo(0.70*L, 0.34*L); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0.58*L, 0.23*L); ctx.lineTo(0.74*L, 0.34*L); ctx.lineTo(0.58*L, 0.45*L); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0.76*L, 0.66*L); ctx.lineTo(0.30*L, 0.66*L); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0.42*L, 0.55*L); ctx.lineTo(0.26*L, 0.66*L); ctx.lineTo(0.42*L, 0.77*L); ctx.stroke();
+  } else if (forma === 'velocidad') {
+    var cxv = 0.5*L, cyv = 0.62*L, rv = 0.32*L;
+    ctx.arc(cxv, cyv, rv, Math.PI, 2*Math.PI); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cxv, cyv); ctx.lineTo(cxv + 0.19*L, cyv - 0.23*L); ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cxv, cyv, 0.06*L, 0, Math.PI*2); ctx.fill();
+  } else if (forma === 'pantalla') {
+    ctx.moveTo(0.16*L,0.34*L); ctx.lineTo(0.16*L,0.16*L); ctx.lineTo(0.34*L,0.16*L); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0.66*L,0.16*L); ctx.lineTo(0.84*L,0.16*L); ctx.lineTo(0.84*L,0.34*L); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0.84*L,0.66*L); ctx.lineTo(0.84*L,0.84*L); ctx.lineTo(0.66*L,0.84*L); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0.34*L,0.84*L); ctx.lineTo(0.16*L,0.84*L); ctx.lineTo(0.16*L,0.66*L); ctx.stroke();
+  } else if (forma === 'canal') {
+    ctx.ellipse(0.5*L, 0.30*L, 0.16*L, 0.16*L, 0, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0.5*L, 0.88*L, 0.30*L, Math.PI, 2*Math.PI); ctx.stroke();
+  } else if (forma === 'lista') {
+    for (var k = 0; k < 3; k++) {
+      var yk = (0.26 + 0.22*k)*L;
+      ctx.beginPath(); ctx.moveTo(0.14*L, yk); ctx.lineTo(0.58*L, yk); ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.moveTo(0.72*L, 0.62*L); ctx.lineTo(0.72*L, 0.84*L); ctx.lineTo(0.90*L, 0.73*L);
+    ctx.closePath(); ctx.fill();
   }
 }
 function icono(forma, lado, color) {
@@ -196,6 +332,15 @@ function icono(forma, lado, color) {
   var ctx = cv.getContext('2d'); ctx.scale(e, e);
   dibujar(ctx, forma, lado, Math.max(1.6, lado*0.082), color || C.txt);
   return cv;
+}
+// La misma cosa, pero como texto: hace falta para meter un icono dentro de un
+// trozo de interfaz que se arma con cadenas. OJO: no vale devolver el canvas,
+// porque al volver a montar el HTML se pierde el dibujo (un canvas serializado
+// no lleva sus pixeles dentro); por eso se manda como imagen ya pintada.
+function iconoHTML(forma, lado, color) {
+  var cv = icono(forma, lado, color);
+  return '<img src="' + cv.toDataURL() + '" width="' + lado + '" height="' + lado +
+         '" alt="" style="display:block">';
 }
 
 /* ---------- trozos de interfaz ---------- */
@@ -231,6 +376,21 @@ function chips(lista, activo) {
   return '<div class="chips">' + lista.map(function (t, i) {
     return '<div class="chip' + (i === activo ? ' on' : '') + '">' + t + '</div>';
   }).join('') + '</div>';
+}
+// Fila de canal (buscador): avatar redondo, nombre y datos.
+function filaCanal(nombre, datos, descripcion) {
+  return '<div class="fila-canal"><div class="av"></div><div>' +
+         '<div class="t">' + nombre + '</div>' +
+         '<div class="s">' + datos + '</div>' +
+         '<div class="e">' + descripcion + '</div></div></div>';
+}
+// Fila de lista de reproduccion: miniatura pequena y dos lineas de texto.
+function filaLista(v, titulo, datos) {
+  return '<div class="fila-lista">' +
+         '<div class="mini"><img src="https://i.ytimg.com/vi/' + v +
+         '/mqdefault.jpg" alt="" style="width:112px;height:63px;object-fit:cover;' +
+         'border-radius:8px;display:block"></div>' +
+         '<div><div class="t">' + titulo + '</div><div class="s">' + datos + '</div></div></div>';
 }
 function telefono(titulo, cuerpo, activo, conRecargar, sinTabs, atras) {
   var t = document.createElement('div'); t.className = 'telefono';
@@ -296,10 +456,48 @@ var pantallas = [
     cuerpo: chips(['Todo','Música','Videojuegos','Noticias','Deportes'], 0) +
             filaGrande(V.t1) + filaGrande(V.t2) },
 
-  { pie:'<b>Buscar</b> — campo de búsqueda y sugerencias en chips, con la tarjeta grande.',
+  { pie:'<b>Buscar → Vídeos</b> (por defecto) — el campo de arriba, los tres filtros y las sugerencias en chips. Al buscar, las sugerencias se van y dejan el sitio a los resultados. Cada resultado dice el canal: <b>tocarlo abre su ficha</b>.',
     t:'Buscar', activo:3, recargar:false,
     cuerpo: '<div class="buscar">Buscar en YouTube</div>' +
-            chips(['música','noticias','deportes','comedia','documentales'], 0) +
+            chips(['Vídeos','Canales','Listas'], 0) +
+            chips(['música','noticias','deportes','comedia','documentales'], -1) +
+            filaGrande(V.t3) + filaGrande(V.t4) },
+
+  { pie:'<b>Buscar → Canales</b> — el mismo campo, pero pidiendo canales. Se ve el avatar, el nombre, el @ y los suscriptores. Tocar una fila abre la ficha del canal.',
+    t:'Buscar', activo:3, recargar:false,
+    cuerpo: '<div class="buscar">viajes</div>' +
+            chips(['Vídeos','Canales','Listas'], 1) +
+            filaCanal('Viajes con Juan', '@viajesconjuan  ·  1,2 M de suscriptores',
+                      'Rutas por carretera, calas escondidas y sitios a los que volver.') +
+            filaCanal('Rutas en 4K', '@rutasen4k  ·  348 mil suscriptores',
+                      'Vídeos en 4K con dron y cámara en mano, uno cada domingo.') +
+            filaCanal('La Costa a Pie', '@lacostaapie  ·  87,3 mil suscriptores',
+                      'Caminando la costa, kilómetro a kilómetro.') },
+
+  { pie:'<b>Ficha de un canal</b> — portada, avatar, nombre, suscriptores, <b>Suscribirse</b> y <b>Compartir</b>. Las pestañas se piden <b>solo al abrirlas</b>: la de Vídeos sale de los estantes del Inicio, así que abrir la ficha cuesta una sola petición. Si el canal no tiene listas, esa pestaña ni aparece.',
+    t:'Viajes con Juan', activo:-1, recargar:false, sinTabs:true, atras:'Buscar',
+    cuerpo: '<div class="canal-portada"></div>' +
+            '<div class="canal-fila"><div class="canal-avatar"></div></div>' +
+            '<div class="canal-nombre">Viajes con Juan</div>' +
+            '<div class="canal-datos">@viajesconjuan  ·  1,2 M de suscriptores</div>' +
+            '<div class="canal-botones"><div class="b sus">Suscribirse</div>' +
+            '<div class="b com">Compartir</div></div>' +
+            '<div class="segmentos"><div class="on">Vídeos</div><div>Listas</div>' +
+            '<div>Información</div></div>' +
+            '<div class="titulo-seccion">Vídeos recientes</div>' +
+            filaGrande(V.t3) + filaGrande(V.t4) },
+
+  { pie:'<b>Lista de reproducción</b> — cabecera con el número de vídeos, el autor y la descripción, el botón <b>Reproducir todo</b> y, debajo, los vídeos en orden.',
+    t:'Rutas de verano', activo:-1, recargar:false, sinTabs:true, atras:'Viajes con Juan',
+    cuerpo: '<div class="lista-cab">' +
+              '<div class="t">Rutas de verano por la costa</div>' +
+              '<div class="s">Viajes con Juan  ·  18 vídeos  ·  1,4 M de visitas</div>' +
+              '<div class="e">Las mejores rutas para hacer en verano: carretera, calas y' +
+              ' sitios donde parar a comer.</div>' +
+              '<div class="boton-rojo">' + iconoHTML('reproducir', 14, '#FFFFFF') +
+              ' Reproducir todo</div>' +
+            '</div>' +
+            '<div class="titulo-seccion">18 vídeos</div>' +
             filaGrande(V.t3) + filaGrande(V.t4) },
 
   { pie:'<b>Ajustes</b> — modo directo o relay, sesión, y la sección nueva de <b>vídeos y descargas</b> con la carpeta elegida.',
@@ -317,17 +515,36 @@ var pantallas = [
             '<div class="cabecera">Diagnóstico</div>' +
             '<div class="ajuste rojo"><div>Probar conexión</div><div>›</div></div>' },
 
-  { pie:'<b>Reproductor</b> — dos toques en el vídeo para ±10 s, arrastrar el dedo para el volumen, velocidad, bucle, descarga, compartir y los mandos en la pantalla de bloqueo. Debajo, los parecidos.',
+  { pie:'<b>Reproductor</b> — mandos <b>propios</b> encima del vídeo: botón grande de reproducir, ±10 s a los lados, barra de progreso y cinco iconos (velocidad, bucle, descargar, compartir y pantalla completa). Se esconden solos a los 3,5 s si el vídeo corre. Debajo, la información del vídeo y los parecidos.',
     t:'Reproduciendo', activo:-1, recargar:false, sinTabs:true, atras:'Inicio',
-    cuerpo: '<div class="caja"><div class="play"><i></i></div></div>' +
-            '<div class="chips muchos"><span class="chip">−10 s</span><span class="chip">+10 s</span><span class="chip on">Velocidad 1x</span><span class="chip">Bucle: no</span><span class="chip">Descargar</span><span class="chip">Compartir</span></div>' +
-            '<div class="info">' +
-              '<div class="t">Ruta por la costa en 4K: 200 km sin prisa</div>' +
-              '<div class="a">Viajes con Juan</div>' +
-              '<div class="e">MP4 360p (los iPhone de 32 bits no decodifican VP9 ni AV1, por eso no hay 720p).<br><br>Resuelto con el cliente ANDROID. Sigues donde lo dejaste: 6:40.</div>' +
-            '</div>' +
-            '<div class="parecidos">Parecidos</div>' +
-            filaGrande(V.t3) + filaGrande(V.t4) },
+    cuerpo:
+      '<div class="video">' +
+        '<div class="velo"></div>' +
+        '<div class="centro">' + iconoHTML('pausa', 24, '#FFFFFF') + '</div>' +
+        '<div class="lado izq">' + iconoHTML('atras10', 28, '#FFFFFF') + '</div>' +
+        '<div class="lado der">' + iconoHTML('adelante10', 28, '#FFFFFF') + '</div>' +
+        '<div class="abajo">' +
+          '<div class="linea"><span>6:40</span>' +
+            '<div class="barra"><i></i></div><span>18:22</span></div>' +
+          '<div class="iconos">' +
+            '<div>' + iconoHTML('velocidad', 20, '#FFFFFF') + ' 1×</div>' +
+            '<div class="activo">' + iconoHTML('bucle', 20, C.acento) + '</div>' +
+            '<div>' + iconoHTML('descargar', 20, '#FFFFFF') + '</div>' +
+            '<div>' + iconoHTML('compartir', 20, '#FFFFFF') + '</div>' +
+            '<div>' + iconoHTML('pantalla', 20, '#FFFFFF') + '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="info">' +
+        '<div class="t">Ruta por la costa en 4K: 200 km sin prisa</div>' +
+        '<div class="a">Viajes con Juan</div>' +
+        '<div class="fila-datos">342.108 visitas  ·  18:22  ·  MP4 360p</div>' +
+        '<div class="ver">' + iconoHTML('canal', 14, C.txt) + ' Ver canal</div>' +
+        '<div class="e">Ruta completa de 200 km siguiendo la costa, con paradas en las' +
+        ' calas más escondidas. Grabado en 4K con dron y con cámara en mano.</div>' +
+      '</div>' +
+      '<div class="parecidos">Parecidos</div>' +
+      filaGrande(V.t3) + filaGrande(V.t4) },
 
   { pie:'<b>Descargas</b> — los vídeos guardados y la carpeta de destino. Cada carpeta se prueba de verdad: un visto significa que la app puede escribir ahí.',
     t:'Descargas', activo:-1, recargar:false, sinTabs:true, atras:'Ajustes',
