@@ -1,3 +1,4 @@
+// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
 // YTDescargas.m -- descarga el MP4 (360p, itag 18) que resuelve YTClient.
 #import "YTDescargas.h"
 #import "YTClient.h"
@@ -139,7 +140,7 @@ static NSString *YTTamanoLegible(unsigned long long bytes) {
 }
 
 + (NSString *)nombreBonitoDeCarpeta:(NSString *)ruta {
-    if (ruta.length == 0) return @"(sin carpeta)";
+    if (ruta.length == 0) return @"(no folder)";
     NSString *inicio = NSHomeDirectory();
     // La parte de contenedor es larguisima ("/var/mobile/Containers/Data/
     // Application/<UUID>/"): se recorta para que quepa en una celda.
@@ -204,11 +205,11 @@ static NSString *YTTamanoLegible(unsigned long long bytes) {
               progreso:(void (^)(double fraccion))progreso
             completion:(void (^)(BOOL ok, NSString *mensaje, NSString *ruta))completion {
     if (video.identificador.length == 0) {
-        if (completion) completion(NO, @"El video no tiene identificador.", nil);
+        if (completion) completion(NO, @"The video has no ID.", nil);
         return;
     }
     if ([self estaDescargando:video.identificador]) {
-        if (completion) completion(NO, @"Ese video ya se esta descargando.", nil);
+        if (completion) completion(NO, @"That video is already downloading.", nil);
         return;
     }
 
@@ -216,8 +217,8 @@ static NSString *YTTamanoLegible(unsigned long long bytes) {
     if (![YTDescargas sePuedeEscribirEn:carpeta]) {
         if (completion) {
             completion(NO, [NSString stringWithFormat:
-                @"No se puede escribir en %@.\n\nElige otra carpeta en Ajustes > "
-                @"Descargas, o borra lo que sobre: quedan %@ libres.",
+                @"Cannot write to %@.\n\nChoose another folder in Settings > "
+                @"Downloads, or delete what you do not need: %@ free.",
                 carpeta, YTTamanoLegible([self espacioLibre])], nil);
         }
         return;
@@ -238,8 +239,8 @@ static NSString *YTTamanoLegible(unsigned long long bytes) {
             [yo->_activos removeObject:video.identificador];
             [[NSNotificationCenter defaultCenter] postNotificationName:YTDescargasCambio object:nil];
             if (completion) {
-                completion(NO, [NSString stringWithFormat:@"No se pudo preparar el video: %@",
-                    [YTClient explicarError:error] ?: @"YouTube no devolvio una direccion"], nil);
+                completion(NO, [NSString stringWithFormat:@"Could not prepare the video: %@",
+                    [YTClient explicarError:error] ?: @"YouTube returned no address"], nil);
             }
             return;
         }
@@ -276,7 +277,7 @@ static NSString *YTTamanoLegible(unsigned long long bytes) {
 - (void)lanzarDescarga:(NSDictionary *)datos {
     NSURL *url = [NSURL URLWithString:datos[@"enlace"]];
     if (!url) {
-        [self fallar:datos motivo:@"La direccion del video no es valida."];
+        [self fallar:datos motivo:@"The video address is not valid."];
         return;
     }
     BOOL conRango = ([datos[@"intento"] integerValue] == 0);
@@ -370,7 +371,7 @@ didFinishDownloadingToURL:(NSURL *)ubicacion {
     datos[@"http"] = @(codigo);
     if (codigo != 200 && codigo != 206) {
         datos[@"error"] = [NSString stringWithFormat:
-            @"YouTube ha contestado HTTP %ld al pedir el video.", (long)codigo];
+            @"YouTube replied HTTP %ld when asking for the video.", (long)codigo];
         return;
     }
 
@@ -387,7 +388,7 @@ didFinishDownloadingToURL:(NSURL *)ubicacion {
     BOOL ok = [ficheros moveItemAtPath:ubicacion.path toPath:destino error:&error];
     datos[@"hecho"] = @(ok);
     if (!ok) {
-        datos[@"error"] = error.localizedDescription ?: @"no se pudo guardar el fichero";
+        datos[@"error"] = error.localizedDescription ?: @"could not save the file";
         return;
     }
 
@@ -397,9 +398,9 @@ didFinishDownloadingToURL:(NSURL *)ubicacion {
     unsigned long long tamano = [atributos[NSFileSize] unsignedLongLongValue];
     datos[@"tamanoReal"] = @(tamano);
     if (tamano == 0) {
-        datos[@"error"] = @"La descarga llego vacia (0 bytes).";
+        datos[@"error"] = @"The download arrived empty (0 bytes).";
     } else if (declarado > 1024 && tamano + 1024 < (unsigned long long)declarado) {
-        datos[@"error"] = [NSString stringWithFormat:@"La descarga se quedo corta: %@ de %@.",
+        datos[@"error"] = [NSString stringWithFormat:@"The download is incomplete: %@ of %@.",
                            YTTamanoLegible(tamano), YTTamanoLegible((unsigned long long)declarado)];
     }
 }
@@ -419,9 +420,9 @@ didCompleteWithError:(NSError *)error {
         [self avisaCambio];
         if (completion) {
             if (error.code == NSURLErrorCancelled) {
-                completion(NO, @"Descarga cancelada.", nil);
+                completion(NO, @"Download cancelled.", nil);
             } else {
-                completion(NO, [NSString stringWithFormat:@"La descarga fallo: %@",
+                completion(NO, [NSString stringWithFormat:@"The download failed: %@",
                     [YTClient explicarError:error]], nil);
             }
         }
@@ -443,14 +444,14 @@ didCompleteWithError:(NSError *)error {
             return;
         }
         [self fallar:datos motivo:[NSString stringWithFormat:
-            @"No se pudo guardar el video en %@.\n\n(%@)",
+            @"Could not save the video in %@.\n\n(%@)",
             [YTDescargas nombreBonitoDeCarpeta:datos[@"ruta"]], fallo]];
         return;
     }
 
     if (![datos[@"hecho"] boolValue]) {
         [self fallar:datos motivo:[NSString stringWithFormat:
-            @"No se pudo guardar el fichero en %@.",
+            @"Could not save the file in %@.",
             [YTDescargas nombreBonitoDeCarpeta:datos[@"ruta"]]]];
         return;
     }
@@ -482,7 +483,7 @@ didCompleteWithError:(NSError *)error {
     [self guardarHistorial:limpio];
 
     if (completion) {
-        completion(YES, [NSString stringWithFormat:@"%@\n\nGuardado en %@ (%@)",
+        completion(YES, [NSString stringWithFormat:@"%@\n\nSaved in %@ (%@)",
             video.titulo ?: @"Video",
             [YTDescargas nombreBonitoDeCarpeta:[destino stringByDeletingLastPathComponent]],
             YTTamanoLegible([tamano unsignedLongLongValue])], destino);

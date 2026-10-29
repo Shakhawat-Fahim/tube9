@@ -1,3 +1,4 @@
+// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
 // YTDescargasViewController.m -- lista de videos descargados y carpeta de destino.
 #import "YTDescargasViewController.h"
 #import "YTTheme.h"
@@ -12,7 +13,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title = @"Descargas";
+    self.title = @"Downloads";
     self.tableView.backgroundColor = [YTTheme fondo];
     self.tableView.separatorColor = [YTTheme borde];
 
@@ -48,26 +49,26 @@
 }
 
 - (NSString *)tableView:(UITableView *)tabla titleForHeaderInSection:(NSInteger)seccion {
-    if (seccion == 0) return @"Carpeta de descargas";
-    if (seccion == 1) return @"Videos descargados";
+    if (seccion == 0) return @"Download folder";
+    if (seccion == 1) return @"Downloaded videos";
     return nil;
 }
 
 - (NSString *)tableView:(UITableView *)tabla titleForFooterInSection:(NSInteger)seccion {
     if (seccion == 0) {
-        return @"Puedes elegir cualquier carpeta, tambien fuera de la app (esto es "
-                "util en dispositivos con jailbreak: /var/mobile/Documents, "
-                "/var/mobile/Media...). Se comprueba de verdad si la app puede "
-                "escribir antes de usar la carpeta.";
+        return @"You can choose any folder, also outside the app (this is "
+                "useful on jailbroken devices: /var/mobile/Documents, "
+                "/var/mobile/Media...). The app really checks that it can "
+                "write there before it uses the folder.";
     }
     if (seccion == 1) {
         if (_descargas.count == 0) {
-            return @"Todavia no hay nada descargado. Abre un video y pulsa el boton "
-                    "Descargar que hay debajo del reproductor.\n\nLa descarga sigue "
-                    "mientras la app este abierta.";
+            return @"Nothing downloaded yet. Open a video and tap the "
+                    "Download button below the player.\n\nThe download continues "
+                    "while the app is open.";
         }
-        return @"Toca un video para reproducirlo, abrirlo con otra app o borrarlo. "
-                "Tambien se puede deslizar para borrar.";
+        return @"Tap a video to play it, open it in another app or delete it. "
+                "You can also swipe to delete.";
     }
     return nil;
 }
@@ -109,11 +110,11 @@ static NSString *YTTextoDeTamano(id bytes) {
     if (indice.section == 0) {
         UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleValue1];
         if (indice.row == 0) {
-            c.textLabel.text = @"Carpeta";
+            c.textLabel.text = @"Folder";
             c.detailTextLabel.text = [YTDescargas nombreBonitoDeCarpeta:[YTDescargas carpeta]];
             c.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
         } else {
-            c.textLabel.text = @"Espacio libre";
+            c.textLabel.text = @"Free space";
             unsigned long long libre = [[YTDescargas compartido] espacioLibre];
             unsigned long long gb = 1024ULL * 1024ULL * 1024ULL;
             c.detailTextLabel.text = libre >= gb
@@ -137,7 +138,7 @@ static NSString *YTTextoDeTamano(id bytes) {
     }
 
     UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleDefault];
-    c.textLabel.text = @"Borrar todas las descargas";
+    c.textLabel.text = @"Delete all downloads";
     c.textLabel.textColor = [YTTheme acento];
     return c;
 }
@@ -164,17 +165,17 @@ static NSString *YTTextoDeTamano(id bytes) {
     }
 
     UIAlertController *alerta = [UIAlertController
-        alertControllerWithTitle:@"Borrar todas las descargas"
-                         message:@"Se borraran los ficheros de la carpeta de descargas. "
-                                 @"Esto no se puede deshacer."
+        alertControllerWithTitle:@"Delete all downloads"
+                         message:@"The files in the download folder will be deleted. "
+                                 @"This cannot be undone."
                   preferredStyle:UIAlertControllerStyleActionSheet];
-    [alerta addAction:[UIAlertAction actionWithTitle:@"Borrar todo"
+    [alerta addAction:[UIAlertAction actionWithTitle:@"Delete all"
                                                style:UIAlertActionStyleDestructive
                                              handler:^(UIAlertAction *accion) {
         [[YTDescargas compartido] borrarTodo];
         [self recargar];
     }]];
-    [alerta addAction:[UIAlertAction actionWithTitle:@"Cancelar"
+    [alerta addAction:[UIAlertAction actionWithTitle:@"Cancel"
                                                style:UIAlertActionStyleCancel
                                              handler:nil]];
     if (alerta.popoverPresentationController) {
@@ -192,7 +193,7 @@ static NSString *YTTextoDeTamano(id bytes) {
                          message:entrada[@"archivo"]
                   preferredStyle:UIAlertControllerStyleActionSheet];
 
-    [alerta addAction:[UIAlertAction actionWithTitle:@"Reproducir aqui"
+    [alerta addAction:[UIAlertAction actionWithTitle:@"Play here"
                                                style:UIAlertActionStyleDefault
                                              handler:^(UIAlertAction *accion) {
         YTPlayerViewController *reproductor = [[YTPlayerViewController alloc]
@@ -201,7 +202,7 @@ static NSString *YTTextoDeTamano(id bytes) {
         [self.navigationController pushViewController:reproductor animated:YES];
     }]];
 
-    [alerta addAction:[UIAlertAction actionWithTitle:@"Abrir con otra app"
+    [alerta addAction:[UIAlertAction actionWithTitle:@"Open in another app"
                                                style:UIAlertActionStyleDefault
                                              handler:^(UIAlertAction *accion) {
         NSURL *url = [NSURL fileURLWithPath:entrada[@"ruta"]];
@@ -211,13 +212,13 @@ static NSString *YTTextoDeTamano(id bytes) {
                                             animated:YES];
     }]];
 
-    [alerta addAction:[UIAlertAction actionWithTitle:@"Borrar"
+    [alerta addAction:[UIAlertAction actionWithTitle:@"Delete"
                                                style:UIAlertActionStyleDestructive
                                              handler:^(UIAlertAction *accion) {
         [[YTDescargas compartido] borrarEntrada:entrada];
         [self recargar];
     }]];
-    [alerta addAction:[UIAlertAction actionWithTitle:@"Cancelar"
+    [alerta addAction:[UIAlertAction actionWithTitle:@"Cancel"
                                                style:UIAlertActionStyleCancel
                                              handler:nil]];
     if (alerta.popoverPresentationController) {

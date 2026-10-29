@@ -1,3 +1,4 @@
+// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
 // YTListaCell.m -- fila de una lista de reproduccion.
 #import "YTListaCell.h"
 #import "YTTheme.h"
@@ -55,7 +56,7 @@ static const CGFloat YTAlto = 88.0;
     if ([canal isKindOfClass:[NSString class]] && canal.length) [partes addObject:canal];
     NSString *videos = lista[@"videos"];
     if ([videos isKindOfClass:[NSString class]] && videos.length) [partes addObject:videos];
-    _datos.text = [partes count] ? [partes componentsJoinedByString:@"  ·  "] : @"Lista de reproduccion";
+    _datos.text = [partes count] ? [partes componentsJoinedByString:@"  ·  "] : @"Playlist";
 
     _imagen.image = nil;
     NSString *url = lista[@"urlMiniatura"];

@@ -1,0 +1,2619 @@
+diff -ru src/tube9/app/AppDelegate.m out/app/AppDelegate.m
+--- src/tube9/app/AppDelegate.m	2026-10-29 03:41:52.817648319 -0400
++++ out/app/AppDelegate.m	2026-10-29 03:49:21.276464222 -0400
+@@ -1,3 +1,4 @@
++// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
+ // AppDelegate.m -- monta la interfaz (todo por codigo, sin storyboards)
+ #import "AppDelegate.h"
+ #import "YTTheme.h"
+@@ -45,29 +46,29 @@
+     // que se han quedado a medias (lo apunta el reproductor).
+     NSMutableArray *estantesDeInicio = [NSMutableArray array];
+     [estantesDeInicio addObject:@{
+-        @"titulo"  : @"Continuar viendo",
++        @"titulo"  : @"Continue watching",
+         @"estante" : @{ @"videos" : [YTProgreso continuarViendo] }
+     }];
+     [estantesDeInicio addObjectsFromArray:@[
+-        @{ @"titulo" : @"Tendencias de hoy", @"consulta" : @"tendencias",
++        @{ @"titulo" : @"Trending today",    @"consulta" : @"trending",
+            @"params" : YTOrdenPorPopularidad },
+-        @{ @"titulo" : @"Música",            @"consulta" : @"música",
++        @{ @"titulo" : @"Music",             @"consulta" : @"music",
+            @"params" : YTOrdenPorPopularidad },
+-        @{ @"titulo" : @"Noticias",          @"consulta" : @"noticias de hoy",
++        @{ @"titulo" : @"News",              @"consulta" : @"news today",
+            @"params" : YTOrdenRecientes },
+-        @{ @"titulo" : @"Deportes",          @"consulta" : @"deportes",
++        @{ @"titulo" : @"Sports",            @"consulta" : @"sports",
+            @"params" : YTOrdenRecientes },
+-        @{ @"titulo" : @"Comedia",           @"consulta" : @"comedia",
++        @{ @"titulo" : @"Comedy",            @"consulta" : @"comedy",
+            @"params" : YTOrdenPorPopularidad },
+-        @{ @"titulo" : @"Para aprender",     @"consulta" : @"documentales",
++        @{ @"titulo" : @"Learn something",   @"consulta" : @"documentaries",
+            @"params" : YTOrdenPorPopularidad }
+     ]];
+     YTFeedViewController *inicio =
+-        [[YTFeedViewController alloc] initConTitulo:@"Inicio" fuentes:estantesDeInicio];
++        [[YTFeedViewController alloc] initConTitulo:@"Home" fuentes:estantesDeInicio];
+     UINavigationController *navInicio =
+         [[UINavigationController alloc] initWithRootViewController:inicio];
+     navInicio.tabBarItem = [[UITabBarItem alloc]
+-        initWithTitle:@"Inicio"
++        initWithTitle:@"Home"
+                 image:[YTTheme icono:@"inicio" lado:26]
+         selectedImage:nil];
+ 
+@@ -76,7 +77,7 @@
+     UINavigationController *navMusica =
+         [[UINavigationController alloc] initWithRootViewController:musica];
+     navMusica.tabBarItem = [[UITabBarItem alloc]
+-        initWithTitle:@"Música"
++        initWithTitle:@"Music"
+                 image:[YTTheme icono:@"musica" lado:26]
+         selectedImage:nil];
+ 
+@@ -85,7 +86,7 @@
+     UINavigationController *navTendencias =
+         [[UINavigationController alloc] initWithRootViewController:tendencias];
+     navTendencias.tabBarItem = [[UITabBarItem alloc]
+-        initWithTitle:@"Tendencias"
++        initWithTitle:@"Trending"
+                 image:[YTTheme icono:@"tendencias" lado:26]
+         selectedImage:nil];
+ 
+@@ -94,7 +95,7 @@
+     UINavigationController *navBuscar =
+         [[UINavigationController alloc] initWithRootViewController:buscar];
+     navBuscar.tabBarItem = [[UITabBarItem alloc]
+-        initWithTitle:@"Buscar"
++        initWithTitle:@"Search"
+                 image:[YTTheme icono:@"buscar" lado:26]
+         selectedImage:nil];
+ 
+@@ -103,7 +104,7 @@
+     UINavigationController *navAjustes =
+         [[UINavigationController alloc] initWithRootViewController:ajustes];
+     navAjustes.tabBarItem = [[UITabBarItem alloc]
+-        initWithTitle:@"Ajustes"
++        initWithTitle:@"Settings"
+                 image:[YTTheme icono:@"ajustes" lado:26]
+         selectedImage:nil];
+ 
+diff -ru src/tube9/app/Resources/Info.plist out/app/Resources/Info.plist
+--- src/tube9/app/Resources/Info.plist	2026-10-29 03:41:52.817715907 -0400
++++ out/app/Resources/Info.plist	2026-10-29 03:49:21.276290657 -0400
+@@ -3,7 +3,7 @@
+ <plist version="1.0">
+ <dict>
+ 	<key>CFBundleDevelopmentRegion</key>
+-	<string>es_ES</string>
++	<string>en</string>
+ 	<key>CFBundleDisplayName</key>
+ 	<string>Tube9</string>
+ 	<key>CFBundleExecutable</key>
+diff -ru src/tube9/app/YTCarpetaViewController.m out/app/YTCarpetaViewController.m
+--- src/tube9/app/YTCarpetaViewController.m	2026-10-29 03:41:52.817715907 -0400
++++ out/app/YTCarpetaViewController.m	2026-10-29 03:49:21.276665617 -0400
+@@ -1,3 +1,4 @@
++// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
+ // YTCarpetaViewController.m -- explorador de carpetas muy sencillo.
+ //
+ // En un iPhone con jailbreak la app puede escribir en carpetas que no son las
+@@ -18,7 +19,7 @@
+ 
+ - (void)viewDidLoad {
+     [super viewDidLoad];
+-    self.title = @"Carpeta";
++    self.title = @"Folder";
+     self.tableView.backgroundColor = [YTTheme fondo];
+     self.tableView.separatorColor = [YTTheme borde];
+ 
+@@ -94,20 +95,20 @@
+ }
+ 
+ - (NSString *)tableView:(UITableView *)tabla titleForHeaderInSection:(NSInteger)seccion {
+-    if (seccion == 0) return @"Carpeta elegida";
+-    if (seccion == 1) return @"Sitios rapidos";
+-    return @"Entrar en...";
++    if (seccion == 0) return @"Chosen folder";
++    if (seccion == 1) return @"Quick places";
++    return @"Open...";
+ }
+ 
+ - (NSString *)tableView:(UITableView *)tabla titleForFooterInSection:(NSInteger)seccion {
+     if (seccion == 0) {
+-        return [NSString stringWithFormat:@"%@\n\nCada carpeta se marca con un visto "
+-                @"si la app puede escribir de verdad en ella. En un dispositivo con "
+-                @"jailbreak lo normal es /var/mobile/Documents o /var/mobile/Media.",
++        return [NSString stringWithFormat:@"%@\n\nEach folder gets a check mark "
++                @"if the app can really write to it. On a "
++                @"jailbroken device the usual choice is /var/mobile/Documents or /var/mobile/Media.",
+                 _ruta];
+     }
+     if (seccion == 2 && _subcarpetas.count == 0) {
+-        return _cargando ? @"Mirando que hay aqui..." : @"No hay subcarpetas.";
++        return _cargando ? @"Looking at what is here..." : @"No subfolders.";
+     }
+     return nil;
+ }
+@@ -142,14 +143,14 @@
+ 
+     if (indice.section == 0) {
+         UITableViewCell *c = [self celda];
+-        c.textLabel.text = @"Usar esta carpeta";
++        c.textLabel.text = @"Use this folder";
+         c.textLabel.textColor = [YTTheme acento];
+         c.detailTextLabel.text = [YTDescargas nombreBonitoDeCarpeta:_ruta];
+         BOOL puede = [YTDescargas sePuedeEscribirEn:_ruta];
+         c.accessoryType = puede ? UITableViewCellAccessoryCheckmark
+                                 : UITableViewCellAccessoryNone;
+         c.detailTextLabel.textColor = puede ? [YTTheme textoSecundario] : [YTTheme acento];
+-        if (!puede) c.detailTextLabel.text = @"(no se puede escribir aqui)";
++        if (!puede) c.detailTextLabel.text = @"(cannot write here)";
+         if ([carpeta isEqualToString:_ruta] && puede) {
+             c.accessoryType = UITableViewCellAccessoryCheckmark;
+             c.textLabel.textColor = [YTTheme textoSecundario];
+@@ -165,7 +166,7 @@
+     BOOL hayPadre = ![_ruta isEqualToString:@"/"];
+     if (hayPadre && indice.row == 0) {
+         UITableViewCell *c = [self celda];
+-        c.textLabel.text = @"⋯  Carpeta superior";
++        c.textLabel.text = @"⋯  Parent folder";
+         c.detailTextLabel.text = [YTDescargas nombreBonitoDeCarpeta:[_ruta stringByDeletingLastPathComponent]];
+         return c;
+     }
+@@ -185,13 +186,13 @@
+     UITableViewCell *c = [self celda];
+     BOOL puede = [carpeta[@"puede"] boolValue];
+     NSString *nombre = carpeta[@"nombre"];
+-    if ([nombre isEqualToString:@"/"]) nombre = @"/  (raiz del sistema)";
++    if ([nombre isEqualToString:@"/"]) nombre = @"/  (system root)";
+     c.textLabel.text = nombre;
+     c.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+     if (puede) {
+-        c.detailTextLabel.text = @"se puede escribir";
++        c.detailTextLabel.text = @"writable";
+     } else {
+-        c.detailTextLabel.text = @"sin permiso de escritura";
++        c.detailTextLabel.text = @"no write permission";
+     }
+     return c;
+ }
+@@ -202,12 +203,12 @@
+     if (indice.section == 0) {
+         if (![YTDescargas sePuedeEscribirEn:_ruta]) {
+             UIAlertController *alerta = [UIAlertController
+-                alertControllerWithTitle:@"Sin permiso"
+-                                 message:@"La app no puede escribir en esta carpeta. "
+-                                         @"Prueba /var/mobile/Documents o la carpeta "
+-                                         @"Descargas de la propia app."
++                alertControllerWithTitle:@"No permission"
++                                 message:@"The app cannot write to this folder. "
++                                         @"Try /var/mobile/Documents or the app's own "
++                                         @"Downloads folder."
+                           preferredStyle:UIAlertControllerStyleAlert];
+-            [alerta addAction:[UIAlertAction actionWithTitle:@"Vale"
++            [alerta addAction:[UIAlertAction actionWithTitle:@"OK"
+                                                        style:UIAlertActionStyleDefault
+                                                      handler:nil]];
+             [self presentViewController:alerta animated:YES completion:nil];
+diff -ru src/tube9/app/YTChannelViewController.m out/app/YTChannelViewController.m
+--- src/tube9/app/YTChannelViewController.m	2026-10-29 03:41:52.817715907 -0400
++++ out/app/YTChannelViewController.m	2026-10-29 03:49:21.276882903 -0400
+@@ -1,3 +1,4 @@
++// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
+ // YTChannelViewController.m -- la ficha de un canal.
+ //
+ // Se monta en dos tiempos, y a proposito:
+@@ -66,7 +67,7 @@
+ 
+ - (void)viewDidLoad {
+     [super viewDidLoad];
+-    self.title = _nombreRespaldo.length ? _nombreRespaldo : @"Canal";
++    self.title = _nombreRespaldo.length ? _nombreRespaldo : @"Channel";
+     self.view.backgroundColor = [YTTheme fondo];
+     self.edgesForExtendedLayout = UIRectEdgeNone;
+     self.automaticallyAdjustsScrollViewInsets = NO;
+@@ -143,7 +144,7 @@
+     [_cabecera addSubview:_datos];
+ 
+     _suscribirse = [UIButton buttonWithType:UIButtonTypeCustom];
+-    [_suscribirse setTitle:@"Suscribirse" forState:UIControlStateNormal];
++    [_suscribirse setTitle:@"Subscribe" forState:UIControlStateNormal];
+     [_suscribirse setTitleColor:[YTTheme textoSobreAcento] forState:UIControlStateNormal];
+     _suscribirse.titleLabel.font = [UIFont systemFontOfSize:14.0 weight:UIFontWeightSemibold];
+     _suscribirse.backgroundColor = [YTTheme acento];
+@@ -154,7 +155,7 @@
+     [_cabecera addSubview:_suscribirse];
+ 
+     _compartir = [UIButton buttonWithType:UIButtonTypeCustom];
+-    [_compartir setTitle:@"Compartir" forState:UIControlStateNormal];
++    [_compartir setTitle:@"Share" forState:UIControlStateNormal];
+     _compartir.titleLabel.font = [UIFont systemFontOfSize:14.0 weight:UIFontWeightSemibold];
+     [_compartir addTarget:self action:@selector(compartir)
+          forControlEvents:UIControlEventTouchUpInside];
+@@ -170,7 +171,7 @@
+     _pidiendo = YES;
+     [_girador startAnimating];
+     _estado.hidden = NO;
+-    _estado.text = @"Cargando el canal...";
++    _estado.text = @"Loading the channel...";
+ 
+     __weak YTChannelViewController *deb = self;
+     [[YTClient compartido] canalConId:_canalId
+@@ -184,7 +185,7 @@
+             yo->_estado.hidden = NO;
+             yo->_estado.text = [NSString stringWithFormat:@"%@\n\n%@",
+                 [YTClient explicarError:error],
+-                @"Vuelve a entrar en el canal para intentarlo otra vez."];
++                @"Open the channel again to try once more."];
+             return;
+         }
+ 
+@@ -244,7 +245,7 @@
+ 
+     // "Videos" siempre esta.
+     [claves addObject:@"videos"];
+-    [titulos addObject:@"Vídeos"];
++    [titulos addObject:@"Videos"];
+ 
+     NSArray *listasInicio = _canal[@"listasDestacadas"];
+     BOOL hayListas = NO;
+@@ -252,12 +253,12 @@
+     if ([listasInicio isKindOfClass:[NSArray class]] && listasInicio.count > 0) hayListas = YES;
+     if (hayListas) {
+         [claves addObject:@"listas"];
+-        [titulos addObject:@"Listas"];
++        [titulos addObject:@"Playlists"];
+     }
+ 
+     if ([(NSString *)_canal[@"paramsInfo"] length] > 0) {
+         [claves addObject:@"info"];
+-        [titulos addObject:@"Información"];
++        [titulos addObject:@"About"];
+     }
+ 
+     _clavesPestana = claves;
+@@ -311,11 +312,11 @@
+     if ([(NSString *)params length] == 0) {
+         NSArray *sueltos = _canal[@"videosDestacados"];
+         _secciones = [self seccionesConVideos:(sueltos ?: @[])];
+-        [self terminarConMensaje:@"Este canal no enseña videos sueltos; mira en sus listas."];
++        [self terminarConMensaje:@"This channel shows no single videos; look in its playlists."];
+         return;
+     }
+ 
+-    [self empezarCarga:@"Cargando los videos..."];
++    [self empezarCarga:@"Loading videos..."];
+     __weak YTChannelViewController *deb = self;
+     [[YTClient compartido] videosDeCanal:_canalId
+                                   params:params
+@@ -324,7 +325,7 @@
+         if (!yo) return;
+         if (error) { [yo fallo:[YTClient explicarError:error] clave:@"videos"]; return; }
+         yo->_secciones = [yo seccionesConVideos:videos];
+-        [yo terminarConMensaje:@"Este canal no tiene videos a la vista."];
++        [yo terminarConMensaje:@"This channel has no visible videos."];
+     }];
+ }
+ 
+@@ -335,11 +336,11 @@
+     NSString *params = _canal[@"paramsListas"];
+     if ([(NSString *)params length] == 0) {
+         _secciones = [self seccionesConListas:destacadas];
+-        [self terminarConMensaje:@"Este canal no tiene listas de reproduccion."];
++        [self terminarConMensaje:@"This channel has no playlists."];
+         return;
+     }
+ 
+-    [self empezarCarga:@"Cargando las listas..."];
++    [self empezarCarga:@"Loading playlists..."];
+     __weak YTChannelViewController *deb = self;
+     [[YTClient compartido] listasDeCanal:_canalId
+                                   params:params
+@@ -354,7 +355,7 @@
+             secciones = [yo seccionesConListas:destacadas];
+         }
+         yo->_secciones = secciones;
+-        [yo terminarConMensaje:@"Este canal no tiene listas de reproduccion."];
++        [yo terminarConMensaje:@"This channel has no playlists."];
+     }];
+ }
+ 
+@@ -362,11 +363,11 @@
+     NSString *params = _canal[@"paramsInfo"];
+     if ([(NSString *)params length] == 0) {
+         _secciones = [self seccionesDeInformacion:@{}];
+-        [self terminarConMensaje:@"No hay informacion de este canal."];
++        [self terminarConMensaje:@"No information for this channel."];
+         return;
+     }
+ 
+-    [self empezarCarga:@"Cargando la informacion..."];
++    [self empezarCarga:@"Loading information..."];
+     __weak YTChannelViewController *deb = self;
+     [[YTClient compartido] informacionDeCanal:_canalId
+                                        params:params
+@@ -375,7 +376,7 @@
+         if (!yo) return;
+         if (error) { [yo fallo:[YTClient explicarError:error] clave:@"info"]; return; }
+         yo->_secciones = [yo seccionesDeInformacion:info];
+-        [yo terminarConMensaje:@"No hay informacion de este canal."];
++        [yo terminarConMensaje:@"No information for this channel."];
+     }];
+ }
+ 
+@@ -411,7 +412,7 @@
+                                 @"filas" : filas }];
+     }
+     _secciones = secciones;
+-    [self terminarConMensaje:@"Este canal todavia no tiene videos publicos."];
++    [self terminarConMensaje:@"This channel has no public videos yet."];
+ }
+ 
+ - (NSArray *)seccionesConListas:(NSArray *)listas {
+@@ -422,7 +423,7 @@
+         [filas addObject:@{ @"tipo" : @"lista", @"dato" : lista }];
+     }
+     if (filas.count == 0) return @[];
+-    return @[ @{ @"titulo" : @"Listas de reproduccion", @"filas" : filas } ];
++    return @[ @{ @"titulo" : @"Playlists", @"filas" : filas } ];
+ }
+ 
+ - (NSArray *)seccionesDeInformacion:(NSDictionary *)info {
+@@ -432,7 +433,7 @@
+     id descripcion = info[@"descripcion"];
+     if ([descripcion isKindOfClass:[NSString class]] && [(NSString *)descripcion length] > 0) {
+         [filas addObject:@{ @"tipo" : @"texto",
+-                            @"dato" : @{ @"titulo" : @"Sobre el canal",
++                            @"dato" : @{ @"titulo" : @"About the channel",
+                                          @"cuerpo" : descripcion } }];
+     }
+ 
+@@ -445,12 +446,12 @@
+         suscritos = _canal[@"suscritos"];
+     }
+     if ([suscritos isKindOfClass:[NSString class]] && suscritos.length) {
+-        [lineas addObject:[NSString stringWithFormat:@"Suscriptores: %@", suscritos]];
++        [lineas addObject:[NSString stringWithFormat:@"Subscribers: %@", suscritos]];
+     }
+ 
+     id visitas = info[@"visitas"];
+     if ([visitas isKindOfClass:[NSString class]] && [(NSString *)visitas length]) {
+-        [lineas addObject:[NSString stringWithFormat:@"Visitas: %@", visitas]];
++        [lineas addObject:[NSString stringWithFormat:@"Views: %@", visitas]];
+     }
+     id alta = info[@"alta"];
+     if ([alta isKindOfClass:[NSString class]] && [(NSString *)alta length]) {
+@@ -458,21 +459,21 @@
+     }
+     id pais = info[@"pais"];
+     if ([pais isKindOfClass:[NSString class]] && [(NSString *)pais length]) {
+-        [lineas addObject:[NSString stringWithFormat:@"Pais: %@", pais]];
++        [lineas addObject:[NSString stringWithFormat:@"Country: %@", pais]];
+     }
+ 
+     if (lineas.count) {
+         [filas addObject:@{ @"tipo" : @"texto",
+-                            @"dato" : @{ @"titulo" : @"Datos",
++                            @"dato" : @{ @"titulo" : @"Details",
+                                          @"cuerpo" : [lineas componentsJoinedByString:@"\n"] } }];
+     }
+ 
+     [filas addObject:@{ @"tipo" : @"texto",
+-                        @"dato" : @{ @"titulo" : @"Suscribirse",
+-                                     @"cuerpo" : @"El boton \"Suscribirse\" de arriba abre "
+-                                                 @"la pagina del canal en YouTube con la "
+-                                                 @"confirmacion ya puesta, para que te "
+-                                                 @"suscribas con tu cuenta." } }];
++                        @"dato" : @{ @"titulo" : @"Subscribe",
++                                     @"cuerpo" : @"The \"Subscribe\" button above opens "
++                                                 @"the channel page on YouTube with the "
++                                                 @"confirmation already set, so you can "
++                                                 @"subscribe with your account." } }];
+ 
+     if (filas.count == 0) return @[];
+     return @[ @{ @"titulo" : @"", @"filas" : filas } ];
+@@ -504,7 +505,7 @@
+     [_pedidas removeObject:clave];   // asi se puede reintentar volviendo a la pestana
+     [_girador stopAnimating];
+     _estado.hidden = NO;
+-    _estado.text = [NSString stringWithFormat:@"%@\n\nToca otra pestana y vuelve para reintentar.",
++    _estado.text = [NSString stringWithFormat:@"%@\n\nTap another tab and come back to retry.",
+                     texto];
+     [_tabla reloadData];
+     [self.view setNeedsLayout];
+@@ -517,13 +518,13 @@
+     // de la aplicacion y, aun asi, YouTube no lo sirve por InnerTube. La via
+     // honesta: su propia pagina, con la confirmacion ya puesta.
+     UIAlertController *alerta = [UIAlertController
+-        alertControllerWithTitle:@"Suscribirse"
+-                         message:@"Tube9 abre la pagina del canal en YouTube con la "
+-                                 "confirmacion de suscripcion ya puesta: alli, con tu "
+-                                 "cuenta abierta en Safari, te suscribes en un toque."
++        alertControllerWithTitle:@"Subscribe"
++                         message:@"Tube9 opens the channel page on YouTube with the "
++                                 "subscribe confirmation already set: there, with your "
++                                 "account signed in to Safari, you subscribe in one tap."
+                   preferredStyle:UIAlertControllerStyleAlert];
+     __weak YTChannelViewController *deb = self;
+-    [alerta addAction:[UIAlertAction actionWithTitle:@"Abrir YouTube"
++    [alerta addAction:[UIAlertAction actionWithTitle:@"Open YouTube"
+                                               style:UIAlertActionStyleDefault
+                                             handler:^(UIAlertAction *accion) {
+         YTChannelViewController *yo = deb;
+@@ -532,7 +533,7 @@
+             @"https://www.youtube.com/channel/%@?sub_confirmation=1", yo->_canalId];
+         [[UIApplication sharedApplication] openURL:[NSURL URLWithString:enlace]];
+     }]];
+-    [alerta addAction:[UIAlertAction actionWithTitle:@"Cancelar"
++    [alerta addAction:[UIAlertAction actionWithTitle:@"Cancel"
+                                               style:UIAlertActionStyleCancel
+                                             handler:nil]];
+     [self presentViewController:alerta animated:YES completion:nil];
+diff -ru src/tube9/app/YTClient.m out/app/YTClient.m
+--- src/tube9/app/YTClient.m	2026-10-29 03:41:52.817715907 -0400
++++ out/app/YTClient.m	2026-10-29 03:49:21.277231275 -0400
+@@ -1,3 +1,4 @@
++// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
+ // YTClient.m -- habla con YouTube (InnerTube) o con el relay
+ #import "YTClient.h"
+ 
+@@ -63,7 +64,7 @@
+                @"agente"  : @"com.google.android.youtube/21.26.364 (Linux; U; Android 11) gzip",
+                @"sdk"     : @30,
+                @"extra"   : @{ @"osName" : @"Android", @"osVersion" : @"11" },
+-               @"nota"    : @"app de Android (12 de 12 descargas correctas)" },
++               @"nota"    : @"Android app (12 of 12 downloads OK)" },
+ 
+             @{ @"nombre"  : @"ANDROID_VR",
+                @"version" : @"1.65.10",
+@@ -73,7 +74,7 @@
+                @"sdk"     : @32,
+                @"extra"   : @{ @"deviceMake" : @"Oculus", @"deviceModel" : @"Quest 3",
+                                @"osName" : @"Android", @"osVersion" : @"12L" },
+-               @"nota"    : @"gafas VR (9 de 12: YouTube le pide po token en algunos)" },
++               @"nota"    : @"VR headset (9 of 12: YouTube asks for a po token on some)" },
+ 
+             @{ @"nombre"  : @"IOS",
+                @"version" : @"21.26.4",
+@@ -83,7 +84,7 @@
+                @"sdk"     : @0,
+                @"extra"   : @{ @"deviceMake" : @"Apple", @"deviceModel" : @"iPhone16,2",
+                                @"osName" : @"iPhone", @"osVersion" : @"18.3.2.22D82" },
+-               @"nota"    : @"app de iPhone (no devolvio formatos en la prueba)" },
++               @"nota"    : @"iPhone app (returned no formats in testing)" },
+ 
+             @{ @"nombre"  : @"VISIONOS",
+                @"version" : @"1.02",
+@@ -94,8 +95,8 @@
+                @"sdk"     : @0,
+                @"extra"   : @{ @"deviceMake" : @"Apple", @"deviceModel" : @"RealityDevice17,1",
+                                @"osName" : @"visionOS", @"osVersion" : @"26.5.23O471" },
+-               @"nota"    : @"gafas Vision Pro (sin po token sobre el papel, pero no "
+-                            @"devolvio formatos en la prueba)" }
++               @"nota"    : @"Vision Pro headset (no po token on paper, but it "
++                            @"returned no formats in testing)" }
+         ];
+     });
+     return lista;
+@@ -123,7 +124,7 @@
+                      @"sdk"     : @0,
+                      @"extra"   : @{},
+                      @"base"    : kBaseYTMusic,
+-                     @"nota"    : @"YouTube Music (solo navegar)" };
++                     @"nota"    : @"YouTube Music (browsing only)" };
+     });
+     return cliente;
+ }
+@@ -400,7 +401,7 @@
+         if (![objeto isKindOfClass:[NSDictionary class]]) {
+             YTEnPrincipal(^{
+                 completion(nil, jsonError ?: [NSError errorWithDomain:@"tube9"
+-                    code:1 userInfo:@{NSLocalizedDescriptionKey : @"Respuesta no valida"}]);
++                    code:1 userInfo:@{NSLocalizedDescriptionKey : @"Invalid response"}]);
+             });
+             return;
+         }
+@@ -429,7 +430,7 @@
+         if (!url) {
+             completion(nil, [NSError errorWithDomain:@"tube9" code:2
+                 userInfo:@{NSLocalizedDescriptionKey :
+-                    @"No has configurado la direccion del relay en Ajustes."}]);
++                    @"You have not set the relay address in Settings."}]);
+             return;
+         }
+         [self obtener:url completion:^(NSDictionary *json, NSError *error) {
+@@ -437,7 +438,7 @@
+             if (![json[@"ok"] boolValue]) {
+                 completion(nil, [NSError errorWithDomain:@"tube9" code:3
+                     userInfo:@{NSLocalizedDescriptionKey :
+-                        json[@"error"] ?: @"El relay respondio con un error"}]);
++                        json[@"error"] ?: @"The relay replied with an error"}]);
+                 return;
+             }
+             completion([YTVideo listaDesdeRelay:json[@"resultados"]], nil);
+@@ -475,13 +476,13 @@
+ - (void)canalConId:(NSString *)canalId completion:(YTBloqueInfo)completion {
+     if (canalId.length == 0) {
+         completion(nil, [NSError errorWithDomain:@"tube9" code:4
+-            userInfo:@{NSLocalizedDescriptionKey : @"Canal no valido"}]);
++            userInfo:@{NSLocalizedDescriptionKey : @"Invalid channel"}]);
+         return;
+     }
+     if ([[YTClient modo] isEqualToString:@"relay"]) {
+         completion(nil, [NSError errorWithDomain:@"tube9" code:3
+             userInfo:@{NSLocalizedDescriptionKey :
+-                @"Los canales necesitan el modo directo (sin relay)."}]);
++                @"Channels need direct mode (no relay)."}]);
+         return;
+     }
+ 
+@@ -575,13 +576,13 @@
+                                 NSError *error))completion {
+     if (listaId.length == 0) {
+         completion(nil, @[], [NSError errorWithDomain:@"tube9" code:4
+-            userInfo:@{NSLocalizedDescriptionKey : @"Lista no valida"}]);
++            userInfo:@{NSLocalizedDescriptionKey : @"Invalid playlist"}]);
+         return;
+     }
+     if ([[YTClient modo] isEqualToString:@"relay"]) {
+         completion(nil, nil, [NSError errorWithDomain:@"tube9" code:3
+             userInfo:@{NSLocalizedDescriptionKey :
+-                @"Las listas necesitan el modo directo (sin relay)."}]);
++                @"Playlists need direct mode (no relay)."}]);
+         return;
+     }
+ 
+@@ -661,13 +662,13 @@
+                         [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+     if (limpia.length == 0) {
+         completion(nil, [NSError errorWithDomain:@"tube9" code:4
+-            userInfo:@{NSLocalizedDescriptionKey : @"Escribe algo que buscar"}]);
++            userInfo:@{NSLocalizedDescriptionKey : @"Type something to search for"}]);
+         return;
+     }
+     if ([[YTClient modo] isEqualToString:@"relay"]) {
+         completion(nil, [NSError errorWithDomain:@"tube9" code:3
+             userInfo:@{NSLocalizedDescriptionKey :
+-                @"Este filtro necesita el modo directo (sin relay)."}]);
++                @"This filter needs direct mode (no relay)."}]);
+         return;
+     }
+     [self asegurarVisitante:^{
+@@ -705,7 +706,7 @@
+     if ([[YTClient modo] isEqualToString:@"relay"]) {
+         completion(nil, [NSError errorWithDomain:@"tube9" code:3
+             userInfo:@{NSLocalizedDescriptionKey :
+-                @"La pantalla de Musica necesita el modo directo (sin relay)."}]);
++                @"The Music screen needs direct mode (no relay)."}]);
+         return;
+     }
+ 
+@@ -750,7 +751,7 @@
+ - (void)resolverVideo:(NSString *)videoId completion:(YTBloqueInfo)completion {
+     if (videoId.length == 0) {
+         completion(nil, [NSError errorWithDomain:@"tube9" code:4
+-            userInfo:@{NSLocalizedDescriptionKey : @"Video no valido"}]);
++            userInfo:@{NSLocalizedDescriptionKey : @"Invalid video"}]);
+         return;
+     }
+ 
+@@ -759,7 +760,7 @@
+         if (!url) {
+             completion(nil, [NSError errorWithDomain:@"tube9" code:2
+                 userInfo:@{NSLocalizedDescriptionKey :
+-                    @"No has configurado la direccion del relay en Ajustes."}]);
++                    @"You have not set the relay address in Settings."}]);
+             return;
+         }
+         [self obtener:url completion:^(NSDictionary *json, NSError *error) {
+@@ -767,13 +768,13 @@
+             if (![json[@"ok"] boolValue]) {
+                 completion(nil, [NSError errorWithDomain:@"tube9" code:3
+                     userInfo:@{NSLocalizedDescriptionKey :
+-                        json[@"error"] ?: @"El relay no pudo resolver el video"}]);
++                        json[@"error"] ?: @"The relay could not resolve the video"}]);
+                 return;
+             }
+             NSString *enlace = json[@"url_proxy"] ?: json[@"url_directa"];
+             if (enlace.length == 0) {
+                 completion(nil, [NSError errorWithDomain:@"tube9" code:5
+-                    userInfo:@{NSLocalizedDescriptionKey : @"El relay no devolvio ninguna URL"}]);
++                    userInfo:@{NSLocalizedDescriptionKey : @"The relay returned no URL"}]);
+                 return;
+             }
+             completion(@{ @"url" : enlace,
+@@ -814,14 +815,14 @@
+             NSString *texto = e.localizedDescription;
+             if (texto.length && ![motivos containsObject:texto]) [motivos addObject:texto];
+         }
+-        NSString *resumen = motivos.count ? [motivos componentsJoinedByString:@" | "] : @"sin detalle";
++        NSString *resumen = motivos.count ? [motivos componentsJoinedByString:@" | "] : @"no details";
+         NSString *ayuda = @"";
+         if ([resumen rangeOfString:@"LOGIN_REQUIRED"].location != NSNotFound ||
+             [resumen rangeOfString:@"inicia sesion"].location != NSNotFound ||
+             [resumen rangeOfString:@"bot"].location != NSNotFound) {
+-            ayuda = @"\n\nYouTube desconfia de esta conexion. Entra en "
+-                     "Ajustes > Iniciar sesion en YouTube: con la sesion iniciada "
+-                     "este aviso desaparece.";
++            ayuda = @"\n\nYouTube does not trust this connection. Go to "
++                     "Settings > Sign in to YouTube: once you are signed in, "
++                     "this message goes away.";
+         }
+         completion(nil, [NSError errorWithDomain:@"tube9" code:6 userInfo:@{
+             NSLocalizedDescriptionKey : [NSString stringWithFormat:@"%@%@", resumen, ayuda]}]);
+@@ -848,7 +849,7 @@
+         NSDictionary *estado = json[@"playabilityStatus"];
+         NSString *nombreEstado = estado[@"status"];
+         if (![nombreEstado isEqualToString:@"OK"]) {
+-            NSString *motivo = estado[@"reason"] ?: nombreEstado ?: @"desconocido";
++            NSString *motivo = estado[@"reason"] ?: nombreEstado ?: @"unknown";
+             [errores addObject:[NSError errorWithDomain:@"tube9" code:6 userInfo:@{
+                 NSLocalizedDescriptionKey : motivo}]];
+             [self resolverVideo:videoId conClientes:clientes indice:indice + 1
+@@ -874,7 +875,7 @@
+         if (!elegido) {
+             [errores addObject:[NSError errorWithDomain:@"tube9" code:7 userInfo:@{
+                 NSLocalizedDescriptionKey :
+-                    @"YouTube no devolvio un formato reproducible para este video."}]];
++                    @"YouTube returned no playable format for this video."}]];
+             [self resolverVideo:videoId conClientes:clientes indice:indice + 1
+                         errores:errores completion:completion];
+             return;
+@@ -889,8 +890,8 @@
+             if (!vale) {
+                 [errores addObject:[NSError errorWithDomain:@"tube9" code:9 userInfo:@{
+                     NSLocalizedDescriptionKey :
+-                        [NSString stringWithFormat:@"%@ dio una URL que no se puede "
+-                         @"descargar (%@)", cliente[@"nombre"], detalle]}]];
++                        [NSString stringWithFormat:@"%@ gave a URL that cannot be "
++                         @"downloaded (%@)", cliente[@"nombre"], detalle]}]];
+                 [self resolverVideo:videoId conClientes:clientes indice:indice + 1
+                             errores:errores completion:completion];
+                 return;
+@@ -928,7 +929,7 @@
+ - (void)comprobarEnlace:(NSString *)enlace
+              completion:(void (^)(BOOL vale, NSString *detalle))completion {
+     NSURL *url = [NSURL URLWithString:enlace];
+-    if (!url) { completion(NO, @"la direccion no es valida"); return; }
++    if (!url) { completion(NO, @"the address is not valid"); return; }
+ 
+     NSMutableURLRequest *peticion = [NSMutableURLRequest
+         requestWithURL:url
+@@ -940,14 +941,14 @@
+         completionHandler:^(NSData *datos, NSURLResponse *respuesta, NSError *error) {
+         double segundos = -[inicio timeIntervalSinceNow];
+         if (error) {
+-            completion(NO, [NSString stringWithFormat:@"%@ (en %.1f s)",
++            completion(NO, [NSString stringWithFormat:@"%@ (in %.1f s)",
+                 [YTClient explicarError:error], segundos]);
+             return;
+         }
+         NSInteger codigo = [respuesta isKindOfClass:[NSHTTPURLResponse class]]
+             ? ((NSHTTPURLResponse *)respuesta).statusCode : 0;
+         if (codigo == 200 || codigo == 206) {
+-            completion(YES, [NSString stringWithFormat:@"HTTP %ld en %.1f s",
++            completion(YES, [NSString stringWithFormat:@"HTTP %ld in %.1f s",
+                              (long)codigo, segundos]);
+         } else {
+             completion(NO, [NSString stringWithFormat:@"HTTP %ld", (long)codigo]);
+@@ -962,8 +963,8 @@
+     NSMutableDictionary *ctx = [NSMutableDictionary dictionary];
+     ctx[@"clientName"] = cliente[@"nombre"];
+     ctx[@"clientVersion"] = cliente[@"version"];
+-    ctx[@"hl"] = @"es";
+-    ctx[@"gl"] = @"ES";
++    ctx[@"hl"] = @"en";
++    ctx[@"gl"] = @"US";
+     NSNumber *sdk = cliente[@"sdk"];
+     if (sdk.integerValue > 0) ctx[@"androidSdkVersion"] = sdk;
+     // deviceMake/deviceModel/osName/osVersion: YouTube los usa para decidir si
+@@ -1033,7 +1034,7 @@
+     [peticion setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+     NSString *agente = cliente[@"agente"];
+     if (agente.length) [peticion setValue:agente forHTTPHeaderField:@"User-Agent"];
+-    [peticion setValue:@"es-ES,es;q=0.9" forHTTPHeaderField:@"Accept-Language"];
++    [peticion setValue:@"en-US,en;q=0.9" forHTTPHeaderField:@"Accept-Language"];
+ 
+     // Las mismas cabeceras que manda NewPipe en cada peticion. Si no van,
+     // YouTube no sabe con que cliente habla y responde mucho mas a menudo con
+@@ -1076,7 +1077,7 @@
+             YTEnPrincipal(^{
+                 completion(nil, [NSError errorWithDomain:@"tube9" code:10 userInfo:@{
+                     NSLocalizedDescriptionKey : [NSString stringWithFormat:
+-                        @"YouTube respondio HTTP %ld al pedir %@.%@",
++                        @"YouTube replied HTTP %ld when asking for %@.%@",
+                         (long)codigo, ruta, detalle]}]); });
+             return;
+         }
+@@ -1084,7 +1085,7 @@
+         if (!esDiccionario) {
+             YTEnPrincipal(^{
+                 completion(nil, [NSError errorWithDomain:@"tube9" code:8
+-                    userInfo:@{NSLocalizedDescriptionKey : @"YouTube devolvio algo inesperado"}]);
++                    userInfo:@{NSLocalizedDescriptionKey : @"YouTube returned something unexpected"}]);
+             });
+             return;
+         }
+@@ -1096,26 +1097,26 @@
+ 
+ - (void)probarConexion:(void (^)(NSString *informe))completion {
+     NSMutableString *informe = [NSMutableString string];
+-    [informe appendFormat:@"Modo: %@\n", [YTClient modo]];
+-    [informe appendFormat:@"Clientes: %@\n", [YTClient listaDeClientes]];
+-    [informe appendFormat:@"Sesion iniciada: %@  (%lu cookies)\n",
+-        ([YTClient haySesion] ? @"SI" : @"NO"), (unsigned long)[YTClient numeroDeCookies]];
++    [informe appendFormat:@"Mode: %@\n", [YTClient modo]];
++    [informe appendFormat:@"Clients: %@\n", [YTClient listaDeClientes]];
++    [informe appendFormat:@"Signed in: %@  (%lu cookies)\n",
++        ([YTClient haySesion] ? @"YES" : @"NO"), (unsigned long)[YTClient numeroDeCookies]];
+ 
+     if ([[YTClient modo] isEqualToString:@"relay"]) {
+         NSURL *url = [YTClient urlDelRelay:@"/api/health" parametros:nil];
+-        [informe appendFormat:@"Relay: %@\n\n", url.absoluteString ?: @"(sin configurar)"];
++        [informe appendFormat:@"Relay: %@\n\n", url.absoluteString ?: @"(not set)"];
+         if (!url) {
+-            [informe appendString:@"Falta la direccion del relay."];
++            [informe appendString:@"The relay address is missing."];
+             completion(informe);
+             return;
+         }
+         [self obtener:url completion:^(NSDictionary *json, NSError *error) {
+             if (error) {
+-                [informe appendFormat:@"FALLO: %@\n%@",
++                [informe appendFormat:@"FAILED: %@\n%@",
+                     [YTClient explicarError:error],
+-                    @"\nComprueba que el relay esta arrancado y en la misma red."];
++                    @"\nCheck that the relay is running and on the same network."];
+             } else {
+-                [informe appendFormat:@"OK  responde %@ v%@",
++                [informe appendFormat:@"OK  %@ v%@ replies",
+                     json[@"servicio"] ?: @"?", json[@"version"] ?: @"?"];
+             }
+             completion(informe);
+@@ -1123,21 +1124,21 @@
+         return;
+     }
+ 
+-    [informe appendString:@"\n1) Buscando en youtube.com...\n"];
++    [informe appendString:@"\n1) Searching youtube.com...\n"];
+     NSDate *principioBusqueda = [NSDate date];
+-    [self buscar:@"prueba" completion:^(NSArray *videos, NSError *error) {
++    [self buscar:@"test" completion:^(NSArray *videos, NSError *error) {
+         [informe appendFormat:@"   %@\n", [self describir:videos error:error
+                                                      desde:principioBusqueda]];
+-        [informe appendFormat:@"   visitante anonimo: %@\n",
+-            ([YTClient visitante].length ? @"obtenido" : @"NO disponible")];
++        [informe appendFormat:@"   anonymous visitor ID: %@\n",
++            ([YTClient visitante].length ? @"received" : @"NOT available")];
+         if (error) {
+-            [informe appendString:@"\nSi es un error de certificado, instala las raices "
+-                               @"actualizadas en el dispositivo (mira el README)."];
++            [informe appendString:@"\nIf this is a certificate error, install the updated "
++                               @"root certificates on the device (see the README)."];
+             completion(informe);
+             return;
+         }
+         if (videos.count == 0) {
+-            [informe appendString:@"\nLa busqueda no devolvio ningun resultado."];
++            [informe appendString:@"\nThe search returned no results."];
+             completion(informe);
+             return;
+         }
+@@ -1145,37 +1146,37 @@
+         YTVideo *prueba = videos[0];
+         NSString *recorte = prueba.titulo.length > 32
+             ? [prueba.titulo substringToIndex:32] : prueba.titulo;
+-        [informe appendFormat:@"\n2) Pidiendo la URL del video \"%@\"...\n", recorte];
++        [informe appendFormat:@"\n2) Asking for the URL of video \"%@\"...\n", recorte];
+         NSDate *principioResolucion = [NSDate date];
+         [self resolverVideo:prueba.identificador
+             completion:^(NSDictionary *info, NSError *error) {
+             double segundos = -[principioResolucion timeIntervalSinceNow];
+             NSString *enlace = info[@"url"];
+             if (error || enlace.length == 0) {
+-                [informe appendFormat:@"   FALLO tras %.1f s: %@\n", segundos,
+-                    [YTClient explicarError:error] ?: @"YouTube no devolvio URL"];
+-                [informe appendString:@"\nYa se han probado todos los clientes. Si el motivo "
+-                                   "es LOGIN_REQUIRED, inicia sesion en Ajustes > "
+-                                   "Iniciar sesion en YouTube."];
++                [informe appendFormat:@"   FAILED after %.1f s: %@\n", segundos,
++                    [YTClient explicarError:error] ?: @"YouTube returned no URL"];
++                [informe appendString:@"\nAll clients have been tried. If the reason "
++                                   "is LOGIN_REQUIRED, sign in under Settings > "
++                                   "Sign in to YouTube."];
+                 completion(informe);
+                 return;
+             }
+             NSURL *url = [NSURL URLWithString:enlace];
+             NSString *quien = info[@"cliente"];
+-            [informe appendFormat:@"   OK  URL obtenida en %.1f s%@\n", segundos,
+-                (quien.length ? [NSString stringWithFormat:@" con el cliente %@", quien] : @"")];
++            [informe appendFormat:@"   OK  URL received in %.1f s%@\n", segundos,
++                (quien.length ? [NSString stringWithFormat:@" with client %@", quien] : @"")];
+             NSString *comprobacion = info[@"comprobacion"];
+             if (comprobacion.length) {
+-                [informe appendFormat:@"   descarga comprobada: %@\n", comprobacion];
++                [informe appendFormat:@"   download check: %@\n", comprobacion];
+             }
+-            [informe appendFormat:@"   servidor de video: %@\n", url.host ?: @"(desconocido)"];
+-            [informe appendString:@"\n3) Descargando los primeros KB del video...\n"];
++            [informe appendFormat:@"   video server: %@\n", url.host ?: @"(unknown)"];
++            [informe appendString:@"\n3) Downloading the first KB of the video...\n"];
+             [self probarBytesDe:enlace completion:^(NSString *resultado) {
+                 [informe appendFormat:@"   %@\n", resultado];
+                 [informe appendString:
+-                    @"\nSi el paso 3 falla o tarda muchisimo, el problema esta en la "
+-                    @"descarga del video, no en la busqueda: suele ser el proveedor de "
+-                    @"Internet dando largas con googlevideo.com. Prueba el modo relay."];
++                    @"\nIf step 3 fails or takes very long, the problem is in the "
++                    @"video download, not in the search: usually the Internet provider "
++                    @"is slowing down googlevideo.com. Try relay mode."];
+                 completion(informe);
+             }];
+         }];
+@@ -1186,10 +1187,10 @@
+ - (NSString *)describir:(NSArray *)videos error:(NSError *)error desde:(NSDate *)inicio {
+     double segundos = -[inicio timeIntervalSinceNow];
+     if (error) {
+-        return [NSString stringWithFormat:@"FALLO tras %.1f s: %@",
++        return [NSString stringWithFormat:@"FAILED after %.1f s: %@",
+                 segundos, [YTClient explicarError:error]];
+     }
+-    return [NSString stringWithFormat:@"OK  %lu resultados en %.1f s",
++    return [NSString stringWithFormat:@"OK  %lu results in %.1f s",
+             (unsigned long)videos.count, segundos];
+ }
+ 
+@@ -1198,7 +1199,7 @@
+ // se descarga".
+ - (void)probarBytesDe:(NSString *)enlace completion:(void (^)(NSString *resultado))completion {
+     NSURL *url = [NSURL URLWithString:enlace];
+-    if (!url) { completion(@"La URL del video no es valida."); return; }
++    if (!url) { completion(@"The video URL is not valid."); return; }
+ 
+     NSMutableURLRequest *peticion = [NSMutableURLRequest requestWithURL:url];
+     [peticion setValue:@"bytes=0-65535" forHTTPHeaderField:@"Range"];
+@@ -1208,7 +1209,7 @@
+         completionHandler:^(NSData *datos, NSURLResponse *respuesta, NSError *error) {
+         double segundos = -[inicio timeIntervalSinceNow];
+         if (error) {
+-            completion([NSString stringWithFormat:@"FALLO tras %.1f s: %@",
++            completion([NSString stringWithFormat:@"FAILED after %.1f s: %@",
+                 segundos, [YTClient explicarError:error]]);
+             return;
+         }
+@@ -1220,9 +1221,9 @@
+                 [datos subdataWithRange:NSMakeRange(4, 4)] encoding:NSASCIIStringEncoding];
+             if (atom) firma = [NSString stringWithFormat:@", atom '%@'", atom];
+         }
+-        completion([NSString stringWithFormat:@"OK  HTTP %ld, %@, %.0f KB en %.1f s%@",
++        completion([NSString stringWithFormat:@"OK  HTTP %ld, %@, %.0f KB in %.1f s%@",
+                     (long)(http ? http.statusCode : 0),
+-                    [respuesta MIMEType] ?: @"tipo desconocido",
++                    [respuesta MIMEType] ?: @"unknown type",
+                     datos.length / 1024.0, segundos, firma]);
+     }] resume];
+ }
+@@ -1441,29 +1442,29 @@
+     if ([error.domain isEqualToString:NSURLErrorDomain]) {
+         switch (error.code) {
+             case NSURLErrorNotConnectedToInternet:
+-                return @"Sin conexion a Internet.";
++                return @"No Internet connection.";
+             case NSURLErrorCannotFindHost:
+-                return @"No se encuentra el servidor (revisa la direccion).";
++                return @"Server not found (check the address).";
+             case NSURLErrorCannotConnectToHost:
+-                return @"No se puede conectar al servidor (revisa el puerto y el firewall).";
++                return @"Cannot connect to the server (check the port and the firewall).";
+             case NSURLErrorTimedOut:
+-                return @"El servidor tarda demasiado en responder.";
++                return @"The server takes too long to reply.";
+             case NSURLErrorServerCertificateUntrusted:
+             case NSURLErrorServerCertificateHasBadDate:
+             case NSURLErrorServerCertificateHasUnknownRoot:
+             case NSURLErrorServerCertificateNotYetValid:
+-                return @"Certificado TLS no valido: iOS 9 no confia en la CA moderna. "
+-                        "Instala las raices actualizadas (README, pasos 1-3).";
++                return @"Invalid TLS certificate: iOS 9 does not trust the modern CA. "
++                        "Install the updated root certificates (README, steps 1-3).";
+             case NSURLErrorSecureConnectionFailed:
+-                return @"Fallo de conexion segura (TLS). Actualiza las raices del "
+-                        "dispositivo (README, pasos 1-3).";
++                return @"Secure connection (TLS) failed. Update the root certificates "
++                        "on the device (README, steps 1-3).";
+             case NSURLErrorCancelled:
+-                return @"Peticion cancelada.";
++                return @"Request cancelled.";
+             default:
+                 break;
+         }
+     }
+-    return error.localizedDescription ?: @"Error desconocido";
++    return error.localizedDescription ?: @"Unknown error";
+ }
+ 
+ @end
+@@ -1650,7 +1651,7 @@
+         video.titulo = YTTextoDeNodo(fila[@"title"]);
+         video.canal  = YTTextoDeNodo(fila[@"subtitle"]);
+     }
+-    if (video.titulo.length == 0) video.titulo = @"(sin titulo)";
++    if (video.titulo.length == 0) video.titulo = @"(no title)";
+ 
+     video.urlMiniatura = YTUrlMiniaturaMusical(fila);
+     if (video.urlMiniatura.length == 0) {
+@@ -1685,7 +1686,7 @@
+     // Con una o dos canciones no vale la pena una fila entera.
+     if (videos.count >= 3) {
+         for (YTVideo *v in videos) [vistos addObject:v.identificador];
+-        [filas addObject:@{ @"titulo" : (titulo.length ? titulo : @"Música"),
++        [filas addObject:@{ @"titulo" : (titulo.length ? titulo : @"Music"),
+                             @"videos" : videos }];
+     }
+ }
+@@ -1730,7 +1731,7 @@
+         [restantes addObject:video];
+     }
+     if (restantes.count >= 3) {
+-        [filas addObject:@{ @"titulo" : (tituloRespaldo.length ? tituloRespaldo : @"Música"),
++        [filas addObject:@{ @"titulo" : (tituloRespaldo.length ? tituloRespaldo : @"Music"),
+                             @"videos" : restantes }];
+     }
+     return filas;
+@@ -1835,7 +1836,7 @@
+ 
+     NSMutableDictionary *lista = [NSMutableDictionary dictionary];
+     lista[@"id"] = ident;
+-    lista[@"titulo"] = YTCadenaOTexto(r[@"title"]) ?: @"(lista sin titulo)";
++    lista[@"titulo"] = YTCadenaOTexto(r[@"title"]) ?: @"(untitled playlist)";
+     NSString *cuantos = YTCadenaOTexto(r[@"videoCountText"])
+                         ?: YTCadenaOTexto(r[@"videoCountShortText"]);
+     lista[@"videos"] = cuantos ?: @"";
+@@ -1886,7 +1887,9 @@
+     for (NSString *texto in textos) {
+         if (texto.length == 0) continue;
+         if ([texto hasPrefix:@"@"]) { manejador = texto; continue; }
+-        if ([texto rangeOfString:@"suscriptor" options:NSCaseInsensitiveSearch].location
++        if ([texto rangeOfString:@"subscriber" options:NSCaseInsensitiveSearch].location
++            != NSNotFound ||
++            [texto rangeOfString:@"suscriptor" options:NSCaseInsensitiveSearch].location
+             != NSNotFound) { subs = texto; continue; }
+         if ([texto rangeOfString:@"video" options:NSCaseInsensitiveSearch].location
+             != NSNotFound) { videos = texto; continue; }
+@@ -1896,7 +1899,7 @@
+ 
+     NSMutableDictionary *canal = [NSMutableDictionary dictionary];
+     canal[@"id"] = ident;
+-    canal[@"titulo"] = YTCadenaOTexto(r[@"title"]) ?: @"(canal sin nombre)";
++    canal[@"titulo"] = YTCadenaOTexto(r[@"title"]) ?: @"(unnamed channel)";
+     canal[@"suscritos"] = subs;
+     canal[@"videos"] = videos;
+     canal[@"manejador"] = manejador;
+diff -ru src/tube9/app/YTDescargas.m out/app/YTDescargas.m
+--- src/tube9/app/YTDescargas.m	2026-10-29 03:41:52.817715907 -0400
++++ out/app/YTDescargas.m	2026-10-29 03:49:21.277522928 -0400
+@@ -1,3 +1,4 @@
++// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
+ // YTDescargas.m -- descarga el MP4 (360p, itag 18) que resuelve YTClient.
+ #import "YTDescargas.h"
+ #import "YTClient.h"
+@@ -139,7 +140,7 @@
+ }
+ 
+ + (NSString *)nombreBonitoDeCarpeta:(NSString *)ruta {
+-    if (ruta.length == 0) return @"(sin carpeta)";
++    if (ruta.length == 0) return @"(no folder)";
+     NSString *inicio = NSHomeDirectory();
+     // La parte de contenedor es larguisima ("/var/mobile/Containers/Data/
+     // Application/<UUID>/"): se recorta para que quepa en una celda.
+@@ -204,11 +205,11 @@
+               progreso:(void (^)(double fraccion))progreso
+             completion:(void (^)(BOOL ok, NSString *mensaje, NSString *ruta))completion {
+     if (video.identificador.length == 0) {
+-        if (completion) completion(NO, @"El video no tiene identificador.", nil);
++        if (completion) completion(NO, @"The video has no ID.", nil);
+         return;
+     }
+     if ([self estaDescargando:video.identificador]) {
+-        if (completion) completion(NO, @"Ese video ya se esta descargando.", nil);
++        if (completion) completion(NO, @"That video is already downloading.", nil);
+         return;
+     }
+ 
+@@ -216,8 +217,8 @@
+     if (![YTDescargas sePuedeEscribirEn:carpeta]) {
+         if (completion) {
+             completion(NO, [NSString stringWithFormat:
+-                @"No se puede escribir en %@.\n\nElige otra carpeta en Ajustes > "
+-                @"Descargas, o borra lo que sobre: quedan %@ libres.",
++                @"Cannot write to %@.\n\nChoose another folder in Settings > "
++                @"Downloads, or delete what you do not need: %@ free.",
+                 carpeta, YTTamanoLegible([self espacioLibre])], nil);
+         }
+         return;
+@@ -238,8 +239,8 @@
+             [yo->_activos removeObject:video.identificador];
+             [[NSNotificationCenter defaultCenter] postNotificationName:YTDescargasCambio object:nil];
+             if (completion) {
+-                completion(NO, [NSString stringWithFormat:@"No se pudo preparar el video: %@",
+-                    [YTClient explicarError:error] ?: @"YouTube no devolvio una direccion"], nil);
++                completion(NO, [NSString stringWithFormat:@"Could not prepare the video: %@",
++                    [YTClient explicarError:error] ?: @"YouTube returned no address"], nil);
+             }
+             return;
+         }
+@@ -276,7 +277,7 @@
+ - (void)lanzarDescarga:(NSDictionary *)datos {
+     NSURL *url = [NSURL URLWithString:datos[@"enlace"]];
+     if (!url) {
+-        [self fallar:datos motivo:@"La direccion del video no es valida."];
++        [self fallar:datos motivo:@"The video address is not valid."];
+         return;
+     }
+     BOOL conRango = ([datos[@"intento"] integerValue] == 0);
+@@ -370,7 +371,7 @@
+     datos[@"http"] = @(codigo);
+     if (codigo != 200 && codigo != 206) {
+         datos[@"error"] = [NSString stringWithFormat:
+-            @"YouTube ha contestado HTTP %ld al pedir el video.", (long)codigo];
++            @"YouTube replied HTTP %ld when asking for the video.", (long)codigo];
+         return;
+     }
+ 
+@@ -387,7 +388,7 @@
+     BOOL ok = [ficheros moveItemAtPath:ubicacion.path toPath:destino error:&error];
+     datos[@"hecho"] = @(ok);
+     if (!ok) {
+-        datos[@"error"] = error.localizedDescription ?: @"no se pudo guardar el fichero";
++        datos[@"error"] = error.localizedDescription ?: @"could not save the file";
+         return;
+     }
+ 
+@@ -397,9 +398,9 @@
+     unsigned long long tamano = [atributos[NSFileSize] unsignedLongLongValue];
+     datos[@"tamanoReal"] = @(tamano);
+     if (tamano == 0) {
+-        datos[@"error"] = @"La descarga llego vacia (0 bytes).";
++        datos[@"error"] = @"The download arrived empty (0 bytes).";
+     } else if (declarado > 1024 && tamano + 1024 < (unsigned long long)declarado) {
+-        datos[@"error"] = [NSString stringWithFormat:@"La descarga se quedo corta: %@ de %@.",
++        datos[@"error"] = [NSString stringWithFormat:@"The download is incomplete: %@ of %@.",
+                            YTTamanoLegible(tamano), YTTamanoLegible((unsigned long long)declarado)];
+     }
+ }
+@@ -419,9 +420,9 @@
+         [self avisaCambio];
+         if (completion) {
+             if (error.code == NSURLErrorCancelled) {
+-                completion(NO, @"Descarga cancelada.", nil);
++                completion(NO, @"Download cancelled.", nil);
+             } else {
+-                completion(NO, [NSString stringWithFormat:@"La descarga fallo: %@",
++                completion(NO, [NSString stringWithFormat:@"The download failed: %@",
+                     [YTClient explicarError:error]], nil);
+             }
+         }
+@@ -443,14 +444,14 @@
+             return;
+         }
+         [self fallar:datos motivo:[NSString stringWithFormat:
+-            @"No se pudo guardar el video en %@.\n\n(%@)",
++            @"Could not save the video in %@.\n\n(%@)",
+             [YTDescargas nombreBonitoDeCarpeta:datos[@"ruta"]], fallo]];
+         return;
+     }
+ 
+     if (![datos[@"hecho"] boolValue]) {
+         [self fallar:datos motivo:[NSString stringWithFormat:
+-            @"No se pudo guardar el fichero en %@.",
++            @"Could not save the file in %@.",
+             [YTDescargas nombreBonitoDeCarpeta:datos[@"ruta"]]]];
+         return;
+     }
+@@ -482,7 +483,7 @@
+     [self guardarHistorial:limpio];
+ 
+     if (completion) {
+-        completion(YES, [NSString stringWithFormat:@"%@\n\nGuardado en %@ (%@)",
++        completion(YES, [NSString stringWithFormat:@"%@\n\nSaved in %@ (%@)",
+             video.titulo ?: @"Video",
+             [YTDescargas nombreBonitoDeCarpeta:[destino stringByDeletingLastPathComponent]],
+             YTTamanoLegible([tamano unsignedLongLongValue])], destino);
+diff -ru src/tube9/app/YTDescargasViewController.m out/app/YTDescargasViewController.m
+--- src/tube9/app/YTDescargasViewController.m	2026-10-29 03:41:52.817715907 -0400
++++ out/app/YTDescargasViewController.m	2026-10-29 03:49:21.277743499 -0400
+@@ -1,3 +1,4 @@
++// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
+ // YTDescargasViewController.m -- lista de videos descargados y carpeta de destino.
+ #import "YTDescargasViewController.h"
+ #import "YTTheme.h"
+@@ -12,7 +13,7 @@
+ 
+ - (void)viewDidLoad {
+     [super viewDidLoad];
+-    self.title = @"Descargas";
++    self.title = @"Downloads";
+     self.tableView.backgroundColor = [YTTheme fondo];
+     self.tableView.separatorColor = [YTTheme borde];
+ 
+@@ -48,26 +49,26 @@
+ }
+ 
+ - (NSString *)tableView:(UITableView *)tabla titleForHeaderInSection:(NSInteger)seccion {
+-    if (seccion == 0) return @"Carpeta de descargas";
+-    if (seccion == 1) return @"Videos descargados";
++    if (seccion == 0) return @"Download folder";
++    if (seccion == 1) return @"Downloaded videos";
+     return nil;
+ }
+ 
+ - (NSString *)tableView:(UITableView *)tabla titleForFooterInSection:(NSInteger)seccion {
+     if (seccion == 0) {
+-        return @"Puedes elegir cualquier carpeta, tambien fuera de la app (esto es "
+-                "util en dispositivos con jailbreak: /var/mobile/Documents, "
+-                "/var/mobile/Media...). Se comprueba de verdad si la app puede "
+-                "escribir antes de usar la carpeta.";
++        return @"You can choose any folder, also outside the app (this is "
++                "useful on jailbroken devices: /var/mobile/Documents, "
++                "/var/mobile/Media...). The app really checks that it can "
++                "write there before it uses the folder.";
+     }
+     if (seccion == 1) {
+         if (_descargas.count == 0) {
+-            return @"Todavia no hay nada descargado. Abre un video y pulsa el boton "
+-                    "Descargar que hay debajo del reproductor.\n\nLa descarga sigue "
+-                    "mientras la app este abierta.";
++            return @"Nothing downloaded yet. Open a video and tap the "
++                    "Download button below the player.\n\nThe download continues "
++                    "while the app is open.";
+         }
+-        return @"Toca un video para reproducirlo, abrirlo con otra app o borrarlo. "
+-                "Tambien se puede deslizar para borrar.";
++        return @"Tap a video to play it, open it in another app or delete it. "
++                "You can also swipe to delete.";
+     }
+     return nil;
+ }
+@@ -109,11 +110,11 @@
+     if (indice.section == 0) {
+         UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleValue1];
+         if (indice.row == 0) {
+-            c.textLabel.text = @"Carpeta";
++            c.textLabel.text = @"Folder";
+             c.detailTextLabel.text = [YTDescargas nombreBonitoDeCarpeta:[YTDescargas carpeta]];
+             c.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+         } else {
+-            c.textLabel.text = @"Espacio libre";
++            c.textLabel.text = @"Free space";
+             unsigned long long libre = [[YTDescargas compartido] espacioLibre];
+             unsigned long long gb = 1024ULL * 1024ULL * 1024ULL;
+             c.detailTextLabel.text = libre >= gb
+@@ -137,7 +138,7 @@
+     }
+ 
+     UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleDefault];
+-    c.textLabel.text = @"Borrar todas las descargas";
++    c.textLabel.text = @"Delete all downloads";
+     c.textLabel.textColor = [YTTheme acento];
+     return c;
+ }
+@@ -164,17 +165,17 @@
+     }
+ 
+     UIAlertController *alerta = [UIAlertController
+-        alertControllerWithTitle:@"Borrar todas las descargas"
+-                         message:@"Se borraran los ficheros de la carpeta de descargas. "
+-                                 @"Esto no se puede deshacer."
++        alertControllerWithTitle:@"Delete all downloads"
++                         message:@"The files in the download folder will be deleted. "
++                                 @"This cannot be undone."
+                   preferredStyle:UIAlertControllerStyleActionSheet];
+-    [alerta addAction:[UIAlertAction actionWithTitle:@"Borrar todo"
++    [alerta addAction:[UIAlertAction actionWithTitle:@"Delete all"
+                                                style:UIAlertActionStyleDestructive
+                                              handler:^(UIAlertAction *accion) {
+         [[YTDescargas compartido] borrarTodo];
+         [self recargar];
+     }]];
+-    [alerta addAction:[UIAlertAction actionWithTitle:@"Cancelar"
++    [alerta addAction:[UIAlertAction actionWithTitle:@"Cancel"
+                                                style:UIAlertActionStyleCancel
+                                              handler:nil]];
+     if (alerta.popoverPresentationController) {
+@@ -192,7 +193,7 @@
+                          message:entrada[@"archivo"]
+                   preferredStyle:UIAlertControllerStyleActionSheet];
+ 
+-    [alerta addAction:[UIAlertAction actionWithTitle:@"Reproducir aqui"
++    [alerta addAction:[UIAlertAction actionWithTitle:@"Play here"
+                                                style:UIAlertActionStyleDefault
+                                              handler:^(UIAlertAction *accion) {
+         YTPlayerViewController *reproductor = [[YTPlayerViewController alloc]
+@@ -201,7 +202,7 @@
+         [self.navigationController pushViewController:reproductor animated:YES];
+     }]];
+ 
+-    [alerta addAction:[UIAlertAction actionWithTitle:@"Abrir con otra app"
++    [alerta addAction:[UIAlertAction actionWithTitle:@"Open in another app"
+                                                style:UIAlertActionStyleDefault
+                                              handler:^(UIAlertAction *accion) {
+         NSURL *url = [NSURL fileURLWithPath:entrada[@"ruta"]];
+@@ -211,13 +212,13 @@
+                                             animated:YES];
+     }]];
+ 
+-    [alerta addAction:[UIAlertAction actionWithTitle:@"Borrar"
++    [alerta addAction:[UIAlertAction actionWithTitle:@"Delete"
+                                                style:UIAlertActionStyleDestructive
+                                              handler:^(UIAlertAction *accion) {
+         [[YTDescargas compartido] borrarEntrada:entrada];
+         [self recargar];
+     }]];
+-    [alerta addAction:[UIAlertAction actionWithTitle:@"Cancelar"
++    [alerta addAction:[UIAlertAction actionWithTitle:@"Cancel"
+                                                style:UIAlertActionStyleCancel
+                                              handler:nil]];
+     if (alerta.popoverPresentationController) {
+diff -ru src/tube9/app/YTFeedViewController.m out/app/YTFeedViewController.m
+--- src/tube9/app/YTFeedViewController.m	2026-10-29 03:41:52.817715907 -0400
++++ out/app/YTFeedViewController.m	2026-10-29 03:49:21.277915838 -0400
+@@ -1,3 +1,4 @@
++// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
+ // YTFeedViewController.m -- pantalla de estantes (Inicio y Musica).
+ //
+ // Carga las fuentes de una en una, no todas a la vez: asi la memoria se queda
+@@ -54,7 +55,7 @@
+ - (instancetype)initConMusica {
+     self = [super init];
+     if (self) {
+-        _tituloPantalla = @"Música";
++        _tituloPantalla = @"Music";
+         // Cuatro pantallas de YouTube Music y cuatro estilos buscados en su
+         // catalogo. Medido: FEmusic_home 20 canciones, explore 24, novedades 24;
+         // las busquedas, entre 11 y 15 cada una. FEmusic_charts NO vale: sus
+@@ -63,10 +64,10 @@
+             @{ @"browseId" : @"FEmusic_home" },
+             @{ @"browseId" : @"FEmusic_explore" },
+             @{ @"browseId" : @"FEmusic_new_releases" },
+-            @{ @"consulta" : @"Reggaetón",      @"musica" : @YES },
+-            @{ @"consulta" : @"Baladas",        @"musica" : @YES },
+-            @{ @"consulta" : @"Rock en español", @"musica" : @YES },
+-            @{ @"consulta" : @"Pop en español",  @"musica" : @YES }
++            @{ @"consulta" : @"Hip hop",        @"musica" : @YES },
++            @{ @"consulta" : @"Country",        @"musica" : @YES },
++            @{ @"consulta" : @"Rock",            @"musica" : @YES },
++            @{ @"consulta" : @"Pop",             @"musica" : @YES }
+         ];
+         _esMusica = YES;
+     }
+@@ -100,7 +101,7 @@
+     _estado.textColor = [YTTheme textoSecundario];
+     _estado.font = [YTTheme fuenteCuerpo];
+     _estado.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+-    _estado.text = @"Cargando...";
++    _estado.text = @"Loading...";
+     [self.view addSubview:_estado];
+ 
+     _girador = [[UIActivityIndicatorView alloc]
+@@ -130,7 +131,7 @@
+     _indice = 0;
+     _filas = [NSMutableArray array];
+     [_tabla reloadData];
+-    _estado.text = @"Cargando...";
++    _estado.text = @"Loading...";
+     _estado.hidden = NO;
+     [_girador startAnimating];
+     self.navigationItem.rightBarButtonItem =
+@@ -157,12 +158,12 @@
+         _usandoRespaldo = YES;
+         _esMusica = NO;
+         _fuentes = @[
+-            @{ @"titulo" : @"Música",          @"consulta" : @"música",
++            @{ @"titulo" : @"Music",           @"consulta" : @"music",
+                @"params" : YTOrdenPorPopularidad },
+-            @{ @"titulo" : @"Éxitos ahora",    @"consulta" : @"éxitos",
++            @{ @"titulo" : @"Top hits now",    @"consulta" : @"top hits",
+                @"params" : YTOrdenPorPopularidad },
+-            @{ @"titulo" : @"Baladas",         @"consulta" : @"baladas románticas" },
+-            @{ @"titulo" : @"Rock",            @"consulta" : @"rock en español" }
++            @{ @"titulo" : @"Ballads",         @"consulta" : @"ballads" },
++            @{ @"titulo" : @"Rock",            @"consulta" : @"rock music" }
+         ];
+         [self recargar];
+         return;
+@@ -172,10 +173,10 @@
+     if (_ultimoError) {
+         _estado.text = [NSString stringWithFormat:@"%@\n\n%@",
+             [YTClient explicarError:_ultimoError],
+-            @"Pulsa el boton de arriba a la derecha para reintentar."];
++            @"Tap the button at the top right to retry."];
+     } else {
+-        _estado.text = @"No hay nada que mostrar.\n\nComprueba la conexion y "
+-                       @"vuelve a intentarlo.";
++        _estado.text = @"Nothing to show.\n\nCheck the connection and "
++                       @"try again.";
+     }
+ }
+ 
+@@ -240,7 +241,7 @@
+     NSInteger posicion = -1;
+     for (NSUInteger i = 0; i < _filas.count; i++) {
+         NSDictionary *fila = _filas[i];
+-        if (fila[@"local"] || [fila[@"titulo"] isEqualToString:@"Continuar viendo"]) {
++        if (fila[@"local"] || [fila[@"titulo"] isEqualToString:@"Continue watching"]) {
+             posicion = (NSInteger)i;
+             break;
+         }
+@@ -254,7 +255,7 @@
+         return;
+     }
+ 
+-    NSDictionary *fila = @{ @"titulo" : @"Continuar viendo", @"videos" : videos, @"local" : @YES };
++    NSDictionary *fila = @{ @"titulo" : @"Continue watching", @"videos" : videos, @"local" : @YES };
+     if (posicion >= 0) {
+         _filas[(NSUInteger)posicion] = fila;
+     } else {
+diff -ru src/tube9/app/YTListaCell.m out/app/YTListaCell.m
+--- src/tube9/app/YTListaCell.m	2026-10-29 03:41:52.817715907 -0400
++++ out/app/YTListaCell.m	2026-10-29 03:49:21.278063491 -0400
+@@ -1,3 +1,4 @@
++// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
+ // YTListaCell.m -- fila de una lista de reproduccion.
+ #import "YTListaCell.h"
+ #import "YTTheme.h"
+@@ -55,7 +56,7 @@
+     if ([canal isKindOfClass:[NSString class]] && canal.length) [partes addObject:canal];
+     NSString *videos = lista[@"videos"];
+     if ([videos isKindOfClass:[NSString class]] && videos.length) [partes addObject:videos];
+-    _datos.text = [partes count] ? [partes componentsJoinedByString:@"  ·  "] : @"Lista de reproduccion";
++    _datos.text = [partes count] ? [partes componentsJoinedByString:@"  ·  "] : @"Playlist";
+ 
+     _imagen.image = nil;
+     NSString *url = lista[@"urlMiniatura"];
+diff -ru src/tube9/app/YTListaViewController.m out/app/YTListaViewController.m
+--- src/tube9/app/YTListaViewController.m	2026-10-29 03:41:52.817715907 -0400
++++ out/app/YTListaViewController.m	2026-10-29 03:49:21.278284850 -0400
+@@ -1,3 +1,4 @@
++// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
+ // YTListaViewController.m -- el contenido de una lista de reproduccion.
+ //
+ // La ficha de la lista (titulo, dueño, cuantas piezas y su descripcion) viene en
+@@ -44,7 +45,7 @@
+ 
+ - (void)viewDidLoad {
+     [super viewDidLoad];
+-    self.title = _tituloRespaldo.length ? _tituloRespaldo : @"Lista";
++    self.title = _tituloRespaldo.length ? _tituloRespaldo : @"Playlist";
+     self.view.backgroundColor = [YTTheme fondo];
+     self.edgesForExtendedLayout = UIRectEdgeNone;
+     self.automaticallyAdjustsScrollViewInsets = NO;
+@@ -101,7 +102,7 @@
+     [_cabecera addSubview:_descripcion];
+ 
+     _reproducirTodo = [UIButton buttonWithType:UIButtonTypeCustom];
+-    [_reproducirTodo setTitle:@"Reproducir todo" forState:UIControlStateNormal];
++    [_reproducirTodo setTitle:@"Play all" forState:UIControlStateNormal];
+     [_reproducirTodo setTitleColor:[YTTheme textoSobreAcento] forState:UIControlStateNormal];
+     _reproducirTodo.titleLabel.font = [UIFont systemFontOfSize:14.0 weight:UIFontWeightSemibold];
+     _reproducirTodo.backgroundColor = [YTTheme acento];
+@@ -120,7 +121,7 @@
+     _pidiendo = YES;
+     [_girador startAnimating];
+     _estado.hidden = NO;
+-    _estado.text = @"Cargando la lista...";
++    _estado.text = @"Loading the playlist...";
+ 
+     __weak YTListaViewController *deb = self;
+     [[YTClient compartido] videosDeLista:_listaId
+@@ -134,7 +135,7 @@
+             yo->_estado.hidden = NO;
+             yo->_estado.text = [NSString stringWithFormat:@"%@\n\n%@",
+                 [YTClient explicarError:error],
+-                @"Vuelve a entrar en la lista para intentarlo otra vez."];
++                @"Open the playlist again to try once more."];
+             return;
+         }
+ 
+@@ -144,7 +145,7 @@
+         [yo->_tabla reloadData];
+         if (yo->_videos.count == 0) {
+             yo->_estado.hidden = NO;
+-            yo->_estado.text = @"Esta lista esta vacia.";
++            yo->_estado.text = @"This playlist is empty.";
+         } else {
+             yo->_estado.hidden = YES;
+         }
+@@ -166,7 +167,7 @@
+     if ([cuantos isKindOfClass:[NSString class]] && cuantos.length) {
+         [partes addObject:cuantos];
+     } else if (_videos.count) {
+-        [partes addObject:[NSString stringWithFormat:@"%lu vídeos", (unsigned long)_videos.count]];
++        [partes addObject:[NSString stringWithFormat:@"%lu videos", (unsigned long)_videos.count]];
+     }
+     _detalles.text = [partes componentsJoinedByString:@"  ·  "];
+ 
+@@ -243,7 +244,7 @@
+ 
+ - (NSString *)tableView:(UITableView *)tabla titleForHeaderInSection:(NSInteger)seccion {
+     if (_videos.count == 0) return nil;
+-    return [NSString stringWithFormat:@"%lu vídeos", (unsigned long)_videos.count];
++    return [NSString stringWithFormat:@"%lu videos", (unsigned long)_videos.count];
+ }
+ 
+ - (void)tableView:(UITableView *)tabla willDisplayHeaderView:(UIView *)vista
+diff -ru src/tube9/app/YTLoginViewController.m out/app/YTLoginViewController.m
+--- src/tube9/app/YTLoginViewController.m	2026-10-29 03:41:52.817715907 -0400
++++ out/app/YTLoginViewController.m	2026-10-29 03:49:21.278464887 -0400
+@@ -1,3 +1,4 @@
++// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
+ // YTLoginViewController.m
+ //
+ // Usa UIWebView (no WKWebView) a proposito: en iOS 9 UIWebView comparte las
+@@ -26,7 +27,7 @@
+ 
+ - (void)viewDidLoad {
+     [super viewDidLoad];
+-    self.title = @"Iniciar sesion";
++    self.title = @"Sign in";
+     self.view.backgroundColor = [UIColor whiteColor];
+ 
+     // El resto de la app lleva la barra oscura; aqui la ponemos clara para que
+@@ -39,11 +40,11 @@
+         [UIColor colorWithWhite:0.13 alpha:1.0] };
+ 
+     self.navigationItem.leftBarButtonItem =
+-        [[UIBarButtonItem alloc] initWithTitle:@"Cancelar"
++        [[UIBarButtonItem alloc] initWithTitle:@"Cancel"
+                                         style:UIBarButtonItemStylePlain
+                                        target:self
+                                        action:@selector(cancelar)];
+-    _listo = [[UIBarButtonItem alloc] initWithTitle:@"Listo"
++    _listo = [[UIBarButtonItem alloc] initWithTitle:@"Done"
+                                              style:UIBarButtonItemStyleDone
+                                             target:self
+                                             action:@selector(terminar)];
+@@ -56,7 +57,7 @@
+     _aviso.font = [UIFont systemFontOfSize:12.0];
+     _aviso.textColor = [UIColor colorWithWhite:0.35 alpha:1.0];
+     _aviso.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+-    _aviso.text = @"Entra con tu cuenta de Google. Al terminar, vuelve aqui y pulsa Listo.";
++    _aviso.text = @"Sign in with your Google account. When finished, come back here and tap Done.";
+     [self.view addSubview:_aviso];
+ 
+     _navegador = [[UIWebView alloc] initWithFrame:CGRectMake(0, 60,
+@@ -72,7 +73,7 @@
+     [self.view addSubview:_navegador];
+ 
+     NSString *direccion = @"https://accounts.google.com/ServiceLogin?service=youtube"
+-                           "&hl=es&continue=https%3A%2F%2Fm.youtube.com%2F";
++                           "&hl=en&continue=https%3A%2F%2Fm.youtube.com%2F";
+     NSMutableURLRequest *peticion = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:direccion]];
+     // Google bloquea a veces los navegadores incrustados; con un agente de
+     // Safari movil se comporta como un navegador normal.
+@@ -105,7 +106,7 @@
+ 
+ - (void)webViewDidStartLoad:(UIWebView *)navegador {
+     _aviso.textColor = [UIColor colorWithWhite:0.35 alpha:1.0];
+-    _aviso.text = @"Cargando la pagina de Google...";
++    _aviso.text = @"Loading the Google page...";
+ }
+ 
+ - (void)webViewDidFinishLoad:(UIWebView *)navegador {
+@@ -133,18 +134,18 @@
+     }
+     if (bloqueado) {
+         _aviso.textColor = [YTTheme acento];
+-        _aviso.text = @"Google no acepta este navegador. Pulsa Cancelar y usa "
+-                       "\"Pegar cookies\" en Ajustes.";
++        _aviso.text = @"Google does not accept this browser. Tap Cancel and use "
++                       "\"Paste cookies\" in Settings.";
+         return;
+     }
+ 
+     if ([YTClient haySesion]) {
+         _listo.enabled = YES;
+         _aviso.textColor = [YTTheme acento];
+-        _aviso.text = @"Sesion iniciada. Pulsa Listo para guardarla.";
++        _aviso.text = @"Signed in. Tap Done to save it.";
+     } else {
+         _aviso.textColor = [UIColor colorWithWhite:0.35 alpha:1.0];
+-        _aviso.text = @"Entra con tu cuenta de Google. Al terminar, vuelve aqui y pulsa Listo.";
++        _aviso.text = @"Sign in with your Google account. When finished, come back here and tap Done.";
+     }
+ }
+ 
+@@ -152,7 +153,7 @@
+     // -999 es una cancelacion normal al navegar; no lo tratamos como fallo
+     if (error.code == NSURLErrorCancelled) return;
+     _aviso.textColor = [YTTheme acento];
+-    _aviso.text = [NSString stringWithFormat:@"No se pudo cargar: %@",
++    _aviso.text = [NSString stringWithFormat:@"Could not load: %@",
+                    [YTClient explicarError:error]];
+ }
+ 
+diff -ru src/tube9/app/YTPlayerViewController.m out/app/YTPlayerViewController.m
+--- src/tube9/app/YTPlayerViewController.m	2026-10-29 03:41:52.817715907 -0400
++++ out/app/YTPlayerViewController.m	2026-10-29 03:49:21.278685616 -0400
+@@ -1,3 +1,4 @@
++// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
+ // YTPlayerViewController.m -- reproductor.
+ //
+ // Ademas de reproducir (que es lo dificil: ver YTClient), esta pantalla hace
+@@ -140,7 +141,7 @@
+     if (self) {
+         _rutaLocal = [ruta copy];
+         YTVideo *video = [[YTVideo alloc] init];
+-        video.titulo = titulo.length ? titulo : @"Video descargado";
++        video.titulo = titulo.length ? titulo : @"Downloaded video";
+         _video = video;
+     }
+     return self;
+@@ -148,7 +149,7 @@
+ 
+ - (void)viewDidLoad {
+     [super viewDidLoad];
+-    self.title = @"Reproduciendo";
++    self.title = @"Now playing";
+     self.view.backgroundColor = [YTTheme fondo];
+     // Con esto la tabla empieza justo debajo de la barra y no hay sorpresas.
+     self.edgesForExtendedLayout = UIRectEdgeNone;
+@@ -180,7 +181,7 @@
+     [self prepararMandosRemotos];
+ 
+     if (_rutaLocal.length) {
+-        _estado.text = @"Fichero descargado: se reproduce desde el dispositivo.";
++        _estado.text = @"Downloaded file: playing from the device.";
+         [self prepararElementoConURL:[NSURL fileURLWithPath:_rutaLocal]];
+     } else {
+         [self resolver];
+@@ -256,7 +257,7 @@
+     [_cabecera addSubview:_autor];
+ 
+     _botonCanal = [UIButton buttonWithType:UIButtonTypeSystem];
+-    [_botonCanal setTitle:@"Ver canal" forState:UIControlStateNormal];
++    [_botonCanal setTitle:@"View channel" forState:UIControlStateNormal];
+     [_botonCanal setImage:[YTTheme icono:@"canal" lado:16.0] forState:UIControlStateNormal];
+     _botonCanal.titleLabel.font = [UIFont systemFontOfSize:13.0 weight:UIFontWeightSemibold];
+     [_botonCanal addTarget:self action:@selector(abrirCanal)
+@@ -273,7 +274,7 @@
+     [_cabecera addSubview:_descripcion];
+ 
+     _botonMas = [UIButton buttonWithType:UIButtonTypeSystem];
+-    [_botonMas setTitle:@"Ver mas" forState:UIControlStateNormal];
++    [_botonMas setTitle:@"Show more" forState:UIControlStateNormal];
+     [_botonMas setTitleColor:[YTTheme acento] forState:UIControlStateNormal];
+     _botonMas.titleLabel.font = [UIFont systemFontOfSize:13.0 weight:UIFontWeightSemibold];
+     _botonMas.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
+@@ -289,7 +290,7 @@
+     [_cabecera addSubview:_estado];
+ 
+     _reintentar = [UIButton buttonWithType:UIButtonTypeSystem];
+-    [_reintentar setTitle:@"Reintentar" forState:UIControlStateNormal];
++    [_reintentar setTitle:@"Retry" forState:UIControlStateNormal];
+     [_reintentar setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+     _reintentar.titleLabel.font = [UIFont systemFontOfSize:15.0 weight:UIFontWeightSemibold];
+     _reintentar.backgroundColor = [YTTheme acento];
+@@ -571,8 +572,8 @@
+     _controles.pantallaCompleta = _pantallaCompleta;
+     [self.view setNeedsLayout];
+     [self reiniciarTemporizadorDeControles];
+-    [self mostrarAviso:(_pantallaCompleta ? @"Gira el telefono para verlo mas grande"
+-                                          : @"Pantalla normal")];
++    [self mostrarAviso:(_pantallaCompleta ? @"Turn the device to see it bigger"
++                                          : @"Normal view")];
+ }
+ 
+ #pragma mark - Resolucion y reproduccion
+@@ -583,7 +584,7 @@
+         return;
+     }
+     _reintentar.hidden = YES;
+-    _estado.text = @"Buscando el video...";
++    _estado.text = @"Finding the video...";
+     [_girador startAnimating];
+     [self ajustarCabecera];
+ 
+@@ -626,9 +627,9 @@
+         if (numero > 0) {
+             NSNumberFormatter *formato = [[NSNumberFormatter alloc] init];
+             formato.numberStyle = NSNumberFormatterDecimalStyle;
+-            formato.locale = [NSLocale localeWithLocaleIdentifier:@"es_ES"];
++            formato.locale = [NSLocale localeWithLocaleIdentifier:@"en_US"];
+             NSString *texto = [formato stringFromNumber:@(numero)];
+-            [partes addObject:[NSString stringWithFormat:@"%@ visitas", texto]];
++            [partes addObject:[NSString stringWithFormat:@"%@ views", texto]];
+         }
+     }
+     id duracion = info[@"duracion"];
+@@ -653,7 +654,7 @@
+ - (void)alternarDescripcion {
+     BOOL entera = (_descripcion.numberOfLines != 0);
+     _descripcion.numberOfLines = entera ? 0 : 3;
+-    [_botonMas setTitle:(entera ? @"Ver menos" : @"Ver mas") forState:UIControlStateNormal];
++    [_botonMas setTitle:(entera ? @"Show less" : @"Show more") forState:UIControlStateNormal];
+     [self ajustarCabecera];
+ }
+ 
+@@ -668,7 +669,7 @@
+ - (void)reproducir:(NSString *)enlace {
+     NSURL *url = [NSURL URLWithString:enlace];
+     if (!url) {
+-        [self mostrarError:@"La direccion del video no es valida."];
++        [self mostrarError:@"The video address is not valid."];
+         return;
+     }
+     [self prepararElementoConURL:url];
+@@ -688,7 +689,7 @@
+                                                   object:_elemento];
+ 
+     _listo = NO;
+-    _hostVideo = url.host ?: @"fichero del dispositivo";
++    _hostVideo = url.host ?: @"file on the device";
+     _totalVideo = 0.0;
+     _elemento = [AVPlayerItem playerItemWithURL:url];
+     // Para que a 1,5x no suene acelerado como una ardilla.
+@@ -703,7 +704,7 @@
+     [_jugador replaceCurrentItemWithPlayerItem:_elemento];
+     [_jugador play];
+     [_girador startAnimating];
+-    _estado.text = @"Cargando...";
++    _estado.text = @"Loading...";
+     [self crearRelojDeLosMandos];
+     [self refrescarControles];
+     [self ajustarCabecera];
+@@ -726,16 +727,16 @@
+         return;
+     }
+     NSTimeInterval segundos = -[_inicioCarga timeIntervalSinceNow];
+-    _estado.text = [NSString stringWithFormat:@"Cargando... %.0f s   (%@)",
++    _estado.text = [NSString stringWithFormat:@"Loading... %.0f s   (%@)",
+                     segundos, _hostVideo];
+     if (segundos >= 30.0) {
+         [_vigilante invalidate];
+         _vigilante = nil;
+         [self mostrarError:[NSString stringWithFormat:
+-            @"El video no llega a empezar.\n\nServidor: %@\n30 segundos sin recibir "
+-            @"nada.\n\nSuele ser el proveedor de Internet dando largas con "
+-            @"googlevideo.com, o que YouTube pida iniciar sesion. Prueba "
+-            @"Ajustes > Iniciar sesion en YouTube, o el modo relay.", _hostVideo]];
++            @"The video does not start.\n\nServer: %@\n30 seconds without receiving "
++            @"anything.\n\nUsually the Internet provider is slowing down "
++            @"googlevideo.com, or YouTube wants you to sign in. Try "
++            @"Settings > Sign in to YouTube, or relay mode.", _hostVideo]];
+     }
+ }
+ 
+@@ -756,14 +757,14 @@
+             self->_vigilante = nil;
+             [self->_girador stopAnimating];
+             NSError *fallo = self->_elemento.error;
+-            NSString *detalle = fallo.localizedDescription ?: @"error desconocido";
++            NSString *detalle = fallo.localizedDescription ?: @"unknown error";
+             NSInteger codigo = fallo.code;
+             NSString *pista = @"";
+             if (codigo == -11850 || codigo == -11800) {
+-                pista = @"\n\nYouTube ha rechazado la descarga (403). Inicia sesion en "
+-                        @"Ajustes para que las peticiones vayan autenticadas.";
++                pista = @"\n\nYouTube refused the download (403). Sign in under "
++                        @"Settings so that requests are authenticated.";
+             }
+-            [self mostrarError:[NSString stringWithFormat:@"No se pudo reproducir.\n%@%@",
++            [self mostrarError:[NSString stringWithFormat:@"Could not play.\n%@%@",
+                                 detalle, pista]];
+         }
+     });
+@@ -780,16 +781,16 @@
+     if (_velocidad != 1.0f) _jugador.rate = _velocidad;
+ 
+     NSString *extra = _clienteVideo.length
+-        ? [NSString stringWithFormat:@"\n\nResuelto con el cliente %@.", _clienteVideo]
++        ? [NSString stringWithFormat:@"\n\nResolved with client %@.", _clienteVideo]
+         : @"";
+     if (_rutaLocal.length) {
+-        _estado.text = @"Reproduciendo desde el dispositivo.";
++        _estado.text = @"Playing from the device.";
+     } else {
+         _estado.text = [NSString stringWithFormat:
+-            @"MP4 360p (los iPhone de 32 bits no decodifican VP9 ni AV1, por eso no "
+-             "hay 720p).%@\n\nUn toque enseña los mandos; dos toques, 10 s atras o "
+-             "adelante. Arrastra arriba/abajo para el volumen, y a lo ancho para "
+-             "moverse por el video.", extra];
++            @"MP4 360p (32-bit devices cannot decode VP9 or AV1, so there is "
++             "no 720p).%@\n\nOne tap shows the controls; double tap goes 10 s back or "
++             "forward. Drag up/down for volume, and sideways to "
++             "move through the video.", extra];
+     }
+     [self ajustarCabecera];
+     [self refrescarControles];
+@@ -813,7 +814,7 @@
+             if (!yo) return;
+             [yo->_jugador play];
+             if (yo->_velocidad != 1.0f) yo->_jugador.rate = yo->_velocidad;
+-            [yo mostrarAviso:[NSString stringWithFormat:@"Sigo donde lo dejaste (%d:%02d)",
++            [yo mostrarAviso:[NSString stringWithFormat:@"Resuming where you left off (%d:%02d)",
+                               (int)(guardado / 60.0), (int)guardado % 60]];
+         }];
+     }
+@@ -851,12 +852,12 @@
+         return;
+     }
+     if (_video.identificador.length) [YTProgreso olvidar:_video.identificador];
+-    _estado.text = @"El video ha terminado.";
++    _estado.text = @"The video has ended.";
+     [self ajustarCabecera];
+     [self refrescarControles];
+     [self reiniciarTemporizadorDeControles];
+     [self actualizarInfoBloqueo];
+-    [self mostrarAviso:@"Fin del video"];
++    [self mostrarAviso:@"End of video"];
+ }
+ 
+ #pragma mark - Gestos
+@@ -901,7 +902,7 @@
+             if (volumen < 0.0f) volumen = 0.0f;
+             if (volumen > 1.0f) volumen = 1.0f;
+             _jugador.volume = volumen;
+-            [self mostrarAviso:[NSString stringWithFormat:@"Volumen %d %%",
++            [self mostrarAviso:[NSString stringWithFormat:@"Volume %d %%",
+                                 (int)roundf(volumen * 100.0f)]];
+         }
+         return;
+@@ -953,13 +954,13 @@
+         _jugador.rate = _velocidad;
+     }
+     _controles.velocidad = _velocidad;
+-    [self mostrarAviso:[NSString stringWithFormat:@"Velocidad %gx", _velocidad]];
++    [self mostrarAviso:[NSString stringWithFormat:@"Speed %gx", _velocidad]];
+ }
+ 
+ - (void)alternarBucle {
+     _bucle = !_bucle;
+     _controles.bucle = _bucle;
+-    [self mostrarAviso:(_bucle ? @"Se repetira el video" : @"Ya no se repite")];
++    [self mostrarAviso:(_bucle ? @"Loop on" : @"Loop off")];
+ }
+ 
+ - (void)compartir {
+@@ -980,7 +981,7 @@
+ 
+ - (void)descargar {
+     if (_rutaLocal.length) {
+-        [self mostrarAviso:@"Ya esta descargado"];
++        [self mostrarAviso:@"Already downloaded"];
+         return;
+     }
+     if (_video.identificador.length == 0) return;
+@@ -990,13 +991,13 @@
+     if ([gestor estaDescargando:_video.identificador]) {
+         [gestor cancelarVideo:_video.identificador];
+         _controles.descargando = NO;
+-        [self mostrarAviso:@"Descarga cancelada"];
++        [self mostrarAviso:@"Download cancelled"];
+         return;
+     }
+ 
+     _controles.descargando = YES;
+     _porcentajeDescarga = -1;
+-    _estado.text = @"Descargando el video...";
++    _estado.text = @"Downloading the video...";
+     [self ajustarCabecera];
+ 
+     __weak YTPlayerViewController *deb = self;
+@@ -1011,28 +1012,28 @@
+             yo->_porcentajeDescarga = porcentaje;
+             [yo->_controles actualizarPorcentajeDescarga:fraccion];
+             yo->_estado.text = porcentaje >= 0
+-                ? [NSString stringWithFormat:@"Descargando... %ld %%  (toca el icono "
+-                                            @"otra vez para cancelar)", (long)porcentaje]
+-                : @"Descargando...";
++                ? [NSString stringWithFormat:@"Downloading... %ld %%  (tap the icon "
++                                            @"again to cancel)", (long)porcentaje]
++                : @"Downloading...";
+             [yo ajustarCabecera];
+         }
+         completion:^(BOOL ok, NSString *mensaje, NSString *ruta) {
+             YTPlayerViewController *yo = deb;
+             if (!yo) return;
+             yo->_controles.descargando = NO;
+-            yo->_estado.text = (ok ? @"Descargado. Lo tienes en Descargas."
+-                                   : @"No se pudo descargar.");
++            yo->_estado.text = (ok ? @"Downloaded. You will find it in Downloads."
++                                   : @"Could not download.");
+             [yo ajustarCabecera];
+ 
+             UIAlertController *alerta = [UIAlertController
+-                alertControllerWithTitle:(ok ? @"Descarga terminada" : @"No se pudo descargar")
++                alertControllerWithTitle:(ok ? @"Download finished" : @"Could not download")
+                                  message:mensaje
+                           preferredStyle:UIAlertControllerStyleAlert];
+-            [alerta addAction:[UIAlertAction actionWithTitle:@"Vale"
++            [alerta addAction:[UIAlertAction actionWithTitle:@"OK"
+                                                        style:UIAlertActionStyleDefault
+                                                      handler:nil]];
+             if (ok) {
+-                [alerta addAction:[UIAlertAction actionWithTitle:@"Ver descargas"
++                [alerta addAction:[UIAlertAction actionWithTitle:@"View downloads"
+                     style:UIAlertActionStyleDefault
+                     handler:^(UIAlertAction *accion) {
+                     YTPlayerViewController *actual = deb;
+@@ -1155,14 +1156,14 @@
+ 
+ - (NSString *)tableView:(UITableView *)tabla titleForHeaderInSection:(NSInteger)seccion {
+     if (_relacionados.count == 0) return nil;
+-    return @"Parecidos";
++    return @"Related";
+ }
+ 
+ - (NSString *)tableView:(UITableView *)tabla titleForFooterInSection:(NSInteger)seccion {
+     if (_relacionados.count == 0) return nil;
+-    return @"Esta lista sale de buscar el titulo del video: la lista oficial de "
+-            "relacionados de YouTube pesa unos 7 MB y no cabe en un telefono de "
+-            "32 bits.";
++    return @"This list comes from searching the video title: YouTube's official "
++            "related list is about 7 MB and does not fit in a "
++            "32-bit device.";
+ }
+ 
+ - (CGFloat)tableView:(UITableView *)tabla heightForRowAtIndexPath:(NSIndexPath *)indice {
+@@ -1183,7 +1184,7 @@
+         UITableViewCell *celda = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault
+                                                         reuseIdentifier:nil];
+         celda.backgroundColor = [YTTheme fondo];
+-        celda.textLabel.text = @"Buscando videos parecidos...";
++        celda.textLabel.text = @"Finding related videos...";
+         celda.textLabel.font = [YTTheme fuenteCuerpo];
+         celda.textLabel.textColor = [YTTheme textoSecundario];
+         celda.selectionStyle = UITableViewCellSelectionStyleNone;
+diff -ru src/tube9/app/YTProgreso.m out/app/YTProgreso.m
+--- src/tube9/app/YTProgreso.m	2026-10-29 03:41:52.817715907 -0400
++++ out/app/YTProgreso.m	2026-10-29 03:49:21.278886174 -0400
+@@ -1,3 +1,4 @@
++// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
+ // YTProgreso.m -- por donde iba cada video, guardado en NSUserDefaults.
+ //
+ // No hace falta cuenta ni red: es una lista local de los ultimos videos vistos
+@@ -110,7 +111,7 @@
+         video.titulo = entrada[@"titulo"];
+         video.urlMiniatura = entrada[@"mini"];
+         if (video.identificador.length == 0) continue;
+-        if (video.titulo.length == 0) video.titulo = @"(sin titulo)";
++        if (video.titulo.length == 0) video.titulo = @"(no title)";
+ 
+         // En el subtitulo se ve por donde iba, que es lo util aqui.
+         double segundos = [seg doubleValue];
+@@ -120,9 +121,9 @@
+                             (int)(segundos / 60.0), (int)segundos % 60];
+         NSMutableArray *partes = [NSMutableArray array];
+         if (canal.length) [partes addObject:canal];
+-        [partes addObject:[NSString stringWithFormat:@"vas por %@", minuto]];
++        [partes addObject:[NSString stringWithFormat:@"at %@", minuto]];
+         if (total > 0.0) {
+-            [partes addObject:[NSString stringWithFormat:@"de %d:%02d",
++            [partes addObject:[NSString stringWithFormat:@"of %d:%02d",
+                                (int)(total / 60.0), (int)total % 60]];
+         }
+         video.canal = [partes componentsJoinedByString:@"  ·  "];
+diff -ru src/tube9/app/YTSearchViewController.m out/app/YTSearchViewController.m
+--- src/tube9/app/YTSearchViewController.m	2026-10-29 03:41:52.817715907 -0400
++++ out/app/YTSearchViewController.m	2026-10-29 03:49:21.279054830 -0400
+@@ -1,3 +1,4 @@
++// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
+ // YTSearchViewController.m -- busqueda y lista de resultados.
+ //
+ // Tres filtros, los mismos que ofrece YouTube:
+@@ -45,7 +46,7 @@
+ 
+ - (void)viewDidLoad {
+     [super viewDidLoad];
+-    self.title = @"Buscar";
++    self.title = @"Search";
+     self.view.backgroundColor = [YTTheme fondo];
+     self.navigationController.navigationBarHidden = NO;
+ 
+@@ -54,7 +55,7 @@
+ 
+     _barra = [[UISearchBar alloc] init];
+     _barra.delegate = self;
+-    _barra.placeholder = @"Buscar en YouTube";
++    _barra.placeholder = @"Search YouTube";
+     _barra.barStyle = UIBarStyleBlack;
+     _barra.translucent = NO;
+     _barra.barTintColor = [YTTheme fondo];
+@@ -91,9 +92,9 @@
+     _estado.textAlignment = NSTextAlignmentCenter;
+     _estado.textColor = [YTTheme textoSecundario];
+     _estado.font = [YTTheme fuenteCuerpo];
+-    _estado.text = @"Escribe arriba o toca una sugerencia para empezar.\n\n"
+-                   @"Con las pestañas de abajo buscas videos, canales o listas "
+-                   @"de reproduccion.";
++    _estado.text = @"Type above or tap a suggestion to start.\n\n"
++                   @"With the tabs below you search for videos, channels or "
++                   @"playlists.";
+     [self.view addSubview:_estado];
+ 
+     [self colocarTiras];
+@@ -110,7 +111,7 @@
+                 campo.layer.cornerRadius = 10.0;
+                 campo.layer.masksToBounds = YES;
+                 campo.attributedPlaceholder = [[NSAttributedString alloc]
+-                    initWithString:@"Buscar en YouTube"
++                    initWithString:@"Search YouTube"
+                         attributes:@{NSForegroundColorAttributeName : [YTTheme textoSecundario]}];
+             }
+         }
+@@ -150,7 +151,7 @@
+     [self.view addSubview:_tiraDeFiltros];
+ 
+     _botonesFiltro = [NSMutableArray array];
+-    NSArray *titulos = @[ @"Vídeos", @"Canales", @"Listas" ];
++    NSArray *titulos = @[ @"Videos", @"Channels", @"Playlists" ];
+     CGFloat x = 12.0;
+     for (NSUInteger i = 0; i < titulos.count; i++) {
+         UIButton *boton = [self pastillaConTitulo:titulos[i]
+@@ -168,9 +169,9 @@
+     _tiraDeSugerencias.showsHorizontalScrollIndicator = NO;
+     [self.view addSubview:_tiraDeSugerencias];
+ 
+-    NSArray *sugerencias = @[ @"música", @"noticias", @"deportes", @"comedia",
+-                              @"documentales", @"tutoriales", @"películas",
+-                              @"videojuegos" ];
++    NSArray *sugerencias = @[ @"music", @"news", @"sports", @"comedy",
++                              @"documentaries", @"tutorials", @"movies",
++                              @"video games" ];
+     _botonesSugerencia = [NSMutableArray array];
+     x = 12.0;
+     for (NSUInteger i = 0; i < sugerencias.count; i++) {
+@@ -247,7 +248,7 @@
+     [self colocarTiras];
+     [_girador startAnimating];
+     _estado.hidden = NO;
+-    _estado.text = @"Buscando...";
++    _estado.text = @"Searching...";
+     _tabla.hidden = YES;
+ 
+     __weak YTSearchViewController *deb = self;
+@@ -255,7 +256,7 @@
+         [[YTClient compartido] buscarCanales:limpia
+             completion:^(NSArray *canales, NSError *error) {
+             [deb acabarCon:canales error:error
+-                    vacio:@"Sin canales con ese nombre."];
++                    vacio:@"No channels with that name."];
+         }];
+         return;
+     }
+@@ -263,13 +264,13 @@
+         [[YTClient compartido] buscarListas:limpia
+             completion:^(NSArray *listas, NSError *error) {
+             [deb acabarCon:listas error:error
+-                    vacio:@"Sin listas de reproduccion con ese nombre."];
++                    vacio:@"No playlists with that name."];
+         }];
+         return;
+     }
+ 
+     [[YTClient compartido] buscar:limpia completion:^(NSArray *videos, NSError *error) {
+-        [deb acabarCon:videos error:error vacio:@"Sin resultados.\nPrueba otra busqueda."];
++        [deb acabarCon:videos error:error vacio:@"No results.\nTry another search."];
+     }];
+ }
+ 
+@@ -284,7 +285,7 @@
+         _estado.hidden = NO;
+         _estado.text = [NSString stringWithFormat:@"%@\n\n%@",
+             [YTClient explicarError:error],
+-            @"Ajustes > Probar conexion para mas detalle."];
++            @"Settings > Test connection for more detail."];
+         return;
+     }
+ 
+diff -ru src/tube9/app/YTSettingsViewController.m out/app/YTSettingsViewController.m
+--- src/tube9/app/YTSettingsViewController.m	2026-10-29 03:41:52.817715907 -0400
++++ out/app/YTSettingsViewController.m	2026-10-29 03:49:21.279233058 -0400
+@@ -1,3 +1,4 @@
++// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
+ // YTSettingsViewController.m -- conexion, cuenta, descargas y ayuda
+ #import "YTSettingsViewController.h"
+ #import "YTTheme.h"
+@@ -13,7 +14,7 @@
+ 
+ - (void)viewDidLoad {
+     [super viewDidLoad];
+-    self.title = @"Ajustes";
++    self.title = @"Settings";
+     self.tableView.backgroundColor = [YTTheme fondo];
+     self.tableView.separatorColor = [YTTheme borde];
+     self.tableView.rowHeight = 50.0;
+@@ -38,31 +39,31 @@
+ }
+ 
+ - (NSString *)tableView:(UITableView *)tabla titleForHeaderInSection:(NSInteger)seccion {
+-    if (seccion == 0) return @"Conexion";
+-    if (seccion == 1) return @"Cuenta de YouTube";
+-    if (seccion == 2) return @"Videos y descargas";
+-    if (seccion == 3) return @"Apariencia";
+-    return @"Ayuda";
++    if (seccion == 0) return @"Connection";
++    if (seccion == 1) return @"YouTube account";
++    if (seccion == 2) return @"Videos and downloads";
++    if (seccion == 3) return @"Appearance";
++    return @"Help";
+ }
+ 
+ - (NSString *)tableView:(UITableView *)tabla titleForFooterInSection:(NSInteger)seccion {
+     if (seccion == 0) {
+-        return @"Directo: la app habla con YouTube directamente (necesita los "
+-                "certificados actualizados en el dispositivo).\n"
+-                "Relay: la app habla con un servidor propio por HTTP, sin certificados.";
++        return @"Direct: the app talks to YouTube directly (needs the "
++                "updated certificates on the device).\n"
++                "Relay: the app talks to your own server over HTTP, no certificates.";
+     }
+     if (seccion == 1) {
+-        return @"Iniciar sesion evita que YouTube diga \"confirma que no eres un bot\" "
+-                "y mejora mucho la fiabilidad.";
++        return @"Signing in stops YouTube from saying \"confirm you are not a bot\" "
++                "and makes playback much more reliable.";
+     }
+     if (seccion == 2) {
+-        return @"Las descargas se guardan como MP4 360p en la carpeta que elijas "
+-                "(tambien fuera de la app, util con jailbreak). \"Continuar viendo\" "
+-                "es la lista de videos a medias que aparece en Inicio.";
++        return @"Downloads are saved as MP4 360p in the folder you choose "
++                "(also outside the app, useful with jailbreak). \"Continue watching\" "
++                "is the list of half-watched videos shown on Home.";
+     }
+     if (seccion == 3) {
+-        return @"Dos fondos (oscuro y claro) y siete colores de botones: catorce "
+-                "combinaciones. Al cambiarlo, la app se repinta sola.";
++        return @"Two backgrounds (dark and light) and seven button colors: fourteen "
++                "combinations. When you change it, the app redraws itself.";
+     }
+     return nil;
+ }
+@@ -96,7 +97,7 @@
+     if (indice.section == 0) {
+         if (indice.row == 0) {
+             UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleDefault];
+-            c.textLabel.text = @"Usar relay propio";
++            c.textLabel.text = @"Use my own relay";
+             c.selectionStyle = UITableViewCellSelectionStyleNone;
+             UISwitch *interruptor = [[UISwitch alloc] init];
+             interruptor.onTintColor = [YTTheme acento];
+@@ -108,22 +109,22 @@
+         }
+         if (indice.row == 1) {
+             UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleValue1];
+-            c.textLabel.text = @"Direccion del relay";
++            c.textLabel.text = @"Relay address";
+             NSString *base = [YTClient relayBase];
+-            c.detailTextLabel.text = base.length ? base : @"sin configurar";
++            c.detailTextLabel.text = base.length ? base : @"not set";
+             c.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+             return c;
+         }
+         if (indice.row == 2) {
+             UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleValue1];
+-            c.textLabel.text = @"Token (opcional)";
++            c.textLabel.text = @"Token (optional)";
+             NSString *token = [YTClient relayToken];
+-            c.detailTextLabel.text = token.length ? @"configurado" : @"ninguno";
++            c.detailTextLabel.text = token.length ? @"set" : @"none";
+             c.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+             return c;
+         }
+         UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleDefault];
+-        c.textLabel.text = @"Probar conexion";
++        c.textLabel.text = @"Test connection";
+         c.textLabel.textColor = [YTTheme acento];
+         c.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+         return c;
+@@ -133,18 +134,18 @@
+         if (indice.row == 0) {
+             UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleValue1];
+             BOOL sesion = [YTClient haySesion];
+-            c.textLabel.text = sesion ? @"Sesion activa" : @"Iniciar sesion en YouTube";
++            c.textLabel.text = sesion ? @"Signed in" : @"Sign in to YouTube";
+             c.textLabel.textColor = sesion ? [YTTheme textoPrimario] : [YTTheme acento];
+             c.detailTextLabel.text = sesion
+                 ? [NSString stringWithFormat:@"%lu cookies", (unsigned long)[YTClient numeroDeCookies]]
+-                : @"anonimo";
++                : @"anonymous";
+             c.accessoryType = sesion ? UITableViewCellAccessoryNone
+                                      : UITableViewCellAccessoryDisclosureIndicator;
+             return c;
+         }
+         if (indice.row == 1) {
+             UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleDefault];
+-            c.textLabel.text = @"Pegar cookies manualmente";
++            c.textLabel.text = @"Paste cookies manually";
+             c.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+             c.detailTextLabel.text = @"";
+             BOOL hayManuales = [YTClient cookiesManuales].length > 0;
+@@ -152,7 +153,7 @@
+             return c;
+         }
+         UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleDefault];
+-        c.textLabel.text = @"Cerrar sesion";
++        c.textLabel.text = @"Sign out";
+         c.textLabel.textColor = [YTTheme acento];
+         return c;
+     }
+@@ -161,31 +162,31 @@
+         UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleValue1];
+         if (indice.row == 0) {
+             NSUInteger cuantas = [[YTDescargas compartido] historial].count;
+-            c.textLabel.text = @"Descargas";
++            c.textLabel.text = @"Downloads";
+             c.detailTextLabel.text = cuantas
+                 ? [NSString stringWithFormat:@"%lu videos", (unsigned long)cuantas]
+-                : @"ninguno";
++                : @"none";
+             c.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+             return c;
+         }
+         if (indice.row == 1) {
+-            c.textLabel.text = @"Carpeta de descargas";
++            c.textLabel.text = @"Download folder";
+             c.detailTextLabel.text = [YTDescargas nombreBonitoDeCarpeta:[YTDescargas carpeta]];
+             c.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+             return c;
+         }
+-        c.textLabel.text = @"Borrar \"Continuar viendo\"";
++        c.textLabel.text = @"Clear \"Continue watching\"";
+         c.textLabel.textColor = [YTTheme acento];
+         NSUInteger cuantos = [YTProgreso continuarViendo].count;
+         c.detailTextLabel.text = cuantos
+             ? [NSString stringWithFormat:@"%lu videos", (unsigned long)cuantos]
+-            : @"vacio";
++            : @"empty";
+         return c;
+     }
+ 
+     if (indice.section == 3) {
+         UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleValue1];
+-        c.textLabel.text = @"Tema y color";
++        c.textLabel.text = @"Theme and color";
+         c.detailTextLabel.text = [NSString stringWithFormat:@"%@ · %@",
+             [YTTheme tituloDeFondo:[YTTheme fondoClave]],
+             [YTTheme tituloDeAcento:[YTTheme acentoClave]]];
+@@ -195,10 +196,10 @@
+ 
+     UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleDefault];
+     if (indice.row == 0) {
+-        c.textLabel.text = @"Arreglar los certificados de iOS 9";
++        c.textLabel.text = @"Fix iOS 9 certificates";
+         c.textLabel.textColor = [YTTheme acento];
+     } else {
+-        c.textLabel.text = @"Acerca de Tube9";
++        c.textLabel.text = @"About Tube9";
+     }
+     c.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+     return c;
+@@ -210,15 +211,15 @@
+     [tabla deselectRowAtIndexPath:indice animated:YES];
+ 
+     if (indice.section == 0) {
+-        if (indice.row == 1) { [self editarTextoParaClave:@"relay" titulo:@"Direccion del relay"]; return; }
++        if (indice.row == 1) { [self editarTextoParaClave:@"relay" titulo:@"Relay address"]; return; }
+         if (indice.row == 2) { [self editarTextoParaClave:@"token" titulo:@"Token"]; return; }
+         if (indice.row == 3) { [self probarConexion]; return; }
+     }
+ 
+     if (indice.section == 1) {
+         if (indice.row == 0) {
+-            if ([YTClient haySesion]) { [self alerta:@"Ya has iniciado sesion"
+-                                             texto:@"Para cambiarla, pulsa Cerrar sesion y vuelve a entrar."]; return; }
++            if ([YTClient haySesion]) { [self alerta:@"You are already signed in"
++                                             texto:@"To change account, tap Sign out and sign in again."]; return; }
+             YTLoginViewController *login = [[YTLoginViewController alloc] init];
+             UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:login];
+             [self presentViewController:nav animated:YES completion:nil];
+@@ -227,7 +228,7 @@
+         if (indice.row == 1) { [self editarCookies]; return; }
+         [YTClient cerrarSesion];
+         [self.tableView reloadData];
+-        [self alerta:@"Sesion cerrada" texto:@"Ahora las peticiones van sin cuenta."];
++        [self alerta:@"Signed out" texto:@"Requests are now sent without an account."];
+         return;
+     }
+ 
+@@ -244,24 +245,24 @@
+         }
+         NSUInteger cuantos = [YTProgreso continuarViendo].count;
+         if (cuantos == 0) {
+-            [self alerta:@"Nada que borrar"
+-                   texto:@"\"Continuar viendo\" esta vacio ahora mismo."];
++            [self alerta:@"Nothing to clear"
++                   texto:@"\"Continue watching\" is empty right now."];
+             return;
+         }
+         UIAlertController *alerta = [UIAlertController
+-            alertControllerWithTitle:@"Borrar \"Continuar viendo\""
++            alertControllerWithTitle:@"Clear \"Continue watching\""
+                              message:[NSString stringWithFormat:
+-                                @"Se olvidaran los %lu videos a medias. Los videos "
+-                                @"seguiran en YouTube, solo se pierde por donde ibas.",
++                                @"The %lu half-watched videos will be forgotten. The videos "
++                                @"stay on YouTube; only your place in them is lost.",
+                                 (unsigned long)cuantos]
+                       preferredStyle:UIAlertControllerStyleAlert];
+-        [alerta addAction:[UIAlertAction actionWithTitle:@"Borrar"
++        [alerta addAction:[UIAlertAction actionWithTitle:@"Clear"
+                                                    style:UIAlertActionStyleDestructive
+                                                  handler:^(UIAlertAction *accion) {
+             [YTProgreso vaciar];
+             [self.tableView reloadData];
+         }]];
+-        [alerta addAction:[UIAlertAction actionWithTitle:@"Cancelar"
++        [alerta addAction:[UIAlertAction actionWithTitle:@"Cancel"
+                                                    style:UIAlertActionStyleCancel
+                                                  handler:nil]];
+         [self presentViewController:alerta animated:YES completion:nil];
+@@ -282,9 +283,9 @@
+     NSString *modo = interruptor.on ? @"relay" : @"directo";
+     [YTClient guardarModo:modo relay:[YTClient relayBase] token:[YTClient relayToken]];
+     if ([modo isEqualToString:@"relay"] && [YTClient relayBase].length == 0) {
+-        [self alerta:@"Falta la direccion"
+-               texto:@"Escribe la direccion de tu relay (por ejemplo "
+-                     "http://192.168.1.50:8787) en la opcion de abajo."];
++        [self alerta:@"Address missing"
++               texto:@"Type the address of your relay (for example "
++                     "http://192.168.1.50:8787) in the option below."];
+     }
+     [self.tableView reloadData];
+ }
+@@ -295,19 +296,19 @@
+ 
+     UIAlertController *alerta =
+         [UIAlertController alertControllerWithTitle:titulo
+-                                            message:(esRelay ? @"Ejemplo: http://192.168.1.50:8787"
+-                                                             : @"Debe coincidir con el --token del relay.")
++                                            message:(esRelay ? @"Example: http://192.168.1.50:8787"
++                                                             : @"Must match the relay's --token.")
+                                      preferredStyle:UIAlertControllerStyleAlert];
+     [alerta addTextFieldWithConfigurationHandler:^(UITextField *campo) {
+         campo.text = actual;
+-        campo.placeholder = esRelay ? @"http://192.168.1.50:8787" : @"opcional";
++        campo.placeholder = esRelay ? @"http://192.168.1.50:8787" : @"optional";
+         campo.keyboardType = esRelay ? UIKeyboardTypeURL : UIKeyboardTypeDefault;
+         campo.autocapitalizationType = UITextAutocapitalizationTypeNone;
+         campo.autocorrectionType = UITextAutocorrectionTypeNo;
+         campo.clearButtonMode = UITextFieldViewModeWhileEditing;
+     }];
+-    [alerta addAction:[UIAlertAction actionWithTitle:@"Cancelar" style:UIAlertActionStyleCancel handler:nil]];
+-    [alerta addAction:[UIAlertAction actionWithTitle:@"Guardar" style:UIAlertActionStyleDefault
++    [alerta addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
++    [alerta addAction:[UIAlertAction actionWithTitle:@"Save" style:UIAlertActionStyleDefault
+         handler:^(UIAlertAction *accion) {
+         NSString *valor = alerta.textFields.firstObject.text ?: @"";
+         valor = [valor stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+@@ -322,17 +323,17 @@
+ 
+ - (void)editarCookies {
+     UIAlertController *alerta =
+-        [UIAlertController alertControllerWithTitle:@"Pegar cookies"
+-                                            message:@"Pega aqui la cabecera Cookie de youtube.com "
+-                                                    "(por ejemplo: SID=...; HSID=...). Dejalo vacio para borrar."
++        [UIAlertController alertControllerWithTitle:@"Paste cookies"
++                                            message:@"Paste the youtube.com Cookie header here "
++                                                    "(for example: SID=...; HSID=...). Leave it empty to clear."
+                                      preferredStyle:UIAlertControllerStyleAlert];
+     [alerta addTextFieldWithConfigurationHandler:^(UITextField *campo) {
+         campo.text = [YTClient cookiesManuales];
+         campo.autocapitalizationType = UITextAutocapitalizationTypeNone;
+         campo.autocorrectionType = UITextAutocorrectionTypeNo;
+     }];
+-    [alerta addAction:[UIAlertAction actionWithTitle:@"Cancelar" style:UIAlertActionStyleCancel handler:nil]];
+-    [alerta addAction:[UIAlertAction actionWithTitle:@"Guardar" style:UIAlertActionStyleDefault
++    [alerta addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
++    [alerta addAction:[UIAlertAction actionWithTitle:@"Save" style:UIAlertActionStyleDefault
+         handler:^(UIAlertAction *accion) {
+         [YTClient guardarCookiesManuales:alerta.textFields.firstObject.text];
+         [self.tableView reloadData];
+@@ -341,12 +342,12 @@
+ }
+ 
+ - (void)probarConexion {
+-    [self alerta:@"Probando..." texto:@"Esto puede tardar unos segundos."];
++    [self alerta:@"Testing..." texto:@"This can take a few seconds."];
+     __weak YTSettingsViewController *deb = self;
+     [[YTClient compartido] probarConexion:^(NSString *informe) {
+         dispatch_async(dispatch_get_main_queue(), ^{
+             [deb dismissViewControllerAnimated:YES completion:^{
+-                [deb alerta:@"Resultado" texto:informe];
++                [deb alerta:@"Result" texto:informe];
+                 [deb.tableView reloadData];
+             }];
+         });
+@@ -359,35 +360,35 @@
+     UIAlertController *a = [UIAlertController alertControllerWithTitle:titulo
+                                                               message:texto
+                                                        preferredStyle:UIAlertControllerStyleAlert];
+-    [a addAction:[UIAlertAction actionWithTitle:@"Vale" style:UIAlertActionStyleDefault handler:nil]];
++    [a addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
+     [self presentViewController:a animated:YES completion:nil];
+ }
+ 
+ - (void)ayudaCertificados {
+     NSString *texto =
+-        @"iOS 9.3.5 es de 2016 y no incluye las autoridades modernas, por eso "
+-        @"da error de certificado al conectar con YouTube.\n\n"
+-        @"Solucion (una sola vez, en un dispositivo con jailbreak):\n\n"
+-        @"1. Descarga en el dispositivo las raices actualizadas:\n"
++        @"iOS 9.3.5 is from 2016 and does not include the modern authorities, so "
++        @"it gives a certificate error when connecting to YouTube.\n\n"
++        @"Fix (only once, on a jailbroken device):\n\n"
++        @"1. Download the updated root certificates to the device:\n"
+         @"   - ISRG Root X1  (Let's Encrypt)\n"
+-        @"   - GTS Root R1 y GTS Root R4  (Google)\n"
+-        @"   Buscalas en letsencrypt.org/certificates y pki.goog/repository.\n\n"
+-        @"2. Instalalo como perfil: Ajustes > General > Perfil > Instalar.\n\n"
+-        @"3. En iOS 9 la raiz instalada pasa a ser de confianza automaticamente. "
+-        @"Si el dispositivo lo permite, comprueba ademas en Ajustes > General > "
+-        @"Informacion > Ajustes de confianza de certificados.\n\n"
+-        @"4. Alternativa sin tocar certificados: usa el modo Relay en Ajustes.";
+-    [self alerta:@"Arreglar certificados" texto:texto];
++        @"   - GTS Root R1 and GTS Root R4  (Google)\n"
++        @"   Find them at letsencrypt.org/certificates and pki.goog/repository.\n\n"
++        @"2. Install it as a profile: Settings > General > Profile > Install.\n\n"
++        @"3. On iOS 9 an installed root is trusted automatically. "
++        @"If the device has it, also check Settings > General > "
++        @"About > Certificate Trust Settings.\n\n"
++        @"4. Option without certificates: use Relay mode in Settings.";
++    [self alerta:@"Fix certificates" texto:texto];
+ }
+ 
+ - (void)acercaDe {
+     NSString *texto =
+-        @"Tube9 1.0.0\nCliente no oficial de YouTube para iOS 9.3.5 (armv7).\n\n"
+-        @"Compilado con Theos + iPhoneOS9.3.sdk. Objective-C, interfaz plana.\n\n"
+-        @"Nota legal: no es una app de YouTube ni esta afiliada a Google. "
+-        @"El acceso a los videos se hace mediante la propia web de YouTube, "
+-        @"cuyas condiciones de uso siguen aplicando.";
+-    [self alerta:@"Acerca de" texto:texto];
++        @"Tube9 1.0.0 (English UI build)\nUnofficial YouTube client for iOS 9.3.5 (armv7).\n\n"
++        @"Built with Theos + iPhoneOS9.3.sdk. Objective-C, flat interface.\n\n"
++        @"Legal note: this is not a YouTube app and is not affiliated with Google. "
++        @"Videos are accessed through YouTube's own web services, "
++        @"whose terms of service still apply.";
++    [self alerta:@"About" texto:texto];
+ }
+ 
+ @end
+diff -ru src/tube9/app/YTTemaViewController.m out/app/YTTemaViewController.m
+--- src/tube9/app/YTTemaViewController.m	2026-10-29 03:41:52.817715907 -0400
++++ out/app/YTTemaViewController.m	2026-10-29 03:49:21.279399632 -0400
+@@ -1,3 +1,4 @@
++// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
+ // YTTemaViewController.m -- elegir fondo (oscuro o claro) y, dentro de ese
+ // fondo, el color de los botones. Son catorce combinaciones.
+ //
+@@ -43,7 +44,7 @@
+ 
+ - (void)viewDidLoad {
+     [super viewDidLoad];
+-    self.title = @"Tema";
++    self.title = @"Theme";
+     self.tableView.backgroundColor = [YTTheme fondo];
+     self.tableView.separatorColor = [YTTheme borde];
+     self.tableView.rowHeight = 50.0;
+@@ -60,22 +61,22 @@
+ }
+ 
+ - (NSString *)tableView:(UITableView *)tabla titleForHeaderInSection:(NSInteger)seccion {
+-    if (seccion == 0) return @"Fondo";
+-    if (seccion == 1) return @"Color de los botones";
+-    return @"Vista previa";
++    if (seccion == 0) return @"Background";
++    if (seccion == 1) return @"Button color";
++    return @"Preview";
+ }
+ 
+ - (NSString *)tableView:(UITableView *)tabla titleForFooterInSection:(NSInteger)seccion {
+     if (seccion == 0) {
+-        return @"El fondo cambia toda la app. Se puede mezclar con cualquiera de "
+-                "los colores de abajo.";
++        return @"The background changes the whole app. It can be combined with any of "
++                "the colors below.";
+     }
+     if (seccion == 1) {
+-        return @"Este color se usa en los botones, los filtros de las listas, la "
+-                "pestana elegida y los interruptores.";
++        return @"This color is used for buttons, list filters, the "
++                "selected tab and the switches.";
+     }
+-    return @"Al cambiar de tema la app vuelve a Inicio para repintar todas las "
+-            "pantallas de una vez.";
++    return @"When you change the theme, the app goes back to Home to redraw all "
++            "screens at once.";
+ }
+ 
+ - (CGFloat)tableView:(UITableView *)tabla heightForRowAtIndexPath:(NSIndexPath *)indice {
+@@ -143,7 +144,7 @@
+ 
+     // Un boton del color elegido, como los filtros de Tendencias.
+     UILabel *pastilla = [[UILabel alloc] initWithFrame:CGRectMake(12.0, 22.0, 74.0, 30.0)];
+-    pastilla.text = @"Boton";
++    pastilla.text = @"Button";
+     pastilla.font = [UIFont systemFontOfSize:13.0 weight:UIFontWeightMedium];
+     pastilla.textAlignment = NSTextAlignmentCenter;
+     pastilla.textColor = [YTTheme textoSobreAcento];
+@@ -154,7 +155,7 @@
+ 
+     UILabel *titulo = [[UILabel alloc] initWithFrame:CGRectMake(98.0, 20.0,
+         CGRectGetWidth(caja.bounds) - 110.0, 18.0)];
+-    titulo.text = @"Titulo del video";
++    titulo.text = @"Video title";
+     titulo.font = [YTTheme fuenteTituloLista];
+     titulo.textColor = [YTTheme textoPrimario];
+     titulo.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+@@ -162,7 +163,7 @@
+ 
+     UILabel *sub = [[UILabel alloc] initWithFrame:CGRectMake(98.0, 40.0,
+         CGRectGetWidth(caja.bounds) - 110.0, 16.0)];
+-    sub.text = @"Canal  ·  1,2 M de visitas";
++    sub.text = @"Channel  ·  1.2M views";
+     sub.font = [YTTheme fuenteMenuda];
+     sub.textColor = [YTTheme textoSecundario];
+     sub.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+diff -ru src/tube9/app/YTTendenciasViewController.m out/app/YTTendenciasViewController.m
+--- src/tube9/app/YTTendenciasViewController.m	2026-10-29 03:41:52.817715907 -0400
++++ out/app/YTTendenciasViewController.m	2026-10-29 03:49:21.279541079 -0400
+@@ -1,3 +1,4 @@
++// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
+ // YTTendenciasViewController.m -- lista de videos ordenada por "mas vistos",
+ // con una fila de "chips" arriba para cambiar de categoria.
+ //
+@@ -30,25 +31,25 @@
+ 
+ - (void)viewDidLoad {
+     [super viewDidLoad];
+-    self.title = @"Tendencias";
++    self.title = @"Trending";
+     self.view.backgroundColor = [YTTheme fondo];
+ 
+     _categorias = @[
+-        @{ @"titulo" : @"Todo",        @"consulta" : @"tendencias",
++        @{ @"titulo" : @"All",         @"consulta" : @"trending",
+            @"params" : YTOrdenPorPopularidad },
+-        @{ @"titulo" : @"Música",      @"consulta" : @"música",
++        @{ @"titulo" : @"Music",       @"consulta" : @"music",
+            @"params" : YTOrdenPorPopularidad },
+-        @{ @"titulo" : @"Videojuegos", @"consulta" : @"videojuegos",
++        @{ @"titulo" : @"Gaming",      @"consulta" : @"video games",
+            @"params" : YTOrdenPorPopularidad },
+-        @{ @"titulo" : @"Noticias",    @"consulta" : @"noticias de hoy",
++        @{ @"titulo" : @"News",        @"consulta" : @"news today",
+            @"params" : YTOrdenRecientes },
+-        @{ @"titulo" : @"Deportes",    @"consulta" : @"deportes",
++        @{ @"titulo" : @"Sports",      @"consulta" : @"sports",
+            @"params" : YTOrdenRecientes },
+-        @{ @"titulo" : @"Películas",   @"consulta" : @"películas completas",
++        @{ @"titulo" : @"Movies",      @"consulta" : @"movies",
+            @"params" : YTOrdenPorPopularidad },
+-        @{ @"titulo" : @"Comedia",     @"consulta" : @"comedia",
++        @{ @"titulo" : @"Comedy",      @"consulta" : @"comedy",
+            @"params" : YTOrdenPorPopularidad },
+-        @{ @"titulo" : @"Aprender",    @"consulta" : @"documentales",
++        @{ @"titulo" : @"Learn",       @"consulta" : @"documentaries",
+            @"params" : YTOrdenPorPopularidad }
+     ];
+     _elegida = 0;
+@@ -144,7 +145,7 @@
+     _ultimoError = nil;
+ 
+     NSDictionary *categoria = _categorias[_elegida];
+-    _estado.text = @"Cargando...";
++    _estado.text = @"Loading...";
+     _estado.hidden = NO;
+     _tabla.hidden = YES;
+     [_girador startAnimating];
+@@ -168,14 +169,14 @@
+             yo->_estado.hidden = NO;
+             yo->_estado.text = [NSString stringWithFormat:@"%@\n\n%@",
+                 [YTClient explicarError:error],
+-                @"Pulsa el boton de arriba a la derecha para reintentar."];
++                @"Tap the button at the top right to retry."];
+             return;
+         }
+         yo->_videos = videos;
+         [yo->_tabla reloadData];
+         yo->_tabla.hidden = (videos.count == 0);
+         yo->_estado.hidden = (videos.count > 0);
+-        if (videos.count == 0) yo->_estado.text = @"Sin resultados para esta categoria.";
++        if (videos.count == 0) yo->_estado.text = @"No results for this category.";
+     }];
+ }
+ 
+diff -ru src/tube9/app/YTTheme.m out/app/YTTheme.m
+--- src/tube9/app/YTTheme.m	2026-10-29 03:41:52.817715907 -0400
++++ out/app/YTTheme.m	2026-10-29 03:49:21.279691164 -0400
+@@ -1,3 +1,4 @@
++// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
+ // YTTheme.m
+ #import "YTTheme.h"
+ 
+@@ -36,13 +37,13 @@
+     static dispatch_once_t unaVez;
+     dispatch_once(&unaVez, ^{
+         lista = @[
+-            @{ @"clave" : @"rojo",     @"titulo" : @"Rojo",     @"hex" : @0xFF0033 },
+-            @{ @"clave" : @"azul",     @"titulo" : @"Azul",     @"hex" : @0x1A73E8 },
+-            @{ @"clave" : @"verde",    @"titulo" : @"Verde",    @"hex" : @0x1FA34A },
+-            @{ @"clave" : @"morado",   @"titulo" : @"Morado",   @"hex" : @0x7C4DFF },
+-            @{ @"clave" : @"turquesa", @"titulo" : @"Turquesa", @"hex" : @0x00A6A6 },
+-            @{ @"clave" : @"ambar",    @"titulo" : @"Ambar",    @"hex" : @0xFFAB00 },
+-            @{ @"clave" : @"rosa",     @"titulo" : @"Rosa",     @"hex" : @0xE91E8C }
++            @{ @"clave" : @"rojo",     @"titulo" : @"Red",     @"hex" : @0xFF0033 },
++            @{ @"clave" : @"azul",     @"titulo" : @"Blue",     @"hex" : @0x1A73E8 },
++            @{ @"clave" : @"verde",    @"titulo" : @"Green",    @"hex" : @0x1FA34A },
++            @{ @"clave" : @"morado",   @"titulo" : @"Purple",   @"hex" : @0x7C4DFF },
++            @{ @"clave" : @"turquesa", @"titulo" : @"Teal", @"hex" : @0x00A6A6 },
++            @{ @"clave" : @"ambar",    @"titulo" : @"Amber",    @"hex" : @0xFFAB00 },
++            @{ @"clave" : @"rosa",     @"titulo" : @"Pink",     @"hex" : @0xE91E8C }
+         ];
+     });
+     return lista;
+@@ -121,10 +122,10 @@
+ 
+ + (NSArray *)fondosDisponibles {
+     return @[
+-        @{ @"clave" : @"oscuro", @"titulo" : @"Oscuro",
+-           @"detalle" : @"El de siempre, como YouTube de noche" },
+-        @{ @"clave" : @"claro",  @"titulo" : @"Claro",
+-           @"detalle" : @"Fondo blanco, para el sol de la calle" }
++        @{ @"clave" : @"oscuro", @"titulo" : @"Dark",
++           @"detalle" : @"The classic one, like YouTube at night" },
++        @{ @"clave" : @"claro",  @"titulo" : @"Light",
++           @"detalle" : @"White background, for bright sunlight" }
+     ];
+ }
+ 
+@@ -149,14 +150,14 @@
+     for (NSDictionary *f in [self fondosDisponibles]) {
+         if ([f[@"clave"] isEqualToString:clave]) return f[@"titulo"];
+     }
+-    return @"Oscuro";
++    return @"Dark";
+ }
+ 
+ + (NSString *)tituloDeAcento:(NSString *)clave {
+     for (NSDictionary *a in YTTablaAcentos()) {
+         if ([a[@"clave"] isEqualToString:clave]) return a[@"titulo"];
+     }
+-    return @"Rojo";
++    return @"Red";
+ }
+ 
+ #pragma mark - Paleta
+diff -ru src/tube9/app/YTVideo.m out/app/YTVideo.m
+--- src/tube9/app/YTVideo.m	2026-10-29 03:41:52.817715907 -0400
++++ out/app/YTVideo.m	2026-10-29 03:49:21.279865039 -0400
+@@ -1,3 +1,4 @@
++// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
+ // YTVideo.m
+ #import "YTVideo.h"
+ 
+@@ -47,7 +48,7 @@
+     v.publicado     = d[@"publicado"];
+     v.urlMiniatura  = d[@"miniatura"];
+     if (!v.identificador) return nil;
+-    if (!v.titulo) v.titulo = @"(sin titulo)";
++    if (!v.titulo) v.titulo = @"(no title)";
+     return v;
+ }
+ 
+@@ -60,7 +61,7 @@
+     v.identificador = vid;
+     // videoRenderer y compactVideoRenderer usan "title"; los estantes de un
+     // canal (videoWithContextRenderer) usan "headline".
+-    v.titulo    = YTTexto(r[@"title"]) ?: YTTexto(r[@"headline"]) ?: @"(sin titulo)";
++    v.titulo    = YTTexto(r[@"title"]) ?: YTTexto(r[@"headline"]) ?: @"(no title)";
+     v.canal     = YTTexto(r[@"shortBylineText"]) ?: YTTexto(r[@"longBylineText"])
+                   ?: YTTexto(r[@"ownerText"]);
+     v.canalId   = YTIdDeCanal(r[@"longBylineText"]) ?: YTIdDeCanal(r[@"shortBylineText"])

@@ -1,3 +1,4 @@
+// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
 // YTChannelViewController.m -- la ficha de un canal.
 //
 // Se monta en dos tiempos, y a proposito:
@@ -66,7 +67,7 @@ static const CGFloat YTLadoAvatar = 64.0;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title = _nombreRespaldo.length ? _nombreRespaldo : @"Canal";
+    self.title = _nombreRespaldo.length ? _nombreRespaldo : @"Channel";
     self.view.backgroundColor = [YTTheme fondo];
     self.edgesForExtendedLayout = UIRectEdgeNone;
     self.automaticallyAdjustsScrollViewInsets = NO;
@@ -143,7 +144,7 @@ static const CGFloat YTLadoAvatar = 64.0;
     [_cabecera addSubview:_datos];
 
     _suscribirse = [UIButton buttonWithType:UIButtonTypeCustom];
-    [_suscribirse setTitle:@"Suscribirse" forState:UIControlStateNormal];
+    [_suscribirse setTitle:@"Subscribe" forState:UIControlStateNormal];
     [_suscribirse setTitleColor:[YTTheme textoSobreAcento] forState:UIControlStateNormal];
     _suscribirse.titleLabel.font = [UIFont systemFontOfSize:14.0 weight:UIFontWeightSemibold];
     _suscribirse.backgroundColor = [YTTheme acento];
@@ -154,7 +155,7 @@ static const CGFloat YTLadoAvatar = 64.0;
     [_cabecera addSubview:_suscribirse];
 
     _compartir = [UIButton buttonWithType:UIButtonTypeCustom];
-    [_compartir setTitle:@"Compartir" forState:UIControlStateNormal];
+    [_compartir setTitle:@"Share" forState:UIControlStateNormal];
     _compartir.titleLabel.font = [UIFont systemFontOfSize:14.0 weight:UIFontWeightSemibold];
     [_compartir addTarget:self action:@selector(compartir)
          forControlEvents:UIControlEventTouchUpInside];
@@ -170,7 +171,7 @@ static const CGFloat YTLadoAvatar = 64.0;
     _pidiendo = YES;
     [_girador startAnimating];
     _estado.hidden = NO;
-    _estado.text = @"Cargando el canal...";
+    _estado.text = @"Loading the channel...";
 
     __weak YTChannelViewController *deb = self;
     [[YTClient compartido] canalConId:_canalId
@@ -184,7 +185,7 @@ static const CGFloat YTLadoAvatar = 64.0;
             yo->_estado.hidden = NO;
             yo->_estado.text = [NSString stringWithFormat:@"%@\n\n%@",
                 [YTClient explicarError:error],
-                @"Vuelve a entrar en el canal para intentarlo otra vez."];
+                @"Open the channel again to try once more."];
             return;
         }
 
@@ -244,7 +245,7 @@ static const CGFloat YTLadoAvatar = 64.0;
 
     // "Videos" siempre esta.
     [claves addObject:@"videos"];
-    [titulos addObject:@"Vídeos"];
+    [titulos addObject:@"Videos"];
 
     NSArray *listasInicio = _canal[@"listasDestacadas"];
     BOOL hayListas = NO;
@@ -252,12 +253,12 @@ static const CGFloat YTLadoAvatar = 64.0;
     if ([listasInicio isKindOfClass:[NSArray class]] && listasInicio.count > 0) hayListas = YES;
     if (hayListas) {
         [claves addObject:@"listas"];
-        [titulos addObject:@"Listas"];
+        [titulos addObject:@"Playlists"];
     }
 
     if ([(NSString *)_canal[@"paramsInfo"] length] > 0) {
         [claves addObject:@"info"];
-        [titulos addObject:@"Información"];
+        [titulos addObject:@"About"];
     }
 
     _clavesPestana = claves;
@@ -311,11 +312,11 @@ static const CGFloat YTLadoAvatar = 64.0;
     if ([(NSString *)params length] == 0) {
         NSArray *sueltos = _canal[@"videosDestacados"];
         _secciones = [self seccionesConVideos:(sueltos ?: @[])];
-        [self terminarConMensaje:@"Este canal no enseña videos sueltos; mira en sus listas."];
+        [self terminarConMensaje:@"This channel shows no single videos; look in its playlists."];
         return;
     }
 
-    [self empezarCarga:@"Cargando los videos..."];
+    [self empezarCarga:@"Loading videos..."];
     __weak YTChannelViewController *deb = self;
     [[YTClient compartido] videosDeCanal:_canalId
                                   params:params
@@ -324,7 +325,7 @@ static const CGFloat YTLadoAvatar = 64.0;
         if (!yo) return;
         if (error) { [yo fallo:[YTClient explicarError:error] clave:@"videos"]; return; }
         yo->_secciones = [yo seccionesConVideos:videos];
-        [yo terminarConMensaje:@"Este canal no tiene videos a la vista."];
+        [yo terminarConMensaje:@"This channel has no visible videos."];
     }];
 }
 
@@ -335,11 +336,11 @@ static const CGFloat YTLadoAvatar = 64.0;
     NSString *params = _canal[@"paramsListas"];
     if ([(NSString *)params length] == 0) {
         _secciones = [self seccionesConListas:destacadas];
-        [self terminarConMensaje:@"Este canal no tiene listas de reproduccion."];
+        [self terminarConMensaje:@"This channel has no playlists."];
         return;
     }
 
-    [self empezarCarga:@"Cargando las listas..."];
+    [self empezarCarga:@"Loading playlists..."];
     __weak YTChannelViewController *deb = self;
     [[YTClient compartido] listasDeCanal:_canalId
                                   params:params
@@ -354,7 +355,7 @@ static const CGFloat YTLadoAvatar = 64.0;
             secciones = [yo seccionesConListas:destacadas];
         }
         yo->_secciones = secciones;
-        [yo terminarConMensaje:@"Este canal no tiene listas de reproduccion."];
+        [yo terminarConMensaje:@"This channel has no playlists."];
     }];
 }
 
@@ -362,11 +363,11 @@ static const CGFloat YTLadoAvatar = 64.0;
     NSString *params = _canal[@"paramsInfo"];
     if ([(NSString *)params length] == 0) {
         _secciones = [self seccionesDeInformacion:@{}];
-        [self terminarConMensaje:@"No hay informacion de este canal."];
+        [self terminarConMensaje:@"No information for this channel."];
         return;
     }
 
-    [self empezarCarga:@"Cargando la informacion..."];
+    [self empezarCarga:@"Loading information..."];
     __weak YTChannelViewController *deb = self;
     [[YTClient compartido] informacionDeCanal:_canalId
                                        params:params
@@ -375,7 +376,7 @@ static const CGFloat YTLadoAvatar = 64.0;
         if (!yo) return;
         if (error) { [yo fallo:[YTClient explicarError:error] clave:@"info"]; return; }
         yo->_secciones = [yo seccionesDeInformacion:info];
-        [yo terminarConMensaje:@"No hay informacion de este canal."];
+        [yo terminarConMensaje:@"No information for this channel."];
     }];
 }
 
@@ -411,7 +412,7 @@ static const CGFloat YTLadoAvatar = 64.0;
                                 @"filas" : filas }];
     }
     _secciones = secciones;
-    [self terminarConMensaje:@"Este canal todavia no tiene videos publicos."];
+    [self terminarConMensaje:@"This channel has no public videos yet."];
 }
 
 - (NSArray *)seccionesConListas:(NSArray *)listas {
@@ -422,7 +423,7 @@ static const CGFloat YTLadoAvatar = 64.0;
         [filas addObject:@{ @"tipo" : @"lista", @"dato" : lista }];
     }
     if (filas.count == 0) return @[];
-    return @[ @{ @"titulo" : @"Listas de reproduccion", @"filas" : filas } ];
+    return @[ @{ @"titulo" : @"Playlists", @"filas" : filas } ];
 }
 
 - (NSArray *)seccionesDeInformacion:(NSDictionary *)info {
@@ -432,7 +433,7 @@ static const CGFloat YTLadoAvatar = 64.0;
     id descripcion = info[@"descripcion"];
     if ([descripcion isKindOfClass:[NSString class]] && [(NSString *)descripcion length] > 0) {
         [filas addObject:@{ @"tipo" : @"texto",
-                            @"dato" : @{ @"titulo" : @"Sobre el canal",
+                            @"dato" : @{ @"titulo" : @"About the channel",
                                          @"cuerpo" : descripcion } }];
     }
 
@@ -445,12 +446,12 @@ static const CGFloat YTLadoAvatar = 64.0;
         suscritos = _canal[@"suscritos"];
     }
     if ([suscritos isKindOfClass:[NSString class]] && suscritos.length) {
-        [lineas addObject:[NSString stringWithFormat:@"Suscriptores: %@", suscritos]];
+        [lineas addObject:[NSString stringWithFormat:@"Subscribers: %@", suscritos]];
     }
 
     id visitas = info[@"visitas"];
     if ([visitas isKindOfClass:[NSString class]] && [(NSString *)visitas length]) {
-        [lineas addObject:[NSString stringWithFormat:@"Visitas: %@", visitas]];
+        [lineas addObject:[NSString stringWithFormat:@"Views: %@", visitas]];
     }
     id alta = info[@"alta"];
     if ([alta isKindOfClass:[NSString class]] && [(NSString *)alta length]) {
@@ -458,21 +459,21 @@ static const CGFloat YTLadoAvatar = 64.0;
     }
     id pais = info[@"pais"];
     if ([pais isKindOfClass:[NSString class]] && [(NSString *)pais length]) {
-        [lineas addObject:[NSString stringWithFormat:@"Pais: %@", pais]];
+        [lineas addObject:[NSString stringWithFormat:@"Country: %@", pais]];
     }
 
     if (lineas.count) {
         [filas addObject:@{ @"tipo" : @"texto",
-                            @"dato" : @{ @"titulo" : @"Datos",
+                            @"dato" : @{ @"titulo" : @"Details",
                                          @"cuerpo" : [lineas componentsJoinedByString:@"\n"] } }];
     }
 
     [filas addObject:@{ @"tipo" : @"texto",
-                        @"dato" : @{ @"titulo" : @"Suscribirse",
-                                     @"cuerpo" : @"El boton \"Suscribirse\" de arriba abre "
-                                                 @"la pagina del canal en YouTube con la "
-                                                 @"confirmacion ya puesta, para que te "
-                                                 @"suscribas con tu cuenta." } }];
+                        @"dato" : @{ @"titulo" : @"Subscribe",
+                                     @"cuerpo" : @"The \"Subscribe\" button above opens "
+                                                 @"the channel page on YouTube with the "
+                                                 @"confirmation already set, so you can "
+                                                 @"subscribe with your account." } }];
 
     if (filas.count == 0) return @[];
     return @[ @{ @"titulo" : @"", @"filas" : filas } ];
@@ -504,7 +505,7 @@ static const CGFloat YTLadoAvatar = 64.0;
     [_pedidas removeObject:clave];   // asi se puede reintentar volviendo a la pestana
     [_girador stopAnimating];
     _estado.hidden = NO;
-    _estado.text = [NSString stringWithFormat:@"%@\n\nToca otra pestana y vuelve para reintentar.",
+    _estado.text = [NSString stringWithFormat:@"%@\n\nTap another tab and come back to retry.",
                     texto];
     [_tabla reloadData];
     [self.view setNeedsLayout];
@@ -517,13 +518,13 @@ static const CGFloat YTLadoAvatar = 64.0;
     // de la aplicacion y, aun asi, YouTube no lo sirve por InnerTube. La via
     // honesta: su propia pagina, con la confirmacion ya puesta.
     UIAlertController *alerta = [UIAlertController
-        alertControllerWithTitle:@"Suscribirse"
-                         message:@"Tube9 abre la pagina del canal en YouTube con la "
-                                 "confirmacion de suscripcion ya puesta: alli, con tu "
-                                 "cuenta abierta en Safari, te suscribes en un toque."
+        alertControllerWithTitle:@"Subscribe"
+                         message:@"Tube9 opens the channel page on YouTube with the "
+                                 "subscribe confirmation already set: there, with your "
+                                 "account signed in to Safari, you subscribe in one tap."
                   preferredStyle:UIAlertControllerStyleAlert];
     __weak YTChannelViewController *deb = self;
-    [alerta addAction:[UIAlertAction actionWithTitle:@"Abrir YouTube"
+    [alerta addAction:[UIAlertAction actionWithTitle:@"Open YouTube"
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction *accion) {
         YTChannelViewController *yo = deb;
@@ -532,7 +533,7 @@ static const CGFloat YTLadoAvatar = 64.0;
             @"https://www.youtube.com/channel/%@?sub_confirmation=1", yo->_canalId];
         [[UIApplication sharedApplication] openURL:[NSURL URLWithString:enlace]];
     }]];
-    [alerta addAction:[UIAlertAction actionWithTitle:@"Cancelar"
+    [alerta addAction:[UIAlertAction actionWithTitle:@"Cancel"
                                               style:UIAlertActionStyleCancel
                                             handler:nil]];
     [self presentViewController:alerta animated:YES completion:nil];

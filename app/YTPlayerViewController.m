@@ -1,3 +1,4 @@
+// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
 // YTPlayerViewController.m -- reproductor.
 //
 // Ademas de reproducir (que es lo dificil: ver YTClient), esta pantalla hace
@@ -140,7 +141,7 @@ static NSString *YTTextoDeTiempo(double segundos) {
     if (self) {
         _rutaLocal = [ruta copy];
         YTVideo *video = [[YTVideo alloc] init];
-        video.titulo = titulo.length ? titulo : @"Video descargado";
+        video.titulo = titulo.length ? titulo : @"Downloaded video";
         _video = video;
     }
     return self;
@@ -148,7 +149,7 @@ static NSString *YTTextoDeTiempo(double segundos) {
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title = @"Reproduciendo";
+    self.title = @"Now playing";
     self.view.backgroundColor = [YTTheme fondo];
     // Con esto la tabla empieza justo debajo de la barra y no hay sorpresas.
     self.edgesForExtendedLayout = UIRectEdgeNone;
@@ -180,7 +181,7 @@ static NSString *YTTextoDeTiempo(double segundos) {
     [self prepararMandosRemotos];
 
     if (_rutaLocal.length) {
-        _estado.text = @"Fichero descargado: se reproduce desde el dispositivo.";
+        _estado.text = @"Downloaded file: playing from the device.";
         [self prepararElementoConURL:[NSURL fileURLWithPath:_rutaLocal]];
     } else {
         [self resolver];
@@ -256,7 +257,7 @@ static NSString *YTTextoDeTiempo(double segundos) {
     [_cabecera addSubview:_autor];
 
     _botonCanal = [UIButton buttonWithType:UIButtonTypeSystem];
-    [_botonCanal setTitle:@"Ver canal" forState:UIControlStateNormal];
+    [_botonCanal setTitle:@"View channel" forState:UIControlStateNormal];
     [_botonCanal setImage:[YTTheme icono:@"canal" lado:16.0] forState:UIControlStateNormal];
     _botonCanal.titleLabel.font = [UIFont systemFontOfSize:13.0 weight:UIFontWeightSemibold];
     [_botonCanal addTarget:self action:@selector(abrirCanal)
@@ -273,7 +274,7 @@ static NSString *YTTextoDeTiempo(double segundos) {
     [_cabecera addSubview:_descripcion];
 
     _botonMas = [UIButton buttonWithType:UIButtonTypeSystem];
-    [_botonMas setTitle:@"Ver mas" forState:UIControlStateNormal];
+    [_botonMas setTitle:@"Show more" forState:UIControlStateNormal];
     [_botonMas setTitleColor:[YTTheme acento] forState:UIControlStateNormal];
     _botonMas.titleLabel.font = [UIFont systemFontOfSize:13.0 weight:UIFontWeightSemibold];
     _botonMas.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
@@ -289,7 +290,7 @@ static NSString *YTTextoDeTiempo(double segundos) {
     [_cabecera addSubview:_estado];
 
     _reintentar = [UIButton buttonWithType:UIButtonTypeSystem];
-    [_reintentar setTitle:@"Reintentar" forState:UIControlStateNormal];
+    [_reintentar setTitle:@"Retry" forState:UIControlStateNormal];
     [_reintentar setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
     _reintentar.titleLabel.font = [UIFont systemFontOfSize:15.0 weight:UIFontWeightSemibold];
     _reintentar.backgroundColor = [YTTheme acento];
@@ -571,8 +572,8 @@ static NSString *YTTextoDeTiempo(double segundos) {
     _controles.pantallaCompleta = _pantallaCompleta;
     [self.view setNeedsLayout];
     [self reiniciarTemporizadorDeControles];
-    [self mostrarAviso:(_pantallaCompleta ? @"Gira el telefono para verlo mas grande"
-                                          : @"Pantalla normal")];
+    [self mostrarAviso:(_pantallaCompleta ? @"Turn the device to see it bigger"
+                                          : @"Normal view")];
 }
 
 #pragma mark - Resolucion y reproduccion
@@ -583,7 +584,7 @@ static NSString *YTTextoDeTiempo(double segundos) {
         return;
     }
     _reintentar.hidden = YES;
-    _estado.text = @"Buscando el video...";
+    _estado.text = @"Finding the video...";
     [_girador startAnimating];
     [self ajustarCabecera];
 
@@ -626,9 +627,9 @@ static NSString *YTTextoDeTiempo(double segundos) {
         if (numero > 0) {
             NSNumberFormatter *formato = [[NSNumberFormatter alloc] init];
             formato.numberStyle = NSNumberFormatterDecimalStyle;
-            formato.locale = [NSLocale localeWithLocaleIdentifier:@"es_ES"];
+            formato.locale = [NSLocale localeWithLocaleIdentifier:@"en_US"];
             NSString *texto = [formato stringFromNumber:@(numero)];
-            [partes addObject:[NSString stringWithFormat:@"%@ visitas", texto]];
+            [partes addObject:[NSString stringWithFormat:@"%@ views", texto]];
         }
     }
     id duracion = info[@"duracion"];
@@ -653,7 +654,7 @@ static NSString *YTTextoDeTiempo(double segundos) {
 - (void)alternarDescripcion {
     BOOL entera = (_descripcion.numberOfLines != 0);
     _descripcion.numberOfLines = entera ? 0 : 3;
-    [_botonMas setTitle:(entera ? @"Ver menos" : @"Ver mas") forState:UIControlStateNormal];
+    [_botonMas setTitle:(entera ? @"Show less" : @"Show more") forState:UIControlStateNormal];
     [self ajustarCabecera];
 }
 
@@ -668,7 +669,7 @@ static NSString *YTTextoDeTiempo(double segundos) {
 - (void)reproducir:(NSString *)enlace {
     NSURL *url = [NSURL URLWithString:enlace];
     if (!url) {
-        [self mostrarError:@"La direccion del video no es valida."];
+        [self mostrarError:@"The video address is not valid."];
         return;
     }
     [self prepararElementoConURL:url];
@@ -688,7 +689,7 @@ static NSString *YTTextoDeTiempo(double segundos) {
                                                   object:_elemento];
 
     _listo = NO;
-    _hostVideo = url.host ?: @"fichero del dispositivo";
+    _hostVideo = url.host ?: @"file on the device";
     _totalVideo = 0.0;
     _elemento = [AVPlayerItem playerItemWithURL:url];
     // Para que a 1,5x no suene acelerado como una ardilla.
@@ -703,7 +704,7 @@ static NSString *YTTextoDeTiempo(double segundos) {
     [_jugador replaceCurrentItemWithPlayerItem:_elemento];
     [_jugador play];
     [_girador startAnimating];
-    _estado.text = @"Cargando...";
+    _estado.text = @"Loading...";
     [self crearRelojDeLosMandos];
     [self refrescarControles];
     [self ajustarCabecera];
@@ -726,16 +727,16 @@ static NSString *YTTextoDeTiempo(double segundos) {
         return;
     }
     NSTimeInterval segundos = -[_inicioCarga timeIntervalSinceNow];
-    _estado.text = [NSString stringWithFormat:@"Cargando... %.0f s   (%@)",
+    _estado.text = [NSString stringWithFormat:@"Loading... %.0f s   (%@)",
                     segundos, _hostVideo];
     if (segundos >= 30.0) {
         [_vigilante invalidate];
         _vigilante = nil;
         [self mostrarError:[NSString stringWithFormat:
-            @"El video no llega a empezar.\n\nServidor: %@\n30 segundos sin recibir "
-            @"nada.\n\nSuele ser el proveedor de Internet dando largas con "
-            @"googlevideo.com, o que YouTube pida iniciar sesion. Prueba "
-            @"Ajustes > Iniciar sesion en YouTube, o el modo relay.", _hostVideo]];
+            @"The video does not start.\n\nServer: %@\n30 seconds without receiving "
+            @"anything.\n\nUsually the Internet provider is slowing down "
+            @"googlevideo.com, or YouTube wants you to sign in. Try "
+            @"Settings > Sign in to YouTube, or relay mode.", _hostVideo]];
     }
 }
 
@@ -756,14 +757,14 @@ static NSString *YTTextoDeTiempo(double segundos) {
             self->_vigilante = nil;
             [self->_girador stopAnimating];
             NSError *fallo = self->_elemento.error;
-            NSString *detalle = fallo.localizedDescription ?: @"error desconocido";
+            NSString *detalle = fallo.localizedDescription ?: @"unknown error";
             NSInteger codigo = fallo.code;
             NSString *pista = @"";
             if (codigo == -11850 || codigo == -11800) {
-                pista = @"\n\nYouTube ha rechazado la descarga (403). Inicia sesion en "
-                        @"Ajustes para que las peticiones vayan autenticadas.";
+                pista = @"\n\nYouTube refused the download (403). Sign in under "
+                        @"Settings so that requests are authenticated.";
             }
-            [self mostrarError:[NSString stringWithFormat:@"No se pudo reproducir.\n%@%@",
+            [self mostrarError:[NSString stringWithFormat:@"Could not play.\n%@%@",
                                 detalle, pista]];
         }
     });
@@ -780,16 +781,16 @@ static NSString *YTTextoDeTiempo(double segundos) {
     if (_velocidad != 1.0f) _jugador.rate = _velocidad;
 
     NSString *extra = _clienteVideo.length
-        ? [NSString stringWithFormat:@"\n\nResuelto con el cliente %@.", _clienteVideo]
+        ? [NSString stringWithFormat:@"\n\nResolved with client %@.", _clienteVideo]
         : @"";
     if (_rutaLocal.length) {
-        _estado.text = @"Reproduciendo desde el dispositivo.";
+        _estado.text = @"Playing from the device.";
     } else {
         _estado.text = [NSString stringWithFormat:
-            @"MP4 360p (los iPhone de 32 bits no decodifican VP9 ni AV1, por eso no "
-             "hay 720p).%@\n\nUn toque enseña los mandos; dos toques, 10 s atras o "
-             "adelante. Arrastra arriba/abajo para el volumen, y a lo ancho para "
-             "moverse por el video.", extra];
+            @"MP4 360p (32-bit devices cannot decode VP9 or AV1, so there is "
+             "no 720p).%@\n\nOne tap shows the controls; double tap goes 10 s back or "
+             "forward. Drag up/down for volume, and sideways to "
+             "move through the video.", extra];
     }
     [self ajustarCabecera];
     [self refrescarControles];
@@ -813,7 +814,7 @@ static NSString *YTTextoDeTiempo(double segundos) {
             if (!yo) return;
             [yo->_jugador play];
             if (yo->_velocidad != 1.0f) yo->_jugador.rate = yo->_velocidad;
-            [yo mostrarAviso:[NSString stringWithFormat:@"Sigo donde lo dejaste (%d:%02d)",
+            [yo mostrarAviso:[NSString stringWithFormat:@"Resuming where you left off (%d:%02d)",
                               (int)(guardado / 60.0), (int)guardado % 60]];
         }];
     }
@@ -851,12 +852,12 @@ static NSString *YTTextoDeTiempo(double segundos) {
         return;
     }
     if (_video.identificador.length) [YTProgreso olvidar:_video.identificador];
-    _estado.text = @"El video ha terminado.";
+    _estado.text = @"The video has ended.";
     [self ajustarCabecera];
     [self refrescarControles];
     [self reiniciarTemporizadorDeControles];
     [self actualizarInfoBloqueo];
-    [self mostrarAviso:@"Fin del video"];
+    [self mostrarAviso:@"End of video"];
 }
 
 #pragma mark - Gestos
@@ -901,7 +902,7 @@ static NSString *YTTextoDeTiempo(double segundos) {
             if (volumen < 0.0f) volumen = 0.0f;
             if (volumen > 1.0f) volumen = 1.0f;
             _jugador.volume = volumen;
-            [self mostrarAviso:[NSString stringWithFormat:@"Volumen %d %%",
+            [self mostrarAviso:[NSString stringWithFormat:@"Volume %d %%",
                                 (int)roundf(volumen * 100.0f)]];
         }
         return;
@@ -953,13 +954,13 @@ static NSString *YTTextoDeTiempo(double segundos) {
         _jugador.rate = _velocidad;
     }
     _controles.velocidad = _velocidad;
-    [self mostrarAviso:[NSString stringWithFormat:@"Velocidad %gx", _velocidad]];
+    [self mostrarAviso:[NSString stringWithFormat:@"Speed %gx", _velocidad]];
 }
 
 - (void)alternarBucle {
     _bucle = !_bucle;
     _controles.bucle = _bucle;
-    [self mostrarAviso:(_bucle ? @"Se repetira el video" : @"Ya no se repite")];
+    [self mostrarAviso:(_bucle ? @"Loop on" : @"Loop off")];
 }
 
 - (void)compartir {
@@ -980,7 +981,7 @@ static NSString *YTTextoDeTiempo(double segundos) {
 
 - (void)descargar {
     if (_rutaLocal.length) {
-        [self mostrarAviso:@"Ya esta descargado"];
+        [self mostrarAviso:@"Already downloaded"];
         return;
     }
     if (_video.identificador.length == 0) return;
@@ -990,13 +991,13 @@ static NSString *YTTextoDeTiempo(double segundos) {
     if ([gestor estaDescargando:_video.identificador]) {
         [gestor cancelarVideo:_video.identificador];
         _controles.descargando = NO;
-        [self mostrarAviso:@"Descarga cancelada"];
+        [self mostrarAviso:@"Download cancelled"];
         return;
     }
 
     _controles.descargando = YES;
     _porcentajeDescarga = -1;
-    _estado.text = @"Descargando el video...";
+    _estado.text = @"Downloading the video...";
     [self ajustarCabecera];
 
     __weak YTPlayerViewController *deb = self;
@@ -1011,28 +1012,28 @@ static NSString *YTTextoDeTiempo(double segundos) {
             yo->_porcentajeDescarga = porcentaje;
             [yo->_controles actualizarPorcentajeDescarga:fraccion];
             yo->_estado.text = porcentaje >= 0
-                ? [NSString stringWithFormat:@"Descargando... %ld %%  (toca el icono "
-                                            @"otra vez para cancelar)", (long)porcentaje]
-                : @"Descargando...";
+                ? [NSString stringWithFormat:@"Downloading... %ld %%  (tap the icon "
+                                            @"again to cancel)", (long)porcentaje]
+                : @"Downloading...";
             [yo ajustarCabecera];
         }
         completion:^(BOOL ok, NSString *mensaje, NSString *ruta) {
             YTPlayerViewController *yo = deb;
             if (!yo) return;
             yo->_controles.descargando = NO;
-            yo->_estado.text = (ok ? @"Descargado. Lo tienes en Descargas."
-                                   : @"No se pudo descargar.");
+            yo->_estado.text = (ok ? @"Downloaded. You will find it in Downloads."
+                                   : @"Could not download.");
             [yo ajustarCabecera];
 
             UIAlertController *alerta = [UIAlertController
-                alertControllerWithTitle:(ok ? @"Descarga terminada" : @"No se pudo descargar")
+                alertControllerWithTitle:(ok ? @"Download finished" : @"Could not download")
                                  message:mensaje
                           preferredStyle:UIAlertControllerStyleAlert];
-            [alerta addAction:[UIAlertAction actionWithTitle:@"Vale"
+            [alerta addAction:[UIAlertAction actionWithTitle:@"OK"
                                                        style:UIAlertActionStyleDefault
                                                      handler:nil]];
             if (ok) {
-                [alerta addAction:[UIAlertAction actionWithTitle:@"Ver descargas"
+                [alerta addAction:[UIAlertAction actionWithTitle:@"View downloads"
                     style:UIAlertActionStyleDefault
                     handler:^(UIAlertAction *accion) {
                     YTPlayerViewController *actual = deb;
@@ -1155,14 +1156,14 @@ static NSString *YTTextoDeTiempo(double segundos) {
 
 - (NSString *)tableView:(UITableView *)tabla titleForHeaderInSection:(NSInteger)seccion {
     if (_relacionados.count == 0) return nil;
-    return @"Parecidos";
+    return @"Related";
 }
 
 - (NSString *)tableView:(UITableView *)tabla titleForFooterInSection:(NSInteger)seccion {
     if (_relacionados.count == 0) return nil;
-    return @"Esta lista sale de buscar el titulo del video: la lista oficial de "
-            "relacionados de YouTube pesa unos 7 MB y no cabe en un telefono de "
-            "32 bits.";
+    return @"This list comes from searching the video title: YouTube's official "
+            "related list is about 7 MB and does not fit in a "
+            "32-bit device.";
 }
 
 - (CGFloat)tableView:(UITableView *)tabla heightForRowAtIndexPath:(NSIndexPath *)indice {
@@ -1183,7 +1184,7 @@ static NSString *YTTextoDeTiempo(double segundos) {
         UITableViewCell *celda = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault
                                                         reuseIdentifier:nil];
         celda.backgroundColor = [YTTheme fondo];
-        celda.textLabel.text = @"Buscando videos parecidos...";
+        celda.textLabel.text = @"Finding related videos...";
         celda.textLabel.font = [YTTheme fuenteCuerpo];
         celda.textLabel.textColor = [YTTheme textoSecundario];
         celda.selectionStyle = UITableViewCellSelectionStyleNone;

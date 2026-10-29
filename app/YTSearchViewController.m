@@ -1,3 +1,4 @@
+// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
 // YTSearchViewController.m -- busqueda y lista de resultados.
 //
 // Tres filtros, los mismos que ofrece YouTube:
@@ -45,7 +46,7 @@ enum {
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title = @"Buscar";
+    self.title = @"Search";
     self.view.backgroundColor = [YTTheme fondo];
     self.navigationController.navigationBarHidden = NO;
 
@@ -54,7 +55,7 @@ enum {
 
     _barra = [[UISearchBar alloc] init];
     _barra.delegate = self;
-    _barra.placeholder = @"Buscar en YouTube";
+    _barra.placeholder = @"Search YouTube";
     _barra.barStyle = UIBarStyleBlack;
     _barra.translucent = NO;
     _barra.barTintColor = [YTTheme fondo];
@@ -91,9 +92,9 @@ enum {
     _estado.textAlignment = NSTextAlignmentCenter;
     _estado.textColor = [YTTheme textoSecundario];
     _estado.font = [YTTheme fuenteCuerpo];
-    _estado.text = @"Escribe arriba o toca una sugerencia para empezar.\n\n"
-                   @"Con las pestañas de abajo buscas videos, canales o listas "
-                   @"de reproduccion.";
+    _estado.text = @"Type above or tap a suggestion to start.\n\n"
+                   @"With the tabs below you search for videos, channels or "
+                   @"playlists.";
     [self.view addSubview:_estado];
 
     [self colocarTiras];
@@ -110,7 +111,7 @@ enum {
                 campo.layer.cornerRadius = 10.0;
                 campo.layer.masksToBounds = YES;
                 campo.attributedPlaceholder = [[NSAttributedString alloc]
-                    initWithString:@"Buscar en YouTube"
+                    initWithString:@"Search YouTube"
                         attributes:@{NSForegroundColorAttributeName : [YTTheme textoSecundario]}];
             }
         }
@@ -150,7 +151,7 @@ enum {
     [self.view addSubview:_tiraDeFiltros];
 
     _botonesFiltro = [NSMutableArray array];
-    NSArray *titulos = @[ @"Vídeos", @"Canales", @"Listas" ];
+    NSArray *titulos = @[ @"Videos", @"Channels", @"Playlists" ];
     CGFloat x = 12.0;
     for (NSUInteger i = 0; i < titulos.count; i++) {
         UIButton *boton = [self pastillaConTitulo:titulos[i]
@@ -168,9 +169,9 @@ enum {
     _tiraDeSugerencias.showsHorizontalScrollIndicator = NO;
     [self.view addSubview:_tiraDeSugerencias];
 
-    NSArray *sugerencias = @[ @"música", @"noticias", @"deportes", @"comedia",
-                              @"documentales", @"tutoriales", @"películas",
-                              @"videojuegos" ];
+    NSArray *sugerencias = @[ @"music", @"news", @"sports", @"comedy",
+                              @"documentaries", @"tutorials", @"movies",
+                              @"video games" ];
     _botonesSugerencia = [NSMutableArray array];
     x = 12.0;
     for (NSUInteger i = 0; i < sugerencias.count; i++) {
@@ -247,7 +248,7 @@ enum {
     [self colocarTiras];
     [_girador startAnimating];
     _estado.hidden = NO;
-    _estado.text = @"Buscando...";
+    _estado.text = @"Searching...";
     _tabla.hidden = YES;
 
     __weak YTSearchViewController *deb = self;
@@ -255,7 +256,7 @@ enum {
         [[YTClient compartido] buscarCanales:limpia
             completion:^(NSArray *canales, NSError *error) {
             [deb acabarCon:canales error:error
-                    vacio:@"Sin canales con ese nombre."];
+                    vacio:@"No channels with that name."];
         }];
         return;
     }
@@ -263,13 +264,13 @@ enum {
         [[YTClient compartido] buscarListas:limpia
             completion:^(NSArray *listas, NSError *error) {
             [deb acabarCon:listas error:error
-                    vacio:@"Sin listas de reproduccion con ese nombre."];
+                    vacio:@"No playlists with that name."];
         }];
         return;
     }
 
     [[YTClient compartido] buscar:limpia completion:^(NSArray *videos, NSError *error) {
-        [deb acabarCon:videos error:error vacio:@"Sin resultados.\nPrueba otra busqueda."];
+        [deb acabarCon:videos error:error vacio:@"No results.\nTry another search."];
     }];
 }
 
@@ -284,7 +285,7 @@ enum {
         _estado.hidden = NO;
         _estado.text = [NSString stringWithFormat:@"%@\n\n%@",
             [YTClient explicarError:error],
-            @"Ajustes > Probar conexion para mas detalle."];
+            @"Settings > Test connection for more detail."];
         return;
     }
 

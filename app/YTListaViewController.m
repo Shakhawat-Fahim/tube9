@@ -1,3 +1,4 @@
+// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
 // YTListaViewController.m -- el contenido de una lista de reproduccion.
 //
 // La ficha de la lista (titulo, dueño, cuantas piezas y su descripcion) viene en
@@ -44,7 +45,7 @@ static const CGFloat YTMargen = 14.0;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title = _tituloRespaldo.length ? _tituloRespaldo : @"Lista";
+    self.title = _tituloRespaldo.length ? _tituloRespaldo : @"Playlist";
     self.view.backgroundColor = [YTTheme fondo];
     self.edgesForExtendedLayout = UIRectEdgeNone;
     self.automaticallyAdjustsScrollViewInsets = NO;
@@ -101,7 +102,7 @@ static const CGFloat YTMargen = 14.0;
     [_cabecera addSubview:_descripcion];
 
     _reproducirTodo = [UIButton buttonWithType:UIButtonTypeCustom];
-    [_reproducirTodo setTitle:@"Reproducir todo" forState:UIControlStateNormal];
+    [_reproducirTodo setTitle:@"Play all" forState:UIControlStateNormal];
     [_reproducirTodo setTitleColor:[YTTheme textoSobreAcento] forState:UIControlStateNormal];
     _reproducirTodo.titleLabel.font = [UIFont systemFontOfSize:14.0 weight:UIFontWeightSemibold];
     _reproducirTodo.backgroundColor = [YTTheme acento];
@@ -120,7 +121,7 @@ static const CGFloat YTMargen = 14.0;
     _pidiendo = YES;
     [_girador startAnimating];
     _estado.hidden = NO;
-    _estado.text = @"Cargando la lista...";
+    _estado.text = @"Loading the playlist...";
 
     __weak YTListaViewController *deb = self;
     [[YTClient compartido] videosDeLista:_listaId
@@ -134,7 +135,7 @@ static const CGFloat YTMargen = 14.0;
             yo->_estado.hidden = NO;
             yo->_estado.text = [NSString stringWithFormat:@"%@\n\n%@",
                 [YTClient explicarError:error],
-                @"Vuelve a entrar en la lista para intentarlo otra vez."];
+                @"Open the playlist again to try once more."];
             return;
         }
 
@@ -144,7 +145,7 @@ static const CGFloat YTMargen = 14.0;
         [yo->_tabla reloadData];
         if (yo->_videos.count == 0) {
             yo->_estado.hidden = NO;
-            yo->_estado.text = @"Esta lista esta vacia.";
+            yo->_estado.text = @"This playlist is empty.";
         } else {
             yo->_estado.hidden = YES;
         }
@@ -166,7 +167,7 @@ static const CGFloat YTMargen = 14.0;
     if ([cuantos isKindOfClass:[NSString class]] && cuantos.length) {
         [partes addObject:cuantos];
     } else if (_videos.count) {
-        [partes addObject:[NSString stringWithFormat:@"%lu vídeos", (unsigned long)_videos.count]];
+        [partes addObject:[NSString stringWithFormat:@"%lu videos", (unsigned long)_videos.count]];
     }
     _detalles.text = [partes componentsJoinedByString:@"  ·  "];
 
@@ -243,7 +244,7 @@ static const CGFloat YTMargen = 14.0;
 
 - (NSString *)tableView:(UITableView *)tabla titleForHeaderInSection:(NSInteger)seccion {
     if (_videos.count == 0) return nil;
-    return [NSString stringWithFormat:@"%lu vídeos", (unsigned long)_videos.count];
+    return [NSString stringWithFormat:@"%lu videos", (unsigned long)_videos.count];
 }
 
 - (void)tableView:(UITableView *)tabla willDisplayHeaderView:(UIView *)vista

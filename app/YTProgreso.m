@@ -1,3 +1,4 @@
+// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
 // YTProgreso.m -- por donde iba cada video, guardado en NSUserDefaults.
 //
 // No hace falta cuenta ni red: es una lista local de los ultimos videos vistos
@@ -110,7 +111,7 @@ static const double kMargenDelFinal = 10.0;      // segundos
         video.titulo = entrada[@"titulo"];
         video.urlMiniatura = entrada[@"mini"];
         if (video.identificador.length == 0) continue;
-        if (video.titulo.length == 0) video.titulo = @"(sin titulo)";
+        if (video.titulo.length == 0) video.titulo = @"(no title)";
 
         // En el subtitulo se ve por donde iba, que es lo util aqui.
         double segundos = [seg doubleValue];
@@ -120,9 +121,9 @@ static const double kMargenDelFinal = 10.0;      // segundos
                             (int)(segundos / 60.0), (int)segundos % 60];
         NSMutableArray *partes = [NSMutableArray array];
         if (canal.length) [partes addObject:canal];
-        [partes addObject:[NSString stringWithFormat:@"vas por %@", minuto]];
+        [partes addObject:[NSString stringWithFormat:@"at %@", minuto]];
         if (total > 0.0) {
-            [partes addObject:[NSString stringWithFormat:@"de %d:%02d",
+            [partes addObject:[NSString stringWithFormat:@"of %d:%02d",
                                (int)(total / 60.0), (int)total % 60]];
         }
         video.canal = [partes componentsJoinedByString:@"  ·  "];

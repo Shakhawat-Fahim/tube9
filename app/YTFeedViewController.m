@@ -1,3 +1,4 @@
+// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
 // YTFeedViewController.m -- pantalla de estantes (Inicio y Musica).
 //
 // Carga las fuentes de una en una, no todas a la vez: asi la memoria se queda
@@ -54,7 +55,7 @@
 - (instancetype)initConMusica {
     self = [super init];
     if (self) {
-        _tituloPantalla = @"Música";
+        _tituloPantalla = @"Music";
         // Cuatro pantallas de YouTube Music y cuatro estilos buscados en su
         // catalogo. Medido: FEmusic_home 20 canciones, explore 24, novedades 24;
         // las busquedas, entre 11 y 15 cada una. FEmusic_charts NO vale: sus
@@ -63,10 +64,10 @@
             @{ @"browseId" : @"FEmusic_home" },
             @{ @"browseId" : @"FEmusic_explore" },
             @{ @"browseId" : @"FEmusic_new_releases" },
-            @{ @"consulta" : @"Reggaetón",      @"musica" : @YES },
-            @{ @"consulta" : @"Baladas",        @"musica" : @YES },
-            @{ @"consulta" : @"Rock en español", @"musica" : @YES },
-            @{ @"consulta" : @"Pop en español",  @"musica" : @YES }
+            @{ @"consulta" : @"Hip hop",        @"musica" : @YES },
+            @{ @"consulta" : @"Country",        @"musica" : @YES },
+            @{ @"consulta" : @"Rock",            @"musica" : @YES },
+            @{ @"consulta" : @"Pop",             @"musica" : @YES }
         ];
         _esMusica = YES;
     }
@@ -100,7 +101,7 @@
     _estado.textColor = [YTTheme textoSecundario];
     _estado.font = [YTTheme fuenteCuerpo];
     _estado.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    _estado.text = @"Cargando...";
+    _estado.text = @"Loading...";
     [self.view addSubview:_estado];
 
     _girador = [[UIActivityIndicatorView alloc]
@@ -130,7 +131,7 @@
     _indice = 0;
     _filas = [NSMutableArray array];
     [_tabla reloadData];
-    _estado.text = @"Cargando...";
+    _estado.text = @"Loading...";
     _estado.hidden = NO;
     [_girador startAnimating];
     self.navigationItem.rightBarButtonItem =
@@ -157,12 +158,12 @@
         _usandoRespaldo = YES;
         _esMusica = NO;
         _fuentes = @[
-            @{ @"titulo" : @"Música",          @"consulta" : @"música",
+            @{ @"titulo" : @"Music",           @"consulta" : @"music",
                @"params" : YTOrdenPorPopularidad },
-            @{ @"titulo" : @"Éxitos ahora",    @"consulta" : @"éxitos",
+            @{ @"titulo" : @"Top hits now",    @"consulta" : @"top hits",
                @"params" : YTOrdenPorPopularidad },
-            @{ @"titulo" : @"Baladas",         @"consulta" : @"baladas románticas" },
-            @{ @"titulo" : @"Rock",            @"consulta" : @"rock en español" }
+            @{ @"titulo" : @"Ballads",         @"consulta" : @"ballads" },
+            @{ @"titulo" : @"Rock",            @"consulta" : @"rock music" }
         ];
         [self recargar];
         return;
@@ -172,10 +173,10 @@
     if (_ultimoError) {
         _estado.text = [NSString stringWithFormat:@"%@\n\n%@",
             [YTClient explicarError:_ultimoError],
-            @"Pulsa el boton de arriba a la derecha para reintentar."];
+            @"Tap the button at the top right to retry."];
     } else {
-        _estado.text = @"No hay nada que mostrar.\n\nComprueba la conexion y "
-                       @"vuelve a intentarlo.";
+        _estado.text = @"Nothing to show.\n\nCheck the connection and "
+                       @"try again.";
     }
 }
 
@@ -240,7 +241,7 @@
     NSInteger posicion = -1;
     for (NSUInteger i = 0; i < _filas.count; i++) {
         NSDictionary *fila = _filas[i];
-        if (fila[@"local"] || [fila[@"titulo"] isEqualToString:@"Continuar viendo"]) {
+        if (fila[@"local"] || [fila[@"titulo"] isEqualToString:@"Continue watching"]) {
             posicion = (NSInteger)i;
             break;
         }
@@ -254,7 +255,7 @@
         return;
     }
 
-    NSDictionary *fila = @{ @"titulo" : @"Continuar viendo", @"videos" : videos, @"local" : @YES };
+    NSDictionary *fila = @{ @"titulo" : @"Continue watching", @"videos" : videos, @"local" : @YES };
     if (posicion >= 0) {
         _filas[(NSUInteger)posicion] = fila;
     } else {

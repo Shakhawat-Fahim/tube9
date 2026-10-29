@@ -1,3 +1,4 @@
+// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
 // YTTemaViewController.m -- elegir fondo (oscuro o claro) y, dentro de ese
 // fondo, el color de los botones. Son catorce combinaciones.
 //
@@ -43,7 +44,7 @@ static UIImage *YTMuestraDeAcento(UIColor *color, CGFloat lado) {
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title = @"Tema";
+    self.title = @"Theme";
     self.tableView.backgroundColor = [YTTheme fondo];
     self.tableView.separatorColor = [YTTheme borde];
     self.tableView.rowHeight = 50.0;
@@ -60,22 +61,22 @@ static UIImage *YTMuestraDeAcento(UIColor *color, CGFloat lado) {
 }
 
 - (NSString *)tableView:(UITableView *)tabla titleForHeaderInSection:(NSInteger)seccion {
-    if (seccion == 0) return @"Fondo";
-    if (seccion == 1) return @"Color de los botones";
-    return @"Vista previa";
+    if (seccion == 0) return @"Background";
+    if (seccion == 1) return @"Button color";
+    return @"Preview";
 }
 
 - (NSString *)tableView:(UITableView *)tabla titleForFooterInSection:(NSInteger)seccion {
     if (seccion == 0) {
-        return @"El fondo cambia toda la app. Se puede mezclar con cualquiera de "
-                "los colores de abajo.";
+        return @"The background changes the whole app. It can be combined with any of "
+                "the colors below.";
     }
     if (seccion == 1) {
-        return @"Este color se usa en los botones, los filtros de las listas, la "
-                "pestana elegida y los interruptores.";
+        return @"This color is used for buttons, list filters, the "
+                "selected tab and the switches.";
     }
-    return @"Al cambiar de tema la app vuelve a Inicio para repintar todas las "
-            "pantallas de una vez.";
+    return @"When you change the theme, the app goes back to Home to redraw all "
+            "screens at once.";
 }
 
 - (CGFloat)tableView:(UITableView *)tabla heightForRowAtIndexPath:(NSIndexPath *)indice {
@@ -143,7 +144,7 @@ static UIImage *YTMuestraDeAcento(UIColor *color, CGFloat lado) {
 
     // Un boton del color elegido, como los filtros de Tendencias.
     UILabel *pastilla = [[UILabel alloc] initWithFrame:CGRectMake(12.0, 22.0, 74.0, 30.0)];
-    pastilla.text = @"Boton";
+    pastilla.text = @"Button";
     pastilla.font = [UIFont systemFontOfSize:13.0 weight:UIFontWeightMedium];
     pastilla.textAlignment = NSTextAlignmentCenter;
     pastilla.textColor = [YTTheme textoSobreAcento];
@@ -154,7 +155,7 @@ static UIImage *YTMuestraDeAcento(UIColor *color, CGFloat lado) {
 
     UILabel *titulo = [[UILabel alloc] initWithFrame:CGRectMake(98.0, 20.0,
         CGRectGetWidth(caja.bounds) - 110.0, 18.0)];
-    titulo.text = @"Titulo del video";
+    titulo.text = @"Video title";
     titulo.font = [YTTheme fuenteTituloLista];
     titulo.textColor = [YTTheme textoPrimario];
     titulo.autoresizingMask = UIViewAutoresizingFlexibleWidth;
@@ -162,7 +163,7 @@ static UIImage *YTMuestraDeAcento(UIColor *color, CGFloat lado) {
 
     UILabel *sub = [[UILabel alloc] initWithFrame:CGRectMake(98.0, 40.0,
         CGRectGetWidth(caja.bounds) - 110.0, 16.0)];
-    sub.text = @"Canal  ·  1,2 M de visitas";
+    sub.text = @"Channel  ·  1.2M views";
     sub.font = [YTTheme fuenteMenuda];
     sub.textColor = [YTTheme textoSecundario];
     sub.autoresizingMask = UIViewAutoresizingFlexibleWidth;

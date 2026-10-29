@@ -1,3 +1,4 @@
+// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
 // YTLoginViewController.m
 //
 // Usa UIWebView (no WKWebView) a proposito: en iOS 9 UIWebView comparte las
@@ -26,7 +27,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title = @"Iniciar sesion";
+    self.title = @"Sign in";
     self.view.backgroundColor = [UIColor whiteColor];
 
     // El resto de la app lleva la barra oscura; aqui la ponemos clara para que
@@ -39,11 +40,11 @@
         [UIColor colorWithWhite:0.13 alpha:1.0] };
 
     self.navigationItem.leftBarButtonItem =
-        [[UIBarButtonItem alloc] initWithTitle:@"Cancelar"
+        [[UIBarButtonItem alloc] initWithTitle:@"Cancel"
                                         style:UIBarButtonItemStylePlain
                                        target:self
                                        action:@selector(cancelar)];
-    _listo = [[UIBarButtonItem alloc] initWithTitle:@"Listo"
+    _listo = [[UIBarButtonItem alloc] initWithTitle:@"Done"
                                              style:UIBarButtonItemStyleDone
                                             target:self
                                             action:@selector(terminar)];
@@ -56,7 +57,7 @@
     _aviso.font = [UIFont systemFontOfSize:12.0];
     _aviso.textColor = [UIColor colorWithWhite:0.35 alpha:1.0];
     _aviso.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-    _aviso.text = @"Entra con tu cuenta de Google. Al terminar, vuelve aqui y pulsa Listo.";
+    _aviso.text = @"Sign in with your Google account. When finished, come back here and tap Done.";
     [self.view addSubview:_aviso];
 
     _navegador = [[UIWebView alloc] initWithFrame:CGRectMake(0, 60,
@@ -72,7 +73,7 @@
     [self.view addSubview:_navegador];
 
     NSString *direccion = @"https://accounts.google.com/ServiceLogin?service=youtube"
-                           "&hl=es&continue=https%3A%2F%2Fm.youtube.com%2F";
+                           "&hl=en&continue=https%3A%2F%2Fm.youtube.com%2F";
     NSMutableURLRequest *peticion = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:direccion]];
     // Google bloquea a veces los navegadores incrustados; con un agente de
     // Safari movil se comporta como un navegador normal.
@@ -105,7 +106,7 @@
 
 - (void)webViewDidStartLoad:(UIWebView *)navegador {
     _aviso.textColor = [UIColor colorWithWhite:0.35 alpha:1.0];
-    _aviso.text = @"Cargando la pagina de Google...";
+    _aviso.text = @"Loading the Google page...";
 }
 
 - (void)webViewDidFinishLoad:(UIWebView *)navegador {
@@ -133,18 +134,18 @@
     }
     if (bloqueado) {
         _aviso.textColor = [YTTheme acento];
-        _aviso.text = @"Google no acepta este navegador. Pulsa Cancelar y usa "
-                       "\"Pegar cookies\" en Ajustes.";
+        _aviso.text = @"Google does not accept this browser. Tap Cancel and use "
+                       "\"Paste cookies\" in Settings.";
         return;
     }
 
     if ([YTClient haySesion]) {
         _listo.enabled = YES;
         _aviso.textColor = [YTTheme acento];
-        _aviso.text = @"Sesion iniciada. Pulsa Listo para guardarla.";
+        _aviso.text = @"Signed in. Tap Done to save it.";
     } else {
         _aviso.textColor = [UIColor colorWithWhite:0.35 alpha:1.0];
-        _aviso.text = @"Entra con tu cuenta de Google. Al terminar, vuelve aqui y pulsa Listo.";
+        _aviso.text = @"Sign in with your Google account. When finished, come back here and tap Done.";
     }
 }
 
@@ -152,7 +153,7 @@
     // -999 es una cancelacion normal al navegar; no lo tratamos como fallo
     if (error.code == NSURLErrorCancelled) return;
     _aviso.textColor = [YTTheme acento];
-    _aviso.text = [NSString stringWithFormat:@"No se pudo cargar: %@",
+    _aviso.text = [NSString stringWithFormat:@"Could not load: %@",
                    [YTClient explicarError:error]];
 }
 

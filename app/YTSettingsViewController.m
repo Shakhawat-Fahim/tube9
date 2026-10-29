@@ -1,3 +1,4 @@
+// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
 // YTSettingsViewController.m -- conexion, cuenta, descargas y ayuda
 #import "YTSettingsViewController.h"
 #import "YTTheme.h"
@@ -13,7 +14,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title = @"Ajustes";
+    self.title = @"Settings";
     self.tableView.backgroundColor = [YTTheme fondo];
     self.tableView.separatorColor = [YTTheme borde];
     self.tableView.rowHeight = 50.0;
@@ -38,31 +39,31 @@
 }
 
 - (NSString *)tableView:(UITableView *)tabla titleForHeaderInSection:(NSInteger)seccion {
-    if (seccion == 0) return @"Conexion";
-    if (seccion == 1) return @"Cuenta de YouTube";
-    if (seccion == 2) return @"Videos y descargas";
-    if (seccion == 3) return @"Apariencia";
-    return @"Ayuda";
+    if (seccion == 0) return @"Connection";
+    if (seccion == 1) return @"YouTube account";
+    if (seccion == 2) return @"Videos and downloads";
+    if (seccion == 3) return @"Appearance";
+    return @"Help";
 }
 
 - (NSString *)tableView:(UITableView *)tabla titleForFooterInSection:(NSInteger)seccion {
     if (seccion == 0) {
-        return @"Directo: la app habla con YouTube directamente (necesita los "
-                "certificados actualizados en el dispositivo).\n"
-                "Relay: la app habla con un servidor propio por HTTP, sin certificados.";
+        return @"Direct: the app talks to YouTube directly (needs the "
+                "updated certificates on the device).\n"
+                "Relay: the app talks to your own server over HTTP, no certificates.";
     }
     if (seccion == 1) {
-        return @"Iniciar sesion evita que YouTube diga \"confirma que no eres un bot\" "
-                "y mejora mucho la fiabilidad.";
+        return @"Signing in stops YouTube from saying \"confirm you are not a bot\" "
+                "and makes playback much more reliable.";
     }
     if (seccion == 2) {
-        return @"Las descargas se guardan como MP4 360p en la carpeta que elijas "
-                "(tambien fuera de la app, util con jailbreak). \"Continuar viendo\" "
-                "es la lista de videos a medias que aparece en Inicio.";
+        return @"Downloads are saved as MP4 360p in the folder you choose "
+                "(also outside the app, useful with jailbreak). \"Continue watching\" "
+                "is the list of half-watched videos shown on Home.";
     }
     if (seccion == 3) {
-        return @"Dos fondos (oscuro y claro) y siete colores de botones: catorce "
-                "combinaciones. Al cambiarlo, la app se repinta sola.";
+        return @"Two backgrounds (dark and light) and seven button colors: fourteen "
+                "combinations. When you change it, the app redraws itself.";
     }
     return nil;
 }
@@ -96,7 +97,7 @@
     if (indice.section == 0) {
         if (indice.row == 0) {
             UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleDefault];
-            c.textLabel.text = @"Usar relay propio";
+            c.textLabel.text = @"Use my own relay";
             c.selectionStyle = UITableViewCellSelectionStyleNone;
             UISwitch *interruptor = [[UISwitch alloc] init];
             interruptor.onTintColor = [YTTheme acento];
@@ -108,22 +109,22 @@
         }
         if (indice.row == 1) {
             UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleValue1];
-            c.textLabel.text = @"Direccion del relay";
+            c.textLabel.text = @"Relay address";
             NSString *base = [YTClient relayBase];
-            c.detailTextLabel.text = base.length ? base : @"sin configurar";
+            c.detailTextLabel.text = base.length ? base : @"not set";
             c.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
             return c;
         }
         if (indice.row == 2) {
             UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleValue1];
-            c.textLabel.text = @"Token (opcional)";
+            c.textLabel.text = @"Token (optional)";
             NSString *token = [YTClient relayToken];
-            c.detailTextLabel.text = token.length ? @"configurado" : @"ninguno";
+            c.detailTextLabel.text = token.length ? @"set" : @"none";
             c.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
             return c;
         }
         UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleDefault];
-        c.textLabel.text = @"Probar conexion";
+        c.textLabel.text = @"Test connection";
         c.textLabel.textColor = [YTTheme acento];
         c.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
         return c;
@@ -133,18 +134,18 @@
         if (indice.row == 0) {
             UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleValue1];
             BOOL sesion = [YTClient haySesion];
-            c.textLabel.text = sesion ? @"Sesion activa" : @"Iniciar sesion en YouTube";
+            c.textLabel.text = sesion ? @"Signed in" : @"Sign in to YouTube";
             c.textLabel.textColor = sesion ? [YTTheme textoPrimario] : [YTTheme acento];
             c.detailTextLabel.text = sesion
                 ? [NSString stringWithFormat:@"%lu cookies", (unsigned long)[YTClient numeroDeCookies]]
-                : @"anonimo";
+                : @"anonymous";
             c.accessoryType = sesion ? UITableViewCellAccessoryNone
                                      : UITableViewCellAccessoryDisclosureIndicator;
             return c;
         }
         if (indice.row == 1) {
             UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleDefault];
-            c.textLabel.text = @"Pegar cookies manualmente";
+            c.textLabel.text = @"Paste cookies manually";
             c.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
             c.detailTextLabel.text = @"";
             BOOL hayManuales = [YTClient cookiesManuales].length > 0;
@@ -152,7 +153,7 @@
             return c;
         }
         UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleDefault];
-        c.textLabel.text = @"Cerrar sesion";
+        c.textLabel.text = @"Sign out";
         c.textLabel.textColor = [YTTheme acento];
         return c;
     }
@@ -161,31 +162,31 @@
         UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleValue1];
         if (indice.row == 0) {
             NSUInteger cuantas = [[YTDescargas compartido] historial].count;
-            c.textLabel.text = @"Descargas";
+            c.textLabel.text = @"Downloads";
             c.detailTextLabel.text = cuantas
                 ? [NSString stringWithFormat:@"%lu videos", (unsigned long)cuantas]
-                : @"ninguno";
+                : @"none";
             c.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
             return c;
         }
         if (indice.row == 1) {
-            c.textLabel.text = @"Carpeta de descargas";
+            c.textLabel.text = @"Download folder";
             c.detailTextLabel.text = [YTDescargas nombreBonitoDeCarpeta:[YTDescargas carpeta]];
             c.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
             return c;
         }
-        c.textLabel.text = @"Borrar \"Continuar viendo\"";
+        c.textLabel.text = @"Clear \"Continue watching\"";
         c.textLabel.textColor = [YTTheme acento];
         NSUInteger cuantos = [YTProgreso continuarViendo].count;
         c.detailTextLabel.text = cuantos
             ? [NSString stringWithFormat:@"%lu videos", (unsigned long)cuantos]
-            : @"vacio";
+            : @"empty";
         return c;
     }
 
     if (indice.section == 3) {
         UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleValue1];
-        c.textLabel.text = @"Tema y color";
+        c.textLabel.text = @"Theme and color";
         c.detailTextLabel.text = [NSString stringWithFormat:@"%@ · %@",
             [YTTheme tituloDeFondo:[YTTheme fondoClave]],
             [YTTheme tituloDeAcento:[YTTheme acentoClave]]];
@@ -195,10 +196,10 @@
 
     UITableViewCell *c = [self celdaConEstilo:UITableViewCellStyleDefault];
     if (indice.row == 0) {
-        c.textLabel.text = @"Arreglar los certificados de iOS 9";
+        c.textLabel.text = @"Fix iOS 9 certificates";
         c.textLabel.textColor = [YTTheme acento];
     } else {
-        c.textLabel.text = @"Acerca de Tube9";
+        c.textLabel.text = @"About Tube9";
     }
     c.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
     return c;
@@ -210,15 +211,15 @@
     [tabla deselectRowAtIndexPath:indice animated:YES];
 
     if (indice.section == 0) {
-        if (indice.row == 1) { [self editarTextoParaClave:@"relay" titulo:@"Direccion del relay"]; return; }
+        if (indice.row == 1) { [self editarTextoParaClave:@"relay" titulo:@"Relay address"]; return; }
         if (indice.row == 2) { [self editarTextoParaClave:@"token" titulo:@"Token"]; return; }
         if (indice.row == 3) { [self probarConexion]; return; }
     }
 
     if (indice.section == 1) {
         if (indice.row == 0) {
-            if ([YTClient haySesion]) { [self alerta:@"Ya has iniciado sesion"
-                                             texto:@"Para cambiarla, pulsa Cerrar sesion y vuelve a entrar."]; return; }
+            if ([YTClient haySesion]) { [self alerta:@"You are already signed in"
+                                             texto:@"To change account, tap Sign out and sign in again."]; return; }
             YTLoginViewController *login = [[YTLoginViewController alloc] init];
             UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:login];
             [self presentViewController:nav animated:YES completion:nil];
@@ -227,7 +228,7 @@
         if (indice.row == 1) { [self editarCookies]; return; }
         [YTClient cerrarSesion];
         [self.tableView reloadData];
-        [self alerta:@"Sesion cerrada" texto:@"Ahora las peticiones van sin cuenta."];
+        [self alerta:@"Signed out" texto:@"Requests are now sent without an account."];
         return;
     }
 
@@ -244,24 +245,24 @@
         }
         NSUInteger cuantos = [YTProgreso continuarViendo].count;
         if (cuantos == 0) {
-            [self alerta:@"Nada que borrar"
-                   texto:@"\"Continuar viendo\" esta vacio ahora mismo."];
+            [self alerta:@"Nothing to clear"
+                   texto:@"\"Continue watching\" is empty right now."];
             return;
         }
         UIAlertController *alerta = [UIAlertController
-            alertControllerWithTitle:@"Borrar \"Continuar viendo\""
+            alertControllerWithTitle:@"Clear \"Continue watching\""
                              message:[NSString stringWithFormat:
-                                @"Se olvidaran los %lu videos a medias. Los videos "
-                                @"seguiran en YouTube, solo se pierde por donde ibas.",
+                                @"The %lu half-watched videos will be forgotten. The videos "
+                                @"stay on YouTube; only your place in them is lost.",
                                 (unsigned long)cuantos]
                       preferredStyle:UIAlertControllerStyleAlert];
-        [alerta addAction:[UIAlertAction actionWithTitle:@"Borrar"
+        [alerta addAction:[UIAlertAction actionWithTitle:@"Clear"
                                                    style:UIAlertActionStyleDestructive
                                                  handler:^(UIAlertAction *accion) {
             [YTProgreso vaciar];
             [self.tableView reloadData];
         }]];
-        [alerta addAction:[UIAlertAction actionWithTitle:@"Cancelar"
+        [alerta addAction:[UIAlertAction actionWithTitle:@"Cancel"
                                                    style:UIAlertActionStyleCancel
                                                  handler:nil]];
         [self presentViewController:alerta animated:YES completion:nil];
@@ -282,9 +283,9 @@
     NSString *modo = interruptor.on ? @"relay" : @"directo";
     [YTClient guardarModo:modo relay:[YTClient relayBase] token:[YTClient relayToken]];
     if ([modo isEqualToString:@"relay"] && [YTClient relayBase].length == 0) {
-        [self alerta:@"Falta la direccion"
-               texto:@"Escribe la direccion de tu relay (por ejemplo "
-                     "http://192.168.1.50:8787) en la opcion de abajo."];
+        [self alerta:@"Address missing"
+               texto:@"Type the address of your relay (for example "
+                     "http://192.168.1.50:8787) in the option below."];
     }
     [self.tableView reloadData];
 }
@@ -295,19 +296,19 @@
 
     UIAlertController *alerta =
         [UIAlertController alertControllerWithTitle:titulo
-                                            message:(esRelay ? @"Ejemplo: http://192.168.1.50:8787"
-                                                             : @"Debe coincidir con el --token del relay.")
+                                            message:(esRelay ? @"Example: http://192.168.1.50:8787"
+                                                             : @"Must match the relay's --token.")
                                      preferredStyle:UIAlertControllerStyleAlert];
     [alerta addTextFieldWithConfigurationHandler:^(UITextField *campo) {
         campo.text = actual;
-        campo.placeholder = esRelay ? @"http://192.168.1.50:8787" : @"opcional";
+        campo.placeholder = esRelay ? @"http://192.168.1.50:8787" : @"optional";
         campo.keyboardType = esRelay ? UIKeyboardTypeURL : UIKeyboardTypeDefault;
         campo.autocapitalizationType = UITextAutocapitalizationTypeNone;
         campo.autocorrectionType = UITextAutocorrectionTypeNo;
         campo.clearButtonMode = UITextFieldViewModeWhileEditing;
     }];
-    [alerta addAction:[UIAlertAction actionWithTitle:@"Cancelar" style:UIAlertActionStyleCancel handler:nil]];
-    [alerta addAction:[UIAlertAction actionWithTitle:@"Guardar" style:UIAlertActionStyleDefault
+    [alerta addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+    [alerta addAction:[UIAlertAction actionWithTitle:@"Save" style:UIAlertActionStyleDefault
         handler:^(UIAlertAction *accion) {
         NSString *valor = alerta.textFields.firstObject.text ?: @"";
         valor = [valor stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
@@ -322,17 +323,17 @@
 
 - (void)editarCookies {
     UIAlertController *alerta =
-        [UIAlertController alertControllerWithTitle:@"Pegar cookies"
-                                            message:@"Pega aqui la cabecera Cookie de youtube.com "
-                                                    "(por ejemplo: SID=...; HSID=...). Dejalo vacio para borrar."
+        [UIAlertController alertControllerWithTitle:@"Paste cookies"
+                                            message:@"Paste the youtube.com Cookie header here "
+                                                    "(for example: SID=...; HSID=...). Leave it empty to clear."
                                      preferredStyle:UIAlertControllerStyleAlert];
     [alerta addTextFieldWithConfigurationHandler:^(UITextField *campo) {
         campo.text = [YTClient cookiesManuales];
         campo.autocapitalizationType = UITextAutocapitalizationTypeNone;
         campo.autocorrectionType = UITextAutocorrectionTypeNo;
     }];
-    [alerta addAction:[UIAlertAction actionWithTitle:@"Cancelar" style:UIAlertActionStyleCancel handler:nil]];
-    [alerta addAction:[UIAlertAction actionWithTitle:@"Guardar" style:UIAlertActionStyleDefault
+    [alerta addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+    [alerta addAction:[UIAlertAction actionWithTitle:@"Save" style:UIAlertActionStyleDefault
         handler:^(UIAlertAction *accion) {
         [YTClient guardarCookiesManuales:alerta.textFields.firstObject.text];
         [self.tableView reloadData];
@@ -341,12 +342,12 @@
 }
 
 - (void)probarConexion {
-    [self alerta:@"Probando..." texto:@"Esto puede tardar unos segundos."];
+    [self alerta:@"Testing..." texto:@"This can take a few seconds."];
     __weak YTSettingsViewController *deb = self;
     [[YTClient compartido] probarConexion:^(NSString *informe) {
         dispatch_async(dispatch_get_main_queue(), ^{
             [deb dismissViewControllerAnimated:YES completion:^{
-                [deb alerta:@"Resultado" texto:informe];
+                [deb alerta:@"Result" texto:informe];
                 [deb.tableView reloadData];
             }];
         });
@@ -359,35 +360,35 @@
     UIAlertController *a = [UIAlertController alertControllerWithTitle:titulo
                                                               message:texto
                                                        preferredStyle:UIAlertControllerStyleAlert];
-    [a addAction:[UIAlertAction actionWithTitle:@"Vale" style:UIAlertActionStyleDefault handler:nil]];
+    [a addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
     [self presentViewController:a animated:YES completion:nil];
 }
 
 - (void)ayudaCertificados {
     NSString *texto =
-        @"iOS 9.3.5 es de 2016 y no incluye las autoridades modernas, por eso "
-        @"da error de certificado al conectar con YouTube.\n\n"
-        @"Solucion (una sola vez, en un dispositivo con jailbreak):\n\n"
-        @"1. Descarga en el dispositivo las raices actualizadas:\n"
+        @"iOS 9.3.5 is from 2016 and does not include the modern authorities, so "
+        @"it gives a certificate error when connecting to YouTube.\n\n"
+        @"Fix (only once, on a jailbroken device):\n\n"
+        @"1. Download the updated root certificates to the device:\n"
         @"   - ISRG Root X1  (Let's Encrypt)\n"
-        @"   - GTS Root R1 y GTS Root R4  (Google)\n"
-        @"   Buscalas en letsencrypt.org/certificates y pki.goog/repository.\n\n"
-        @"2. Instalalo como perfil: Ajustes > General > Perfil > Instalar.\n\n"
-        @"3. En iOS 9 la raiz instalada pasa a ser de confianza automaticamente. "
-        @"Si el dispositivo lo permite, comprueba ademas en Ajustes > General > "
-        @"Informacion > Ajustes de confianza de certificados.\n\n"
-        @"4. Alternativa sin tocar certificados: usa el modo Relay en Ajustes.";
-    [self alerta:@"Arreglar certificados" texto:texto];
+        @"   - GTS Root R1 and GTS Root R4  (Google)\n"
+        @"   Find them at letsencrypt.org/certificates and pki.goog/repository.\n\n"
+        @"2. Install it as a profile: Settings > General > Profile > Install.\n\n"
+        @"3. On iOS 9 an installed root is trusted automatically. "
+        @"If the device has it, also check Settings > General > "
+        @"About > Certificate Trust Settings.\n\n"
+        @"4. Option without certificates: use Relay mode in Settings.";
+    [self alerta:@"Fix certificates" texto:texto];
 }
 
 - (void)acercaDe {
     NSString *texto =
-        @"Tube9 1.0.0\nCliente no oficial de YouTube para iOS 9.3.5 (armv7).\n\n"
-        @"Compilado con Theos + iPhoneOS9.3.sdk. Objective-C, interfaz plana.\n\n"
-        @"Nota legal: no es una app de YouTube ni esta afiliada a Google. "
-        @"El acceso a los videos se hace mediante la propia web de YouTube, "
-        @"cuyas condiciones de uso siguen aplicando.";
-    [self alerta:@"Acerca de" texto:texto];
+        @"Tube9 1.0.0 (English UI build)\nUnofficial YouTube client for iOS 9.3.5 (armv7).\n\n"
+        @"Built with Theos + iPhoneOS9.3.sdk. Objective-C, flat interface.\n\n"
+        @"Legal note: this is not a YouTube app and is not affiliated with Google. "
+        @"Videos are accessed through YouTube's own web services, "
+        @"whose terms of service still apply.";
+    [self alerta:@"About" texto:texto];
 }
 
 @end

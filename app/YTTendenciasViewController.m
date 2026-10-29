@@ -1,3 +1,4 @@
+// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
 // YTTendenciasViewController.m -- lista de videos ordenada por "mas vistos",
 // con una fila de "chips" arriba para cambiar de categoria.
 //
@@ -30,25 +31,25 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title = @"Tendencias";
+    self.title = @"Trending";
     self.view.backgroundColor = [YTTheme fondo];
 
     _categorias = @[
-        @{ @"titulo" : @"Todo",        @"consulta" : @"tendencias",
+        @{ @"titulo" : @"All",         @"consulta" : @"trending",
            @"params" : YTOrdenPorPopularidad },
-        @{ @"titulo" : @"Música",      @"consulta" : @"música",
+        @{ @"titulo" : @"Music",       @"consulta" : @"music",
            @"params" : YTOrdenPorPopularidad },
-        @{ @"titulo" : @"Videojuegos", @"consulta" : @"videojuegos",
+        @{ @"titulo" : @"Gaming",      @"consulta" : @"video games",
            @"params" : YTOrdenPorPopularidad },
-        @{ @"titulo" : @"Noticias",    @"consulta" : @"noticias de hoy",
+        @{ @"titulo" : @"News",        @"consulta" : @"news today",
            @"params" : YTOrdenRecientes },
-        @{ @"titulo" : @"Deportes",    @"consulta" : @"deportes",
+        @{ @"titulo" : @"Sports",      @"consulta" : @"sports",
            @"params" : YTOrdenRecientes },
-        @{ @"titulo" : @"Películas",   @"consulta" : @"películas completas",
+        @{ @"titulo" : @"Movies",      @"consulta" : @"movies",
            @"params" : YTOrdenPorPopularidad },
-        @{ @"titulo" : @"Comedia",     @"consulta" : @"comedia",
+        @{ @"titulo" : @"Comedy",      @"consulta" : @"comedy",
            @"params" : YTOrdenPorPopularidad },
-        @{ @"titulo" : @"Aprender",    @"consulta" : @"documentales",
+        @{ @"titulo" : @"Learn",       @"consulta" : @"documentaries",
            @"params" : YTOrdenPorPopularidad }
     ];
     _elegida = 0;
@@ -144,7 +145,7 @@
     _ultimoError = nil;
 
     NSDictionary *categoria = _categorias[_elegida];
-    _estado.text = @"Cargando...";
+    _estado.text = @"Loading...";
     _estado.hidden = NO;
     _tabla.hidden = YES;
     [_girador startAnimating];
@@ -168,14 +169,14 @@
             yo->_estado.hidden = NO;
             yo->_estado.text = [NSString stringWithFormat:@"%@\n\n%@",
                 [YTClient explicarError:error],
-                @"Pulsa el boton de arriba a la derecha para reintentar."];
+                @"Tap the button at the top right to retry."];
             return;
         }
         yo->_videos = videos;
         [yo->_tabla reloadData];
         yo->_tabla.hidden = (videos.count == 0);
         yo->_estado.hidden = (videos.count > 0);
-        if (videos.count == 0) yo->_estado.text = @"Sin resultados para esta categoria.";
+        if (videos.count == 0) yo->_estado.text = @"No results for this category.";
     }];
 }
 

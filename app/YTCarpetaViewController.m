@@ -1,3 +1,4 @@
+// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
 // YTCarpetaViewController.m -- explorador de carpetas muy sencillo.
 //
 // En un iPhone con jailbreak la app puede escribir en carpetas que no son las
@@ -18,7 +19,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title = @"Carpeta";
+    self.title = @"Folder";
     self.tableView.backgroundColor = [YTTheme fondo];
     self.tableView.separatorColor = [YTTheme borde];
 
@@ -94,20 +95,20 @@
 }
 
 - (NSString *)tableView:(UITableView *)tabla titleForHeaderInSection:(NSInteger)seccion {
-    if (seccion == 0) return @"Carpeta elegida";
-    if (seccion == 1) return @"Sitios rapidos";
-    return @"Entrar en...";
+    if (seccion == 0) return @"Chosen folder";
+    if (seccion == 1) return @"Quick places";
+    return @"Open...";
 }
 
 - (NSString *)tableView:(UITableView *)tabla titleForFooterInSection:(NSInteger)seccion {
     if (seccion == 0) {
-        return [NSString stringWithFormat:@"%@\n\nCada carpeta se marca con un visto "
-                @"si la app puede escribir de verdad en ella. En un dispositivo con "
-                @"jailbreak lo normal es /var/mobile/Documents o /var/mobile/Media.",
+        return [NSString stringWithFormat:@"%@\n\nEach folder gets a check mark "
+                @"if the app can really write to it. On a "
+                @"jailbroken device the usual choice is /var/mobile/Documents or /var/mobile/Media.",
                 _ruta];
     }
     if (seccion == 2 && _subcarpetas.count == 0) {
-        return _cargando ? @"Mirando que hay aqui..." : @"No hay subcarpetas.";
+        return _cargando ? @"Looking at what is here..." : @"No subfolders.";
     }
     return nil;
 }
@@ -142,14 +143,14 @@
 
     if (indice.section == 0) {
         UITableViewCell *c = [self celda];
-        c.textLabel.text = @"Usar esta carpeta";
+        c.textLabel.text = @"Use this folder";
         c.textLabel.textColor = [YTTheme acento];
         c.detailTextLabel.text = [YTDescargas nombreBonitoDeCarpeta:_ruta];
         BOOL puede = [YTDescargas sePuedeEscribirEn:_ruta];
         c.accessoryType = puede ? UITableViewCellAccessoryCheckmark
                                 : UITableViewCellAccessoryNone;
         c.detailTextLabel.textColor = puede ? [YTTheme textoSecundario] : [YTTheme acento];
-        if (!puede) c.detailTextLabel.text = @"(no se puede escribir aqui)";
+        if (!puede) c.detailTextLabel.text = @"(cannot write here)";
         if ([carpeta isEqualToString:_ruta] && puede) {
             c.accessoryType = UITableViewCellAccessoryCheckmark;
             c.textLabel.textColor = [YTTheme textoSecundario];
@@ -165,7 +166,7 @@
     BOOL hayPadre = ![_ruta isEqualToString:@"/"];
     if (hayPadre && indice.row == 0) {
         UITableViewCell *c = [self celda];
-        c.textLabel.text = @"⋯  Carpeta superior";
+        c.textLabel.text = @"⋯  Parent folder";
         c.detailTextLabel.text = [YTDescargas nombreBonitoDeCarpeta:[_ruta stringByDeletingLastPathComponent]];
         return c;
     }
@@ -185,13 +186,13 @@
     UITableViewCell *c = [self celda];
     BOOL puede = [carpeta[@"puede"] boolValue];
     NSString *nombre = carpeta[@"nombre"];
-    if ([nombre isEqualToString:@"/"]) nombre = @"/  (raiz del sistema)";
+    if ([nombre isEqualToString:@"/"]) nombre = @"/  (system root)";
     c.textLabel.text = nombre;
     c.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
     if (puede) {
-        c.detailTextLabel.text = @"se puede escribir";
+        c.detailTextLabel.text = @"writable";
     } else {
-        c.detailTextLabel.text = @"sin permiso de escritura";
+        c.detailTextLabel.text = @"no write permission";
     }
     return c;
 }
@@ -202,12 +203,12 @@
     if (indice.section == 0) {
         if (![YTDescargas sePuedeEscribirEn:_ruta]) {
             UIAlertController *alerta = [UIAlertController
-                alertControllerWithTitle:@"Sin permiso"
-                                 message:@"La app no puede escribir en esta carpeta. "
-                                         @"Prueba /var/mobile/Documents o la carpeta "
-                                         @"Descargas de la propia app."
+                alertControllerWithTitle:@"No permission"
+                                 message:@"The app cannot write to this folder. "
+                                         @"Try /var/mobile/Documents or the app's own "
+                                         @"Downloads folder."
                           preferredStyle:UIAlertControllerStyleAlert];
-            [alerta addAction:[UIAlertAction actionWithTitle:@"Vale"
+            [alerta addAction:[UIAlertAction actionWithTitle:@"OK"
                                                        style:UIAlertActionStyleDefault
                                                      handler:nil]];
             [self presentViewController:alerta animated:YES completion:nil];

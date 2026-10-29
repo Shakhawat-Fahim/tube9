@@ -1,3 +1,4 @@
+// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
 // AppDelegate.m -- monta la interfaz (todo por codigo, sin storyboards)
 #import "AppDelegate.h"
 #import "YTTheme.h"
@@ -45,29 +46,29 @@
     // que se han quedado a medias (lo apunta el reproductor).
     NSMutableArray *estantesDeInicio = [NSMutableArray array];
     [estantesDeInicio addObject:@{
-        @"titulo"  : @"Continuar viendo",
+        @"titulo"  : @"Continue watching",
         @"estante" : @{ @"videos" : [YTProgreso continuarViendo] }
     }];
     [estantesDeInicio addObjectsFromArray:@[
-        @{ @"titulo" : @"Tendencias de hoy", @"consulta" : @"tendencias",
+        @{ @"titulo" : @"Trending today",    @"consulta" : @"trending",
            @"params" : YTOrdenPorPopularidad },
-        @{ @"titulo" : @"Música",            @"consulta" : @"música",
+        @{ @"titulo" : @"Music",             @"consulta" : @"music",
            @"params" : YTOrdenPorPopularidad },
-        @{ @"titulo" : @"Noticias",          @"consulta" : @"noticias de hoy",
+        @{ @"titulo" : @"News",              @"consulta" : @"news today",
            @"params" : YTOrdenRecientes },
-        @{ @"titulo" : @"Deportes",          @"consulta" : @"deportes",
+        @{ @"titulo" : @"Sports",            @"consulta" : @"sports",
            @"params" : YTOrdenRecientes },
-        @{ @"titulo" : @"Comedia",           @"consulta" : @"comedia",
+        @{ @"titulo" : @"Comedy",            @"consulta" : @"comedy",
            @"params" : YTOrdenPorPopularidad },
-        @{ @"titulo" : @"Para aprender",     @"consulta" : @"documentales",
+        @{ @"titulo" : @"Learn something",   @"consulta" : @"documentaries",
            @"params" : YTOrdenPorPopularidad }
     ]];
     YTFeedViewController *inicio =
-        [[YTFeedViewController alloc] initConTitulo:@"Inicio" fuentes:estantesDeInicio];
+        [[YTFeedViewController alloc] initConTitulo:@"Home" fuentes:estantesDeInicio];
     UINavigationController *navInicio =
         [[UINavigationController alloc] initWithRootViewController:inicio];
     navInicio.tabBarItem = [[UITabBarItem alloc]
-        initWithTitle:@"Inicio"
+        initWithTitle:@"Home"
                 image:[YTTheme icono:@"inicio" lado:26]
         selectedImage:nil];
 
@@ -76,7 +77,7 @@
     UINavigationController *navMusica =
         [[UINavigationController alloc] initWithRootViewController:musica];
     navMusica.tabBarItem = [[UITabBarItem alloc]
-        initWithTitle:@"Música"
+        initWithTitle:@"Music"
                 image:[YTTheme icono:@"musica" lado:26]
         selectedImage:nil];
 
@@ -85,7 +86,7 @@
     UINavigationController *navTendencias =
         [[UINavigationController alloc] initWithRootViewController:tendencias];
     navTendencias.tabBarItem = [[UITabBarItem alloc]
-        initWithTitle:@"Tendencias"
+        initWithTitle:@"Trending"
                 image:[YTTheme icono:@"tendencias" lado:26]
         selectedImage:nil];
 
@@ -94,7 +95,7 @@
     UINavigationController *navBuscar =
         [[UINavigationController alloc] initWithRootViewController:buscar];
     navBuscar.tabBarItem = [[UITabBarItem alloc]
-        initWithTitle:@"Buscar"
+        initWithTitle:@"Search"
                 image:[YTTheme icono:@"buscar" lado:26]
         selectedImage:nil];
 
@@ -103,7 +104,7 @@
     UINavigationController *navAjustes =
         [[UINavigationController alloc] initWithRootViewController:ajustes];
     navAjustes.tabBarItem = [[UITabBarItem alloc]
-        initWithTitle:@"Ajustes"
+        initWithTitle:@"Settings"
                 image:[YTTheme icono:@"ajustes" lado:26]
         selectedImage:nil];
 

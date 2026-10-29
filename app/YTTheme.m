@@ -1,3 +1,4 @@
+// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
 // YTTheme.m
 #import "YTTheme.h"
 
@@ -36,13 +37,13 @@ static NSArray *YTTablaAcentos(void) {
     static dispatch_once_t unaVez;
     dispatch_once(&unaVez, ^{
         lista = @[
-            @{ @"clave" : @"rojo",     @"titulo" : @"Rojo",     @"hex" : @0xFF0033 },
-            @{ @"clave" : @"azul",     @"titulo" : @"Azul",     @"hex" : @0x1A73E8 },
-            @{ @"clave" : @"verde",    @"titulo" : @"Verde",    @"hex" : @0x1FA34A },
-            @{ @"clave" : @"morado",   @"titulo" : @"Morado",   @"hex" : @0x7C4DFF },
-            @{ @"clave" : @"turquesa", @"titulo" : @"Turquesa", @"hex" : @0x00A6A6 },
-            @{ @"clave" : @"ambar",    @"titulo" : @"Ambar",    @"hex" : @0xFFAB00 },
-            @{ @"clave" : @"rosa",     @"titulo" : @"Rosa",     @"hex" : @0xE91E8C }
+            @{ @"clave" : @"rojo",     @"titulo" : @"Red",     @"hex" : @0xFF0033 },
+            @{ @"clave" : @"azul",     @"titulo" : @"Blue",     @"hex" : @0x1A73E8 },
+            @{ @"clave" : @"verde",    @"titulo" : @"Green",    @"hex" : @0x1FA34A },
+            @{ @"clave" : @"morado",   @"titulo" : @"Purple",   @"hex" : @0x7C4DFF },
+            @{ @"clave" : @"turquesa", @"titulo" : @"Teal", @"hex" : @0x00A6A6 },
+            @{ @"clave" : @"ambar",    @"titulo" : @"Amber",    @"hex" : @0xFFAB00 },
+            @{ @"clave" : @"rosa",     @"titulo" : @"Pink",     @"hex" : @0xE91E8C }
         ];
     });
     return lista;
@@ -121,10 +122,10 @@ static UIColor *YTAcentoAjustado(NSUInteger hex, BOOL claro) {
 
 + (NSArray *)fondosDisponibles {
     return @[
-        @{ @"clave" : @"oscuro", @"titulo" : @"Oscuro",
-           @"detalle" : @"El de siempre, como YouTube de noche" },
-        @{ @"clave" : @"claro",  @"titulo" : @"Claro",
-           @"detalle" : @"Fondo blanco, para el sol de la calle" }
+        @{ @"clave" : @"oscuro", @"titulo" : @"Dark",
+           @"detalle" : @"The classic one, like YouTube at night" },
+        @{ @"clave" : @"claro",  @"titulo" : @"Light",
+           @"detalle" : @"White background, for bright sunlight" }
     ];
 }
 
@@ -149,14 +150,14 @@ static UIColor *YTAcentoAjustado(NSUInteger hex, BOOL claro) {
     for (NSDictionary *f in [self fondosDisponibles]) {
         if ([f[@"clave"] isEqualToString:clave]) return f[@"titulo"];
     }
-    return @"Oscuro";
+    return @"Dark";
 }
 
 + (NSString *)tituloDeAcento:(NSString *)clave {
     for (NSDictionary *a in YTTablaAcentos()) {
         if ([a[@"clave"] isEqualToString:clave]) return a[@"titulo"];
     }
-    return @"Rojo";
+    return @"Red";
 }
 
 #pragma mark - Paleta

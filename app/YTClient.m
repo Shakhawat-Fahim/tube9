@@ -1,3 +1,4 @@
+// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
 // YTClient.m -- habla con YouTube (InnerTube) o con el relay
 #import "YTClient.h"
 
@@ -63,7 +64,7 @@ static NSArray *YTClientes(void) {
                @"agente"  : @"com.google.android.youtube/21.26.364 (Linux; U; Android 11) gzip",
                @"sdk"     : @30,
                @"extra"   : @{ @"osName" : @"Android", @"osVersion" : @"11" },
-               @"nota"    : @"app de Android (12 de 12 descargas correctas)" },
+               @"nota"    : @"Android app (12 of 12 downloads OK)" },
 
             @{ @"nombre"  : @"ANDROID_VR",
                @"version" : @"1.65.10",
@@ -73,7 +74,7 @@ static NSArray *YTClientes(void) {
                @"sdk"     : @32,
                @"extra"   : @{ @"deviceMake" : @"Oculus", @"deviceModel" : @"Quest 3",
                                @"osName" : @"Android", @"osVersion" : @"12L" },
-               @"nota"    : @"gafas VR (9 de 12: YouTube le pide po token en algunos)" },
+               @"nota"    : @"VR headset (9 of 12: YouTube asks for a po token on some)" },
 
             @{ @"nombre"  : @"IOS",
                @"version" : @"21.26.4",
@@ -83,7 +84,7 @@ static NSArray *YTClientes(void) {
                @"sdk"     : @0,
                @"extra"   : @{ @"deviceMake" : @"Apple", @"deviceModel" : @"iPhone16,2",
                                @"osName" : @"iPhone", @"osVersion" : @"18.3.2.22D82" },
-               @"nota"    : @"app de iPhone (no devolvio formatos en la prueba)" },
+               @"nota"    : @"iPhone app (returned no formats in testing)" },
 
             @{ @"nombre"  : @"VISIONOS",
                @"version" : @"1.02",
@@ -94,8 +95,8 @@ static NSArray *YTClientes(void) {
                @"sdk"     : @0,
                @"extra"   : @{ @"deviceMake" : @"Apple", @"deviceModel" : @"RealityDevice17,1",
                                @"osName" : @"visionOS", @"osVersion" : @"26.5.23O471" },
-               @"nota"    : @"gafas Vision Pro (sin po token sobre el papel, pero no "
-                            @"devolvio formatos en la prueba)" }
+               @"nota"    : @"Vision Pro headset (no po token on paper, but it "
+                            @"returned no formats in testing)" }
         ];
     });
     return lista;
@@ -123,7 +124,7 @@ static NSDictionary *YTClienteMusica(void) {
                      @"sdk"     : @0,
                      @"extra"   : @{},
                      @"base"    : kBaseYTMusic,
-                     @"nota"    : @"YouTube Music (solo navegar)" };
+                     @"nota"    : @"YouTube Music (browsing only)" };
     });
     return cliente;
 }
@@ -400,7 +401,7 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
         if (![objeto isKindOfClass:[NSDictionary class]]) {
             YTEnPrincipal(^{
                 completion(nil, jsonError ?: [NSError errorWithDomain:@"tube9"
-                    code:1 userInfo:@{NSLocalizedDescriptionKey : @"Respuesta no valida"}]);
+                    code:1 userInfo:@{NSLocalizedDescriptionKey : @"Invalid response"}]);
             });
             return;
         }
@@ -429,7 +430,7 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
         if (!url) {
             completion(nil, [NSError errorWithDomain:@"tube9" code:2
                 userInfo:@{NSLocalizedDescriptionKey :
-                    @"No has configurado la direccion del relay en Ajustes."}]);
+                    @"You have not set the relay address in Settings."}]);
             return;
         }
         [self obtener:url completion:^(NSDictionary *json, NSError *error) {
@@ -437,7 +438,7 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
             if (![json[@"ok"] boolValue]) {
                 completion(nil, [NSError errorWithDomain:@"tube9" code:3
                     userInfo:@{NSLocalizedDescriptionKey :
-                        json[@"error"] ?: @"El relay respondio con un error"}]);
+                        json[@"error"] ?: @"The relay replied with an error"}]);
                 return;
             }
             completion([YTVideo listaDesdeRelay:json[@"resultados"]], nil);
@@ -475,13 +476,13 @@ static void YTEnPrincipal(dispatch_block_t bloque) {
 - (void)canalConId:(NSString *)canalId completion:(YTBloqueInfo)completion {
     if (canalId.length == 0) {
         completion(nil, [NSError errorWithDomain:@"tube9" code:4
-            userInfo:@{NSLocalizedDescriptionKey : @"Canal no valido"}]);
+            userInfo:@{NSLocalizedDescriptionKey : @"Invalid channel"}]);
         return;
     }
     if ([[YTClient modo] isEqualToString:@"relay"]) {
         completion(nil, [NSError errorWithDomain:@"tube9" code:3
             userInfo:@{NSLocalizedDescriptionKey :
-                @"Los canales necesitan el modo directo (sin relay)."}]);
+                @"Channels need direct mode (no relay)."}]);
         return;
     }
 
@@ -575,13 +576,13 @@ static id YTRaizDeContenido(NSDictionary *json) {
                                 NSError *error))completion {
     if (listaId.length == 0) {
         completion(nil, @[], [NSError errorWithDomain:@"tube9" code:4
-            userInfo:@{NSLocalizedDescriptionKey : @"Lista no valida"}]);
+            userInfo:@{NSLocalizedDescriptionKey : @"Invalid playlist"}]);
         return;
     }
     if ([[YTClient modo] isEqualToString:@"relay"]) {
         completion(nil, nil, [NSError errorWithDomain:@"tube9" code:3
             userInfo:@{NSLocalizedDescriptionKey :
-                @"Las listas necesitan el modo directo (sin relay)."}]);
+                @"Playlists need direct mode (no relay)."}]);
         return;
     }
 
@@ -661,13 +662,13 @@ static id YTRaizDeContenido(NSDictionary *json) {
                         [NSCharacterSet whitespaceAndNewlineCharacterSet]];
     if (limpia.length == 0) {
         completion(nil, [NSError errorWithDomain:@"tube9" code:4
-            userInfo:@{NSLocalizedDescriptionKey : @"Escribe algo que buscar"}]);
+            userInfo:@{NSLocalizedDescriptionKey : @"Type something to search for"}]);
         return;
     }
     if ([[YTClient modo] isEqualToString:@"relay"]) {
         completion(nil, [NSError errorWithDomain:@"tube9" code:3
             userInfo:@{NSLocalizedDescriptionKey :
-                @"Este filtro necesita el modo directo (sin relay)."}]);
+                @"This filter needs direct mode (no relay)."}]);
         return;
     }
     [self asegurarVisitante:^{
@@ -705,7 +706,7 @@ static id YTRaizDeContenido(NSDictionary *json) {
     if ([[YTClient modo] isEqualToString:@"relay"]) {
         completion(nil, [NSError errorWithDomain:@"tube9" code:3
             userInfo:@{NSLocalizedDescriptionKey :
-                @"La pantalla de Musica necesita el modo directo (sin relay)."}]);
+                @"The Music screen needs direct mode (no relay)."}]);
         return;
     }
 
@@ -750,7 +751,7 @@ static id YTRaizDeContenido(NSDictionary *json) {
 - (void)resolverVideo:(NSString *)videoId completion:(YTBloqueInfo)completion {
     if (videoId.length == 0) {
         completion(nil, [NSError errorWithDomain:@"tube9" code:4
-            userInfo:@{NSLocalizedDescriptionKey : @"Video no valido"}]);
+            userInfo:@{NSLocalizedDescriptionKey : @"Invalid video"}]);
         return;
     }
 
@@ -759,7 +760,7 @@ static id YTRaizDeContenido(NSDictionary *json) {
         if (!url) {
             completion(nil, [NSError errorWithDomain:@"tube9" code:2
                 userInfo:@{NSLocalizedDescriptionKey :
-                    @"No has configurado la direccion del relay en Ajustes."}]);
+                    @"You have not set the relay address in Settings."}]);
             return;
         }
         [self obtener:url completion:^(NSDictionary *json, NSError *error) {
@@ -767,13 +768,13 @@ static id YTRaizDeContenido(NSDictionary *json) {
             if (![json[@"ok"] boolValue]) {
                 completion(nil, [NSError errorWithDomain:@"tube9" code:3
                     userInfo:@{NSLocalizedDescriptionKey :
-                        json[@"error"] ?: @"El relay no pudo resolver el video"}]);
+                        json[@"error"] ?: @"The relay could not resolve the video"}]);
                 return;
             }
             NSString *enlace = json[@"url_proxy"] ?: json[@"url_directa"];
             if (enlace.length == 0) {
                 completion(nil, [NSError errorWithDomain:@"tube9" code:5
-                    userInfo:@{NSLocalizedDescriptionKey : @"El relay no devolvio ninguna URL"}]);
+                    userInfo:@{NSLocalizedDescriptionKey : @"The relay returned no URL"}]);
                 return;
             }
             completion(@{ @"url" : enlace,
@@ -814,14 +815,14 @@ static id YTRaizDeContenido(NSDictionary *json) {
             NSString *texto = e.localizedDescription;
             if (texto.length && ![motivos containsObject:texto]) [motivos addObject:texto];
         }
-        NSString *resumen = motivos.count ? [motivos componentsJoinedByString:@" | "] : @"sin detalle";
+        NSString *resumen = motivos.count ? [motivos componentsJoinedByString:@" | "] : @"no details";
         NSString *ayuda = @"";
         if ([resumen rangeOfString:@"LOGIN_REQUIRED"].location != NSNotFound ||
             [resumen rangeOfString:@"inicia sesion"].location != NSNotFound ||
             [resumen rangeOfString:@"bot"].location != NSNotFound) {
-            ayuda = @"\n\nYouTube desconfia de esta conexion. Entra en "
-                     "Ajustes > Iniciar sesion en YouTube: con la sesion iniciada "
-                     "este aviso desaparece.";
+            ayuda = @"\n\nYouTube does not trust this connection. Go to "
+                     "Settings > Sign in to YouTube: once you are signed in, "
+                     "this message goes away.";
         }
         completion(nil, [NSError errorWithDomain:@"tube9" code:6 userInfo:@{
             NSLocalizedDescriptionKey : [NSString stringWithFormat:@"%@%@", resumen, ayuda]}]);
@@ -848,7 +849,7 @@ static id YTRaizDeContenido(NSDictionary *json) {
         NSDictionary *estado = json[@"playabilityStatus"];
         NSString *nombreEstado = estado[@"status"];
         if (![nombreEstado isEqualToString:@"OK"]) {
-            NSString *motivo = estado[@"reason"] ?: nombreEstado ?: @"desconocido";
+            NSString *motivo = estado[@"reason"] ?: nombreEstado ?: @"unknown";
             [errores addObject:[NSError errorWithDomain:@"tube9" code:6 userInfo:@{
                 NSLocalizedDescriptionKey : motivo}]];
             [self resolverVideo:videoId conClientes:clientes indice:indice + 1
@@ -874,7 +875,7 @@ static id YTRaizDeContenido(NSDictionary *json) {
         if (!elegido) {
             [errores addObject:[NSError errorWithDomain:@"tube9" code:7 userInfo:@{
                 NSLocalizedDescriptionKey :
-                    @"YouTube no devolvio un formato reproducible para este video."}]];
+                    @"YouTube returned no playable format for this video."}]];
             [self resolverVideo:videoId conClientes:clientes indice:indice + 1
                         errores:errores completion:completion];
             return;
@@ -889,8 +890,8 @@ static id YTRaizDeContenido(NSDictionary *json) {
             if (!vale) {
                 [errores addObject:[NSError errorWithDomain:@"tube9" code:9 userInfo:@{
                     NSLocalizedDescriptionKey :
-                        [NSString stringWithFormat:@"%@ dio una URL que no se puede "
-                         @"descargar (%@)", cliente[@"nombre"], detalle]}]];
+                        [NSString stringWithFormat:@"%@ gave a URL that cannot be "
+                         @"downloaded (%@)", cliente[@"nombre"], detalle]}]];
                 [self resolverVideo:videoId conClientes:clientes indice:indice + 1
                             errores:errores completion:completion];
                 return;
@@ -928,7 +929,7 @@ static id YTRaizDeContenido(NSDictionary *json) {
 - (void)comprobarEnlace:(NSString *)enlace
              completion:(void (^)(BOOL vale, NSString *detalle))completion {
     NSURL *url = [NSURL URLWithString:enlace];
-    if (!url) { completion(NO, @"la direccion no es valida"); return; }
+    if (!url) { completion(NO, @"the address is not valid"); return; }
 
     NSMutableURLRequest *peticion = [NSMutableURLRequest
         requestWithURL:url
@@ -940,14 +941,14 @@ static id YTRaizDeContenido(NSDictionary *json) {
         completionHandler:^(NSData *datos, NSURLResponse *respuesta, NSError *error) {
         double segundos = -[inicio timeIntervalSinceNow];
         if (error) {
-            completion(NO, [NSString stringWithFormat:@"%@ (en %.1f s)",
+            completion(NO, [NSString stringWithFormat:@"%@ (in %.1f s)",
                 [YTClient explicarError:error], segundos]);
             return;
         }
         NSInteger codigo = [respuesta isKindOfClass:[NSHTTPURLResponse class]]
             ? ((NSHTTPURLResponse *)respuesta).statusCode : 0;
         if (codigo == 200 || codigo == 206) {
-            completion(YES, [NSString stringWithFormat:@"HTTP %ld en %.1f s",
+            completion(YES, [NSString stringWithFormat:@"HTTP %ld in %.1f s",
                              (long)codigo, segundos]);
         } else {
             completion(NO, [NSString stringWithFormat:@"HTTP %ld", (long)codigo]);
@@ -962,8 +963,8 @@ static id YTRaizDeContenido(NSDictionary *json) {
     NSMutableDictionary *ctx = [NSMutableDictionary dictionary];
     ctx[@"clientName"] = cliente[@"nombre"];
     ctx[@"clientVersion"] = cliente[@"version"];
-    ctx[@"hl"] = @"es";
-    ctx[@"gl"] = @"ES";
+    ctx[@"hl"] = @"en";
+    ctx[@"gl"] = @"US";
     NSNumber *sdk = cliente[@"sdk"];
     if (sdk.integerValue > 0) ctx[@"androidSdkVersion"] = sdk;
     // deviceMake/deviceModel/osName/osVersion: YouTube los usa para decidir si
@@ -1033,7 +1034,7 @@ static id YTRaizDeContenido(NSDictionary *json) {
     [peticion setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
     NSString *agente = cliente[@"agente"];
     if (agente.length) [peticion setValue:agente forHTTPHeaderField:@"User-Agent"];
-    [peticion setValue:@"es-ES,es;q=0.9" forHTTPHeaderField:@"Accept-Language"];
+    [peticion setValue:@"en-US,en;q=0.9" forHTTPHeaderField:@"Accept-Language"];
 
     // Las mismas cabeceras que manda NewPipe en cada peticion. Si no van,
     // YouTube no sabe con que cliente habla y responde mucho mas a menudo con
@@ -1076,7 +1077,7 @@ static id YTRaizDeContenido(NSDictionary *json) {
             YTEnPrincipal(^{
                 completion(nil, [NSError errorWithDomain:@"tube9" code:10 userInfo:@{
                     NSLocalizedDescriptionKey : [NSString stringWithFormat:
-                        @"YouTube respondio HTTP %ld al pedir %@.%@",
+                        @"YouTube replied HTTP %ld when asking for %@.%@",
                         (long)codigo, ruta, detalle]}]); });
             return;
         }
@@ -1084,7 +1085,7 @@ static id YTRaizDeContenido(NSDictionary *json) {
         if (!esDiccionario) {
             YTEnPrincipal(^{
                 completion(nil, [NSError errorWithDomain:@"tube9" code:8
-                    userInfo:@{NSLocalizedDescriptionKey : @"YouTube devolvio algo inesperado"}]);
+                    userInfo:@{NSLocalizedDescriptionKey : @"YouTube returned something unexpected"}]);
             });
             return;
         }
@@ -1096,26 +1097,26 @@ static id YTRaizDeContenido(NSDictionary *json) {
 
 - (void)probarConexion:(void (^)(NSString *informe))completion {
     NSMutableString *informe = [NSMutableString string];
-    [informe appendFormat:@"Modo: %@\n", [YTClient modo]];
-    [informe appendFormat:@"Clientes: %@\n", [YTClient listaDeClientes]];
-    [informe appendFormat:@"Sesion iniciada: %@  (%lu cookies)\n",
-        ([YTClient haySesion] ? @"SI" : @"NO"), (unsigned long)[YTClient numeroDeCookies]];
+    [informe appendFormat:@"Mode: %@\n", [YTClient modo]];
+    [informe appendFormat:@"Clients: %@\n", [YTClient listaDeClientes]];
+    [informe appendFormat:@"Signed in: %@  (%lu cookies)\n",
+        ([YTClient haySesion] ? @"YES" : @"NO"), (unsigned long)[YTClient numeroDeCookies]];
 
     if ([[YTClient modo] isEqualToString:@"relay"]) {
         NSURL *url = [YTClient urlDelRelay:@"/api/health" parametros:nil];
-        [informe appendFormat:@"Relay: %@\n\n", url.absoluteString ?: @"(sin configurar)"];
+        [informe appendFormat:@"Relay: %@\n\n", url.absoluteString ?: @"(not set)"];
         if (!url) {
-            [informe appendString:@"Falta la direccion del relay."];
+            [informe appendString:@"The relay address is missing."];
             completion(informe);
             return;
         }
         [self obtener:url completion:^(NSDictionary *json, NSError *error) {
             if (error) {
-                [informe appendFormat:@"FALLO: %@\n%@",
+                [informe appendFormat:@"FAILED: %@\n%@",
                     [YTClient explicarError:error],
-                    @"\nComprueba que el relay esta arrancado y en la misma red."];
+                    @"\nCheck that the relay is running and on the same network."];
             } else {
-                [informe appendFormat:@"OK  responde %@ v%@",
+                [informe appendFormat:@"OK  %@ v%@ replies",
                     json[@"servicio"] ?: @"?", json[@"version"] ?: @"?"];
             }
             completion(informe);
@@ -1123,21 +1124,21 @@ static id YTRaizDeContenido(NSDictionary *json) {
         return;
     }
 
-    [informe appendString:@"\n1) Buscando en youtube.com...\n"];
+    [informe appendString:@"\n1) Searching youtube.com...\n"];
     NSDate *principioBusqueda = [NSDate date];
-    [self buscar:@"prueba" completion:^(NSArray *videos, NSError *error) {
+    [self buscar:@"test" completion:^(NSArray *videos, NSError *error) {
         [informe appendFormat:@"   %@\n", [self describir:videos error:error
                                                      desde:principioBusqueda]];
-        [informe appendFormat:@"   visitante anonimo: %@\n",
-            ([YTClient visitante].length ? @"obtenido" : @"NO disponible")];
+        [informe appendFormat:@"   anonymous visitor ID: %@\n",
+            ([YTClient visitante].length ? @"received" : @"NOT available")];
         if (error) {
-            [informe appendString:@"\nSi es un error de certificado, instala las raices "
-                               @"actualizadas en el dispositivo (mira el README)."];
+            [informe appendString:@"\nIf this is a certificate error, install the updated "
+                               @"root certificates on the device (see the README)."];
             completion(informe);
             return;
         }
         if (videos.count == 0) {
-            [informe appendString:@"\nLa busqueda no devolvio ningun resultado."];
+            [informe appendString:@"\nThe search returned no results."];
             completion(informe);
             return;
         }
@@ -1145,37 +1146,37 @@ static id YTRaizDeContenido(NSDictionary *json) {
         YTVideo *prueba = videos[0];
         NSString *recorte = prueba.titulo.length > 32
             ? [prueba.titulo substringToIndex:32] : prueba.titulo;
-        [informe appendFormat:@"\n2) Pidiendo la URL del video \"%@\"...\n", recorte];
+        [informe appendFormat:@"\n2) Asking for the URL of video \"%@\"...\n", recorte];
         NSDate *principioResolucion = [NSDate date];
         [self resolverVideo:prueba.identificador
             completion:^(NSDictionary *info, NSError *error) {
             double segundos = -[principioResolucion timeIntervalSinceNow];
             NSString *enlace = info[@"url"];
             if (error || enlace.length == 0) {
-                [informe appendFormat:@"   FALLO tras %.1f s: %@\n", segundos,
-                    [YTClient explicarError:error] ?: @"YouTube no devolvio URL"];
-                [informe appendString:@"\nYa se han probado todos los clientes. Si el motivo "
-                                   "es LOGIN_REQUIRED, inicia sesion en Ajustes > "
-                                   "Iniciar sesion en YouTube."];
+                [informe appendFormat:@"   FAILED after %.1f s: %@\n", segundos,
+                    [YTClient explicarError:error] ?: @"YouTube returned no URL"];
+                [informe appendString:@"\nAll clients have been tried. If the reason "
+                                   "is LOGIN_REQUIRED, sign in under Settings > "
+                                   "Sign in to YouTube."];
                 completion(informe);
                 return;
             }
             NSURL *url = [NSURL URLWithString:enlace];
             NSString *quien = info[@"cliente"];
-            [informe appendFormat:@"   OK  URL obtenida en %.1f s%@\n", segundos,
-                (quien.length ? [NSString stringWithFormat:@" con el cliente %@", quien] : @"")];
+            [informe appendFormat:@"   OK  URL received in %.1f s%@\n", segundos,
+                (quien.length ? [NSString stringWithFormat:@" with client %@", quien] : @"")];
             NSString *comprobacion = info[@"comprobacion"];
             if (comprobacion.length) {
-                [informe appendFormat:@"   descarga comprobada: %@\n", comprobacion];
+                [informe appendFormat:@"   download check: %@\n", comprobacion];
             }
-            [informe appendFormat:@"   servidor de video: %@\n", url.host ?: @"(desconocido)"];
-            [informe appendString:@"\n3) Descargando los primeros KB del video...\n"];
+            [informe appendFormat:@"   video server: %@\n", url.host ?: @"(unknown)"];
+            [informe appendString:@"\n3) Downloading the first KB of the video...\n"];
             [self probarBytesDe:enlace completion:^(NSString *resultado) {
                 [informe appendFormat:@"   %@\n", resultado];
                 [informe appendString:
-                    @"\nSi el paso 3 falla o tarda muchisimo, el problema esta en la "
-                    @"descarga del video, no en la busqueda: suele ser el proveedor de "
-                    @"Internet dando largas con googlevideo.com. Prueba el modo relay."];
+                    @"\nIf step 3 fails or takes very long, the problem is in the "
+                    @"video download, not in the search: usually the Internet provider "
+                    @"is slowing down googlevideo.com. Try relay mode."];
                 completion(informe);
             }];
         }];
@@ -1186,10 +1187,10 @@ static id YTRaizDeContenido(NSDictionary *json) {
 - (NSString *)describir:(NSArray *)videos error:(NSError *)error desde:(NSDate *)inicio {
     double segundos = -[inicio timeIntervalSinceNow];
     if (error) {
-        return [NSString stringWithFormat:@"FALLO tras %.1f s: %@",
+        return [NSString stringWithFormat:@"FAILED after %.1f s: %@",
                 segundos, [YTClient explicarError:error]];
     }
-    return [NSString stringWithFormat:@"OK  %lu resultados en %.1f s",
+    return [NSString stringWithFormat:@"OK  %lu results in %.1f s",
             (unsigned long)videos.count, segundos];
 }
 
@@ -1198,7 +1199,7 @@ static id YTRaizDeContenido(NSDictionary *json) {
 // se descarga".
 - (void)probarBytesDe:(NSString *)enlace completion:(void (^)(NSString *resultado))completion {
     NSURL *url = [NSURL URLWithString:enlace];
-    if (!url) { completion(@"La URL del video no es valida."); return; }
+    if (!url) { completion(@"The video URL is not valid."); return; }
 
     NSMutableURLRequest *peticion = [NSMutableURLRequest requestWithURL:url];
     [peticion setValue:@"bytes=0-65535" forHTTPHeaderField:@"Range"];
@@ -1208,7 +1209,7 @@ static id YTRaizDeContenido(NSDictionary *json) {
         completionHandler:^(NSData *datos, NSURLResponse *respuesta, NSError *error) {
         double segundos = -[inicio timeIntervalSinceNow];
         if (error) {
-            completion([NSString stringWithFormat:@"FALLO tras %.1f s: %@",
+            completion([NSString stringWithFormat:@"FAILED after %.1f s: %@",
                 segundos, [YTClient explicarError:error]]);
             return;
         }
@@ -1220,9 +1221,9 @@ static id YTRaizDeContenido(NSDictionary *json) {
                 [datos subdataWithRange:NSMakeRange(4, 4)] encoding:NSASCIIStringEncoding];
             if (atom) firma = [NSString stringWithFormat:@", atom '%@'", atom];
         }
-        completion([NSString stringWithFormat:@"OK  HTTP %ld, %@, %.0f KB en %.1f s%@",
+        completion([NSString stringWithFormat:@"OK  HTTP %ld, %@, %.0f KB in %.1f s%@",
                     (long)(http ? http.statusCode : 0),
-                    [respuesta MIMEType] ?: @"tipo desconocido",
+                    [respuesta MIMEType] ?: @"unknown type",
                     datos.length / 1024.0, segundos, firma]);
     }] resume];
 }
@@ -1441,29 +1442,29 @@ static const NSUInteger kMiniaturasSimultaneas = 4;
     if ([error.domain isEqualToString:NSURLErrorDomain]) {
         switch (error.code) {
             case NSURLErrorNotConnectedToInternet:
-                return @"Sin conexion a Internet.";
+                return @"No Internet connection.";
             case NSURLErrorCannotFindHost:
-                return @"No se encuentra el servidor (revisa la direccion).";
+                return @"Server not found (check the address).";
             case NSURLErrorCannotConnectToHost:
-                return @"No se puede conectar al servidor (revisa el puerto y el firewall).";
+                return @"Cannot connect to the server (check the port and the firewall).";
             case NSURLErrorTimedOut:
-                return @"El servidor tarda demasiado en responder.";
+                return @"The server takes too long to reply.";
             case NSURLErrorServerCertificateUntrusted:
             case NSURLErrorServerCertificateHasBadDate:
             case NSURLErrorServerCertificateHasUnknownRoot:
             case NSURLErrorServerCertificateNotYetValid:
-                return @"Certificado TLS no valido: iOS 9 no confia en la CA moderna. "
-                        "Instala las raices actualizadas (README, pasos 1-3).";
+                return @"Invalid TLS certificate: iOS 9 does not trust the modern CA. "
+                        "Install the updated root certificates (README, steps 1-3).";
             case NSURLErrorSecureConnectionFailed:
-                return @"Fallo de conexion segura (TLS). Actualiza las raices del "
-                        "dispositivo (README, pasos 1-3).";
+                return @"Secure connection (TLS) failed. Update the root certificates "
+                        "on the device (README, steps 1-3).";
             case NSURLErrorCancelled:
-                return @"Peticion cancelada.";
+                return @"Request cancelled.";
             default:
                 break;
         }
     }
-    return error.localizedDescription ?: @"Error desconocido";
+    return error.localizedDescription ?: @"Unknown error";
 }
 
 @end
@@ -1650,7 +1651,7 @@ static YTVideo *YTVideoDeFilaMusical(NSDictionary *fila) {
         video.titulo = YTTextoDeNodo(fila[@"title"]);
         video.canal  = YTTextoDeNodo(fila[@"subtitle"]);
     }
-    if (video.titulo.length == 0) video.titulo = @"(sin titulo)";
+    if (video.titulo.length == 0) video.titulo = @"(no title)";
 
     video.urlMiniatura = YTUrlMiniaturaMusical(fila);
     if (video.urlMiniatura.length == 0) {
@@ -1685,7 +1686,7 @@ static void YTConsumirEstante(NSDictionary *contenedor, NSMutableArray *filas,
     // Con una o dos canciones no vale la pena una fila entera.
     if (videos.count >= 3) {
         for (YTVideo *v in videos) [vistos addObject:v.identificador];
-        [filas addObject:@{ @"titulo" : (titulo.length ? titulo : @"Música"),
+        [filas addObject:@{ @"titulo" : (titulo.length ? titulo : @"Music"),
                             @"videos" : videos }];
     }
 }
@@ -1730,7 +1731,7 @@ NSArray *YTCarruselesMusicales(NSDictionary *json, NSString *tituloRespaldo) {
         [restantes addObject:video];
     }
     if (restantes.count >= 3) {
-        [filas addObject:@{ @"titulo" : (tituloRespaldo.length ? tituloRespaldo : @"Música"),
+        [filas addObject:@{ @"titulo" : (tituloRespaldo.length ? tituloRespaldo : @"Music"),
                             @"videos" : restantes }];
     }
     return filas;
@@ -1835,7 +1836,7 @@ static NSDictionary *YTListaDesdeRenderer(NSDictionary *r) {
 
     NSMutableDictionary *lista = [NSMutableDictionary dictionary];
     lista[@"id"] = ident;
-    lista[@"titulo"] = YTCadenaOTexto(r[@"title"]) ?: @"(lista sin titulo)";
+    lista[@"titulo"] = YTCadenaOTexto(r[@"title"]) ?: @"(untitled playlist)";
     NSString *cuantos = YTCadenaOTexto(r[@"videoCountText"])
                         ?: YTCadenaOTexto(r[@"videoCountShortText"]);
     lista[@"videos"] = cuantos ?: @"";
@@ -1886,7 +1887,9 @@ static NSDictionary *YTCanalDesdeRenderer(NSDictionary *r) {
     for (NSString *texto in textos) {
         if (texto.length == 0) continue;
         if ([texto hasPrefix:@"@"]) { manejador = texto; continue; }
-        if ([texto rangeOfString:@"suscriptor" options:NSCaseInsensitiveSearch].location
+        if ([texto rangeOfString:@"subscriber" options:NSCaseInsensitiveSearch].location
+            != NSNotFound ||
+            [texto rangeOfString:@"suscriptor" options:NSCaseInsensitiveSearch].location
             != NSNotFound) { subs = texto; continue; }
         if ([texto rangeOfString:@"video" options:NSCaseInsensitiveSearch].location
             != NSNotFound) { videos = texto; continue; }
@@ -1896,7 +1899,7 @@ static NSDictionary *YTCanalDesdeRenderer(NSDictionary *r) {
 
     NSMutableDictionary *canal = [NSMutableDictionary dictionary];
     canal[@"id"] = ident;
-    canal[@"titulo"] = YTCadenaOTexto(r[@"title"]) ?: @"(canal sin nombre)";
+    canal[@"titulo"] = YTCadenaOTexto(r[@"title"]) ?: @"(unnamed channel)";
     canal[@"suscritos"] = subs;
     canal[@"videos"] = videos;
     canal[@"manejador"] = manejador;

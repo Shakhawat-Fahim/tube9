@@ -1,3 +1,4 @@
+// v1.0-en 2026-10-29: English UI build (textos traducidos al ingles; hl=en, gl=US)
 // YTVideo.m
 #import "YTVideo.h"
 
@@ -47,7 +48,7 @@ static NSString *YTIdDeCanal(NSDictionary *nodo) {
     v.publicado     = d[@"publicado"];
     v.urlMiniatura  = d[@"miniatura"];
     if (!v.identificador) return nil;
-    if (!v.titulo) v.titulo = @"(sin titulo)";
+    if (!v.titulo) v.titulo = @"(no title)";
     return v;
 }
 
@@ -60,7 +61,7 @@ static NSString *YTIdDeCanal(NSDictionary *nodo) {
     v.identificador = vid;
     // videoRenderer y compactVideoRenderer usan "title"; los estantes de un
     // canal (videoWithContextRenderer) usan "headline".
-    v.titulo    = YTTexto(r[@"title"]) ?: YTTexto(r[@"headline"]) ?: @"(sin titulo)";
+    v.titulo    = YTTexto(r[@"title"]) ?: YTTexto(r[@"headline"]) ?: @"(no title)";
     v.canal     = YTTexto(r[@"shortBylineText"]) ?: YTTexto(r[@"longBylineText"])
                   ?: YTTexto(r[@"ownerText"]);
     v.canalId   = YTIdDeCanal(r[@"longBylineText"]) ?: YTIdDeCanal(r[@"shortBylineText"])
